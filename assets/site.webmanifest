@@ -1,0 +1,14 @@
+{
+  "name": "Novin Pey Test Alborz",
+  "short_name": "NPT Alborz",
+  "icons": [
+    {
+      "src": "assets/favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#080808",
+  "background_color": "#080808",
+  "display": "standalone"
+}
