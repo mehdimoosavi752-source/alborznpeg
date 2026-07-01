@@ -1,0 +1,7 @@
+services:
+  - type: static
+    name: alborznpeg-site
+    env: static
+    buildCommand: ""
+    staticPublishPath: docs
+    pullRequestPreviewsEnabled: true

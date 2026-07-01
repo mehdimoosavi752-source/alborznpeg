@@ -1,0 +1,13 @@
+{
+  "name": "alborznpeg-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static website for Alborz NPEG, ready for Render and GitHub Pages.",
+  "scripts": {
+    "start": "node server.js",
+    "build": "node -e \"console.log('Static site: no build step required')\""
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
