@@ -32,7 +32,7 @@
     body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(circle at calc(var(--cx,.5)*100%) calc(var(--cy,.5)*100%),rgba(215,25,32,.12),transparent 24%),linear-gradient(90deg,rgba(0,0,0,.02) 1px,transparent 1px);background-size:auto,44px 44px}
     .topline{min-height:42px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:7px clamp(16px,4vw,68px);font-size:13px;font-weight:900}
     .topline a{font-size:15px}
-    .header{height:76px;background:linear-gradient(135deg,rgba(14,14,14,.76),rgba(6,6,6,.9));backdrop-filter:blur(22px) saturate(1.35);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 18px;position:fixed;top:18px;right:clamp(14px,3vw,44px);left:clamp(14px,3vw,44px);z-index:40;border:1px solid rgba(255,255,255,.16);border-radius:26px;box-shadow:0 24px 80px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.14)}
+    .header{height:76px;background:linear-gradient(135deg,rgba(14,14,14,.76),rgba(6,6,6,.9));backdrop-filter:blur(22px) saturate(1.35);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 18px;position:fixed;top:14px;right:clamp(14px,3vw,44px);left:clamp(14px,3vw,44px);z-index:40;border:1px solid rgba(255,255,255,.16);border-radius:26px;box-shadow:0 24px 80px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.14)}
     .brand{display:flex;align-items:center;gap:13px;min-width:255px}
     .mark{width:54px;height:54px;background:url("assets/logo.svg") center/contain no-repeat;display:grid;place-items:center;font-size:0;filter:drop-shadow(0 12px 18px rgba(0,0,0,.3))}
     .mark:before,.mark:after{display:none}
@@ -44,7 +44,7 @@
     .btn{display:inline-flex;align-items:center;justify-content:center;min-height:45px;padding:9px 18px;border:1px solid #333;background:#fff;color:#111;font-weight:900;white-space:nowrap;position:relative;overflow:hidden}
     .btn:before{content:"";position:absolute;inset:0;background:rgba(255,255,255,.2);transform:translateX(120%) skewX(-18deg);transition:.35s}.btn:hover:before{transform:translateX(-120%) skewX(-18deg)}
     .btn.red{background:var(--red);border-color:var(--red);color:#fff}.btn.dark{background:#0b0b0b;color:#fff;border-color:#393939}
-    .hero{min-height:calc(100vh - 42px);background:#080808;display:grid;grid-template-columns:minmax(0,1fr) minmax(440px,.88fr);position:relative;overflow:hidden;padding-top:72px}
+    .hero{min-height:100vh;background:#080808;display:grid;grid-template-columns:minmax(0,1fr) minmax(440px,.88fr);position:relative;overflow:hidden;padding-top:72px}
     .hero:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(215,25,32,.12),transparent 28%),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(0deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:auto,72px 72px,72px 72px;opacity:.8;animation:gridDrift 18s linear infinite}
     .blueprint-layer{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.35;overflow:hidden}.blueprint-layer:before{content:"";position:absolute;inset:-80px;background:linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(0deg,rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(135deg,transparent 49.4%,rgba(215,25,32,.28) 50%,transparent 50.6%);background-size:96px 96px,96px 96px,180px 180px;animation:blueprintPan 16s linear infinite}.blueprint-layer:after{content:"";position:absolute;left:8%;top:18%;width:42%;height:2px;background:var(--red);transform-origin:left center;animation:craneSweep 5.2s ease-in-out infinite}
     .hero-copy{position:relative;z-index:2;color:#fff;padding:76px clamp(16px,4vw,68px) 56px;display:flex;flex-direction:column;justify-content:end;animation:rise .75s ease both}
@@ -109,7 +109,7 @@
     .contact:before{content:"";position:absolute;top:0;bottom:0;right:0;width:10px;background:var(--red)}.contact:after{content:"";position:absolute;left:0;top:0;width:260px;height:100%;background:linear-gradient(135deg,rgba(215,25,32,.35),transparent);clip-path:polygon(0 0,100% 0,45% 100%,0 100%)}
     .contact h2{margin:0 0 8px;font-size:35px}.contact p{margin:0;color:#d2d2d2}.contact>*{position:relative;z-index:1}
     .mega-footer{background:#080808;color:#d6d6d6;padding:48px clamp(16px,4vw,68px) 28px;border-top:5px solid var(--red);position:relative;overflow:hidden}.mega-footer:before{content:"";position:absolute;top:0;bottom:0;right:0;width:34%;background:linear-gradient(135deg,rgba(215,25,32,.22),transparent);clip-path:polygon(0 0,100% 0,62% 100%,0 100%)}.footer-grid{position:relative;z-index:1;display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;gap:28px}.mega-footer h3{color:#fff;margin:0 0 14px;font-size:18px}.mega-footer p{margin:0;color:#bbb}.footer-links{display:grid;gap:8px}.footer-links a{color:#d7d7d7;font-size:14px;transition:transform .2s ease,color .2s ease}.footer-links a:hover{color:#fff;transform:translateX(-5px)}.footer-bottom{position:relative;z-index:1;border-top:1px solid #2a2a2a;margin-top:30px;padding-top:18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:#aaa;font-size:13px}
-    .call-widget{position:fixed;left:clamp(14px,3vw,44px);top:106px;z-index:39;width:260px;background:linear-gradient(135deg,rgba(255,255,255,.2),rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.22);border-radius:0 0 24px 24px;backdrop-filter:blur(22px);box-shadow:0 20px 60px rgba(0,0,0,.24);color:#fff;overflow:hidden;transform:translateY(-12px);animation:floatIn .75s ease .65s both}.call-widget:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(215,25,32,.34),transparent);pointer-events:none}.call-widget a,.call-widget span{position:relative;z-index:1}.call-widget span{display:block;padding:13px 16px 0;font-size:12px;color:#eee}.call-widget a{display:flex;justify-content:space-between;align-items:center;padding:7px 16px 14px;font-weight:900}.call-widget b{color:#fff;font-size:18px}
+    .call-widget{position:fixed;left:clamp(14px,3vw,44px);top:102px;z-index:39;width:max-content;background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.22);border-radius:18px;backdrop-filter:blur(22px);box-shadow:0 14px 44px rgba(0,0,0,.22);color:#fff;overflow:hidden;animation:floatIn .75s ease .65s both}.call-widget:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(215,25,32,.3),transparent);pointer-events:none}.call-widget span,.call-widget em{display:none}.call-widget a{position:relative;z-index:1;display:flex;align-items:center;padding:8px 13px;font-weight:900}.call-widget b{color:#fff;font-size:15px;line-height:1}
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.reveal{opacity:1;transform:none}}
     @media(max-width:1120px){
       .menu{display:none}.actions .btn.dark{display:none}.header{height:74px}.brand{min-width:auto}.brand strong{font-size:16px}.brand span{display:none}.call-widget{display:none}
@@ -123,11 +123,6 @@
 </head>
 <body>
   <div class="scroll-progress" aria-hidden="true"></div>
-  <div class="topline">
-    <div>مشاوره و ارزیابی پروژه: <a href="tel:02632356821">۰۲۶۳۲۳۵۶۸۲۱</a></div>
-    <div>عمران، معماری، کنترل کیفیت، مدیریت پروژه و پشتیبانی فنی سازمانی</div>
-  </div>
-
   <header class="header">
     <a class="brand" href="#">
       <span class="mark">نوین پی تست البرز</span>
@@ -398,4 +393,5 @@
   </script>
 </body>
 </html>
+
 

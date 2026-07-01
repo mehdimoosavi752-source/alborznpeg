@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Alborz NPEG blueprint logo">
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M24 0H0v24" fill="none" stroke="#ffffff" stroke-width="1" opacity=".09"/>
+    </pattern>
+    <linearGradient id="r" x1="48" y1="38" x2="212" y2="216" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff4b50"/>
+      <stop offset=".62" stop-color="#d71920"/>
+      <stop offset="1" stop-color="#75070b"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="50" fill="#0a0a0a"/>
+  <rect width="256" height="256" rx="50" fill="url(#grid)"/>
+  <path d="M54 190V66h29l45 58 45-58h29v124h-31v-74l-43 55-43-55v74H54Z" fill="#ffffff"/>
+  <path d="M54 190h148" stroke="url(#r)" stroke-width="12" stroke-linecap="round"/>
+  <path d="M42 54h172M42 202h172M54 42v172M202 42v172" fill="none" stroke="#d71920" stroke-width="5" stroke-linecap="round" opacity=".92"/>
+  <circle cx="54" cy="54" r="7" fill="#ffffff"/>
+  <circle cx="202" cy="202" r="7" fill="#ffffff"/>
+</svg>

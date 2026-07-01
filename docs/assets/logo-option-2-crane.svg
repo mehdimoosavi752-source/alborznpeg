@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Alborz NPEG crane logo">
+  <defs>
+    <linearGradient id="r" x1="40" y1="28" x2="218" y2="218" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff565c"/>
+      <stop offset=".55" stop-color="#d71920"/>
+      <stop offset="1" stop-color="#86080d"/>
+    </linearGradient>
+    <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#000000" flood-opacity=".36"/>
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="54" fill="#080808"/>
+  <path d="M50 200h156" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
+  <path d="M78 184V70h30l70 114h-34l-15-26H108v26H78Zm31-52h35l-35-58v58Z" fill="url(#r)" filter="url(#s)"/>
+  <path d="M63 70h119l25 22H92" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M182 70v48l18 12" fill="none" stroke="#d71920" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M198 134h24" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+</svg>
