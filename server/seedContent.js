@@ -35,16 +35,20 @@ export const DEFAULT_CONTENT = {
     { id: uid("prj"), name: "اپتما HD146X", brand: "Optoma", category: "خانگی", technology: "DLP", resolution: "Full HD 1080p", lumens: 3600, price: 21800000, warranty: "۱۸ ماه", desc: "قیمت مناسب و کیفیت تصویر بالا، انتخابی محبوب برای شروع سینمای خانگی", stock: 7, icon: "Monitor", pattern: "scan" },
     { id: uid("prj"), name: "ایکس‌جیمی Halo+", brand: "XGIMI", category: "قابل‌حمل", technology: "LED با باتری", resolution: "Full HD 1080p", lumens: 900, price: 32500000, warranty: "۱۲ ماه", desc: "پروژکتور باتری‌دار قابل‌حمل با اندروید تی‌وی، مناسب سینمای حیاط و کمپینگ", stock: 5, icon: "Layers", pattern: "wave" },
   ],
-  pages: [
-    { id: "about-extra", title: "قوانین و مقررات", slug: "rules", showInMenu: false, order: 9,
-      content: "کلیه محصولات فروشگاه نوین پلی‌تکنیک اورجینال و دارای گارانتی معتبر هستند. مهلت بازگشت کالا ۷ روز از تاریخ تحویل است." },
-  ],
   menu: [
     { id: uid("menu"), label: "خانه", type: "route", target: "home", visible: true, order: 1 },
     { id: uid("menu"), label: "خدمات", type: "route", target: "services", visible: true, order: 2 },
     { id: uid("menu"), label: "فروشگاه پروژکتور", type: "route", target: "shop", visible: true, order: 3 },
-    { id: uid("menu"), label: "درباره ما", type: "route", target: "about", visible: true, order: 4 },
-    { id: uid("menu"), label: "تماس با ما", type: "route", target: "contact", visible: true, order: 5 },
+    { id: uid("menu"), label: "مقالات", type: "route", target: "articles", visible: true, order: 4 },
+    { id: uid("menu"), label: "سوالات رایج", type: "route", target: "faq", visible: true, order: 5 },
+    { id: uid("menu"), label: "درباره ما", type: "route", target: "about", visible: true, order: 6 },
+    { id: uid("menu"), label: "تماس با ما", type: "route", target: "contact", visible: true, order: 7 },
+  ],
+  faq: [
+    { id: uid("faq"), question: "آیا محصولات فروشگاه گارانتی دارند؟", answer: "بله، تمامی پروژکتورها دارای گارانتی معتبر شرکتی هستند که مدت آن در صفحه‌ی هر محصول ذکر شده است." },
+    { id: uid("faq"), question: "هزینه‌ی تعمیر و اورهال چقدر است؟", answer: "هزینه بسته به نوع خرابی و مدل دستگاه متفاوت است. بعد از عیب‌یابی رایگان، پیش‌فاکتور دقیق به شما اعلام می‌شود." },
+    { id: uid("faq"), question: "امکان بازگشت کالا وجود دارد؟", answer: "بله، تا ۷ روز پس از تحویل کالا در صورت سالم بودن بسته‌بندی امکان بازگشت وجود دارد." },
+    { id: uid("faq"), question: "ارسال به شهرستان‌ها انجام می‌شود؟", answer: "بله، ارسال به سراسر کشور از طریق پست پیشتاز و تیپاکس انجام می‌شود." },
   ],
   footer: {
     about: "نوین پلی‌تکنیک؛ مرجع تخصصی تعمیر، اورهال تجهیزات کامپیوتری/پلی‌استیشن و فروش اورجینال ویدئو پروژکتور با گارانتی معتبر.",

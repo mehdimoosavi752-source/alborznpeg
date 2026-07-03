@@ -44,3 +44,19 @@ export function requireAdmin(req, res, next) {
   }
   next();
 }
+
+// ویرایشگر یا مدیر: دسترسی به مدیریت کل محتوای سایت (خدمات، محصولات، منو، فوتر، هیرو)
+export function requireEditor(req, res, next) {
+  if (!req.user || !["admin", "editor"].includes(req.user.role)) {
+    return res.status(403).json({ error: "شما دسترسی ویرایش محتوا را ندارید" });
+  }
+  next();
+}
+
+// نویسنده، ویرایشگر یا مدیر: حداقل دسترسی برای ورود به پنل و ساخت/ویرایش صفحات
+export function requireAuthor(req, res, next) {
+  if (!req.user || !["admin", "editor", "author"].includes(req.user.role)) {
+    return res.status(403).json({ error: "شما دسترسی لازم برای این بخش را ندارید" });
+  }
+  next();
+}

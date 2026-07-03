@@ -44,6 +44,18 @@ export const api = {
     request("/api/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
   me: () => request("/api/auth/me"),
 
+  // صفحات (مثل ویرایشگر صفحات وردپرس)
+  getPagesPublic: () => request("/api/pages"),
+  getPagesAdmin: () => request("/api/pages/admin"),
+  createPage: (payload) => request("/api/pages", { method: "POST", body: JSON.stringify(payload) }),
+  updatePage: (id, payload) => request(`/api/pages/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  deletePage: (id) => request(`/api/pages/${id}`, { method: "DELETE" }),
+
+  // درگاه پرداخت
+  getPaymentSettings: () => request("/api/admin/payment-settings"),
+  updatePaymentSettings: (payload) => request("/api/admin/payment-settings", { method: "PUT", body: JSON.stringify(payload) }),
+  getPaymentStatus: () => request("/api/payment-status"),
+
   // کاربران (فقط مدیر)
   listUsers: () => request("/api/users"),
   setUserRole: (id, role) => request(`/api/users/${id}`, { method: "PATCH", body: JSON.stringify({ role }) }),

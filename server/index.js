@@ -5,7 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
 import { db, uid } from "./db.js";
-import { signToken, authenticate, optionalAuthenticate, requireAdmin } from "./auth.js";
+import { signToken, authenticate, optionalAuthenticate, requireAdmin, requireEditor, requireAuthor } from "./auth.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -34,10 +34,10 @@ app.post("/api/auth/register", (req, res) => {
   const hash = bcrypt.hashSync(password, 10);
   const createdAt = new Date().toISOString();
   db.prepare(
-    "INSERT INTO users (id, username, password_hash, name, role, created_at) VALUES (?, ?, ?, ?, 'user', ?)"
+    "INSERT INTO users (id, username, password_hash, name, role, created_at) VALUES (?, ?, ?, ?, 'subscriber', ?)"
   ).run(id, username, hash, name, createdAt);
 
-  const user = { id, username, name, role: "user", created_at: createdAt };
+  const user = { id, username, name, role: "subscriber", created_at: createdAt };
   const token = signToken(user);
   res.json({ token, user: toPublicUser(user) });
 });
@@ -67,13 +67,102 @@ app.get("/api/content", (req, res) => {
   res.json(JSON.parse(row.data));
 });
 
-app.put("/api/content", authenticate, requireAdmin, (req, res) => {
+app.put("/api/content", authenticate, requireEditor, (req, res) => {
   const content = req.body;
   if (!content || typeof content !== "object") return res.status(400).json({ error: "محتوای نامعتبر" });
   db.prepare("UPDATE site_content SET data = ?, updated_at = ? WHERE id = 1").run(
     JSON.stringify(content),
     new Date().toISOString()
   );
+  res.json({ ok: true });
+});
+
+/* ============================== صفحات (مثل ویرایشگر صفحات وردپرس) ============================== */
+
+function rowToPage(p) {
+  return {
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    blocks: JSON.parse(p.blocks),
+    showInMenu: !!p.show_in_menu,
+    isArticle: !!p.is_article,
+    order: p.menu_order,
+    status: p.status,
+    authorId: p.author_id,
+    authorName: p.author_name,
+    createdAt: p.created_at,
+    updatedAt: p.updated_at,
+  };
+}
+
+// عمومی: فقط صفحات منتشرشده (برای نمایش در سایت)
+app.get("/api/pages", (req, res) => {
+  const rows = db.prepare("SELECT * FROM pages WHERE status = 'published' ORDER BY menu_order ASC").all();
+  res.json({ pages: rows.map(rowToPage) });
+});
+
+// پنل مدیریت: نویسنده فقط صفحات خودش را می‌بیند؛ ویرایشگر/مدیر همه را می‌بینند (شامل پیش‌نویس)
+app.get("/api/pages/admin", authenticate, requireAuthor, (req, res) => {
+  const isAuthorOnly = req.user.role === "author";
+  const rows = isAuthorOnly
+    ? db.prepare("SELECT * FROM pages WHERE author_id = ? ORDER BY updated_at DESC").all(req.user.id)
+    : db.prepare("SELECT * FROM pages ORDER BY updated_at DESC").all();
+  res.json({ pages: rows.map(rowToPage) });
+});
+
+app.post("/api/pages", authenticate, requireAuthor, (req, res) => {
+  const { title, slug, blocks, showInMenu, status, isArticle } = req.body || {};
+  if (!title || !slug) return res.status(400).json({ error: "عنوان و نامک صفحه الزامی است" });
+  const exists = db.prepare("SELECT id FROM pages WHERE slug = ?").get(slug);
+  if (exists) return res.status(409).json({ error: "این نامک (slug) قبلاً استفاده شده است" });
+
+  const id = uid("page");
+  const now = new Date().toISOString();
+  const maxOrder = db.prepare("SELECT MAX(menu_order) AS m FROM pages").get().m || 0;
+  db.prepare(
+    `INSERT INTO pages (id, title, slug, blocks, show_in_menu, is_article, menu_order, status, author_id, author_name, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, title, slug, JSON.stringify(blocks || []), showInMenu ? 1 : 0, isArticle ? 1 : 0, maxOrder + 1, status === "draft" ? "draft" : "published", req.user.id, req.user.name, now, now);
+  res.json({ ok: true, id });
+});
+
+function loadPageOr404(id, res) {
+  const page = db.prepare("SELECT * FROM pages WHERE id = ?").get(id);
+  if (!page) { res.status(404).json({ error: "صفحه یافت نشد" }); return null; }
+  return page;
+}
+
+app.put("/api/pages/:id", authenticate, requireAuthor, (req, res) => {
+  const page = loadPageOr404(req.params.id, res);
+  if (!page) return;
+  if (req.user.role === "author" && page.author_id !== req.user.id) {
+    return res.status(403).json({ error: "شما فقط می‌توانید صفحات خودتان را ویرایش کنید" });
+  }
+  const { title, slug, blocks, showInMenu, order, status, isArticle } = req.body || {};
+  db.prepare(
+    `UPDATE pages SET title = ?, slug = ?, blocks = ?, show_in_menu = ?, is_article = ?, menu_order = ?, status = ?, updated_at = ? WHERE id = ?`
+  ).run(
+    title ?? page.title,
+    slug ?? page.slug,
+    JSON.stringify(blocks ?? JSON.parse(page.blocks)),
+    showInMenu === undefined ? page.show_in_menu : (showInMenu ? 1 : 0),
+    isArticle === undefined ? page.is_article : (isArticle ? 1 : 0),
+    order ?? page.menu_order,
+    status ?? page.status,
+    new Date().toISOString(),
+    page.id
+  );
+  res.json({ ok: true });
+});
+
+app.delete("/api/pages/:id", authenticate, requireAuthor, (req, res) => {
+  const page = loadPageOr404(req.params.id, res);
+  if (!page) return;
+  if (req.user.role === "author" && page.author_id !== req.user.id) {
+    return res.status(403).json({ error: "شما فقط می‌توانید صفحات خودتان را حذف کنید" });
+  }
+  db.prepare("DELETE FROM pages WHERE id = ?").run(page.id);
   res.json({ ok: true });
 });
 
@@ -86,7 +175,7 @@ app.get("/api/users", authenticate, requireAdmin, (req, res) => {
 
 app.patch("/api/users/:id", authenticate, requireAdmin, (req, res) => {
   const { role } = req.body || {};
-  if (!["user", "admin"].includes(role)) return res.status(400).json({ error: "نقش نامعتبر" });
+  if (!["subscriber", "author", "editor", "admin"].includes(role)) return res.status(400).json({ error: "نقش نامعتبر" });
   const result = db.prepare("UPDATE users SET role = ? WHERE id = ?").run(role, req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: "کاربر یافت نشد" });
   res.json({ ok: true });
@@ -143,6 +232,34 @@ app.post("/api/messages", (req, res) => {
 app.get("/api/messages", authenticate, requireAdmin, (req, res) => {
   const rows = db.prepare("SELECT * FROM messages ORDER BY created_at DESC").all();
   res.json({ messages: rows.map((m) => ({ id: m.id, name: m.name, phone: m.phone, message: m.message, date: m.created_at })) });
+});
+
+/* ============================== درگاه پرداخت (اطلاعات حساس، فقط مدیر) ============================== */
+// نکته‌ی امنیتی مهم: apiKey هرگز از اینجا در endpoint عمومی برنمی‌گردد،
+// چون هر بازدیدکننده‌ای GET /api/content را می‌بیند و اگر کلید آنجا بود لو می‌رفت.
+
+app.get("/api/admin/payment-settings", authenticate, requireAdmin, (req, res) => {
+  const row = db.prepare("SELECT * FROM payment_settings WHERE id = 1").get();
+  res.json({
+    provider: row.provider,
+    merchantId: row.merchant_id,
+    apiKey: row.api_key,
+    enabled: !!row.enabled,
+  });
+});
+
+app.put("/api/admin/payment-settings", authenticate, requireAdmin, (req, res) => {
+  const { provider, merchantId, apiKey, enabled } = req.body || {};
+  db.prepare(
+    "UPDATE payment_settings SET provider = ?, merchant_id = ?, api_key = ?, enabled = ?, updated_at = ? WHERE id = 1"
+  ).run(provider || "", merchantId || "", apiKey || "", enabled ? 1 : 0, new Date().toISOString());
+  res.json({ ok: true });
+});
+
+// عمومی و امن: فقط می‌گوید درگاه فعال است یا نه، بدون افشای کلید
+app.get("/api/payment-status", (req, res) => {
+  const row = db.prepare("SELECT provider, enabled FROM payment_settings WHERE id = 1").get();
+  res.json({ enabled: !!row.enabled, provider: row.enabled ? row.provider : null });
 });
 
 /* ============================== سرو کردن فرانت‌اند ساخته‌شده (تک‌سرویسی) ============================== */
