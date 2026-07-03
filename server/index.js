@@ -1,10 +1,13 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
 import { db, uid } from "./db.js";
 import { signToken, authenticate, optionalAuthenticate, requireAdmin } from "./auth.js";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 8787;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
@@ -140,6 +143,18 @@ app.post("/api/messages", (req, res) => {
 app.get("/api/messages", authenticate, requireAdmin, (req, res) => {
   const rows = db.prepare("SELECT * FROM messages ORDER BY created_at DESC").all();
   res.json({ messages: rows.map((m) => ({ id: m.id, name: m.name, phone: m.phone, message: m.message, date: m.created_at })) });
+});
+
+/* ============================== سرو کردن فرانت‌اند ساخته‌شده (تک‌سرویسی) ============================== */
+// اگر پوشه‌ی client/dist وجود داشته باشد (یعنی فرانت‌اند build شده)، همین سرور آن را هم سرو می‌کند.
+// این یعنی فقط یک سرویس روی Render لازم است، نه دو سرویس جدا.
+
+const clientDist = path.join(__dirname, "../client/dist");
+app.use(express.static(clientDist));
+app.get(/^(?!\/api).*/, (req, res, next) => {
+  res.sendFile(path.join(clientDist, "index.html"), (err) => {
+    if (err) next();
+  });
 });
 
 app.listen(PORT, () => {

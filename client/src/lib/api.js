@@ -2,7 +2,7 @@
 // به‌جای ذخیره‌سازی محلی، با یک سرور واقعی (Express + SQLite) صحبت می‌کند
 // که رمزهای عبور را هش می‌کند و دسترسی مدیریتی را واقعاً سمت سرور چک می‌کند.
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8787";
+const API_URL = import.meta.env.VITE_API_URL || "";
 const TOKEN_KEY = "novin_token";
 
 function getToken() {
