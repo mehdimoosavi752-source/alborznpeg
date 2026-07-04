@@ -6,15 +6,24 @@ import {
   ChevronUp, ChevronDown, Check, Package, CreditCard,
   ShieldCheck, Zap, Clock, ChevronLeft, Layers, RotateCcw, Search,
   SlidersHorizontal, BadgeCheck, Truck, Mail, ChevronRight, Users as UsersIcon,
-  Eye, EyeOff, Image as ImageIcon, Type, AlignLeft, MousePointerClick,
+  Eye, EyeOff, Image as ImageIcon, Type, AlignLeft, MousePointerClick, Globe, LifeBuoy, Star,
 } from "lucide-react";
-import { api } from "./lib/api.js";
+import { api, resolveImageUrl } from "./lib/api.js";
 
 /* ============================== ثابت‌ها ============================== */
 
 const uid = (p = "id") => `${p}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-const toman = (n) => new Intl.NumberFormat("fa-IR").format(n) + " تومان";
 const slugify = (s) => s.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\u0600-\u06FF-]/g, "") || uid("p");
+
+// متن یا شیء دوزبانه را با توجه به زبان فعلی برمی‌گرداند
+const tr = (field, lang) => {
+  if (field && typeof field === "object") return field[lang] || field.fa || field.en || "";
+  return field || "";
+};
+const fmtNum = (n, lang) => new Intl.NumberFormat(lang === "fa" ? "fa-IR" : "en-US").format(n);
+const fmtPrice = (n, lang) => (lang === "fa" ? `${fmtNum(n, lang)} تومان` : `${fmtNum(n, lang)} Toman`);
+const fmtDate = (d, lang) => new Date(d).toLocaleDateString(lang === "fa" ? "fa-IR" : "en-US");
+const fmtDateTime = (d, lang) => new Date(d).toLocaleString(lang === "fa" ? "fa-IR" : "en-US");
 
 const PATTERNS = ["circuit", "hex", "scan", "dots", "grid", "wave"];
 const patternStyle = (pattern) => {
@@ -31,30 +40,167 @@ const patternStyle = (pattern) => {
 const ICONS = { Monitor, Cpu, Gamepad2, Wrench, ShieldCheck, Zap, Clock, Package, Layers, Truck, BadgeCheck };
 const ICON_NAMES = Object.keys(ICONS);
 
-const ROLE_LABELS = { admin: "مدیر", editor: "ویرایشگر", author: "نویسنده", subscriber: "مشترک" };
+const ROLE_LABELS = {
+  admin: { fa: "مدیر", en: "Admin" },
+  editor: { fa: "ویرایشگر", en: "Editor" },
+  author: { fa: "نویسنده", en: "Author" },
+  subscriber: { fa: "مشترک", en: "Subscriber" },
+};
 const ROLE_ORDER = ["subscriber", "author", "editor", "admin"];
 
+/* ============================== فرهنگ لغت رابط کاربری ============================== */
+
+const UI = {
+  loginRegister: { fa: "ورود / ثبت‌نام", en: "Login / Register" },
+  myAccount: { fa: "حساب من", en: "My Account" },
+  adminPanel: { fa: "پنل مدیریت", en: "Admin Panel" },
+  logout: { fa: "خروج", en: "Logout" },
+  cart: { fa: "سبد خرید", en: "Cart" },
+  cartEmpty: { fa: "سبد خرید شما خالی است", en: "Your cart is empty" },
+  add: { fa: "افزودن", en: "Add" },
+  addToCart: { fa: "افزودن به سبد", en: "Add to Cart" },
+  total: { fa: "جمع کل", en: "Total" },
+  checkout: { fa: "تسویه حساب", en: "Checkout" },
+  everythingAtGlance: { fa: "همه‌چیز در یک نگاه", en: "Everything at a Glance" },
+  whichSectionHome: { fa: "به کدوم بخش نیاز داری؟", en: "Where do you want to go?" },
+  trustAuthenticity: { fa: "اصالت کالا تضمینی", en: "Guaranteed Authenticity" },
+  trustWarranty: { fa: "گارانتی معتبر", en: "Valid Warranty" },
+  trustShipping: { fa: "ارسال سریع سراسری", en: "Fast Nationwide Shipping" },
+  trustReturn: { fa: "۷ روز مهلت بازگشت", en: "7-Day Return Policy" },
+  ourServices: { fa: "خدمات ما", en: "Our Services" },
+  servicesTitle: { fa: "تعمیر، اورهال و سرویس تخصصی", en: "Repair, Overhaul & Specialized Service" },
+  servicesSubtitle: { fa: "تیم فنی نوین پلی‌تکنیک با ابزار تشخیص پیشرفته، مشکل شما را دقیق پیدا و مطمئن رفع می‌کند.", en: "Our technical team uses advanced diagnostic tools to pinpoint your issue and fix it right the first time." },
+  originalShop: { fa: "فروشگاه اورجینال", en: "Genuine Products Shop" },
+  shopTitle: { fa: "ویدئو پروژکتور", en: "Video Projectors" },
+  shopSubtitle: { fa: "واردات مستقیم و مرجع فروش معتبرترین برندهای ویدئو پروژکتور با گارانتی معتبر", en: "Direct import and trusted retailer of the top projector brands, all backed by valid warranty" },
+  searchPlaceholder: { fa: "جستجوی مدل یا برند...", en: "Search model or brand..." },
+  filters: { fa: "فیلترها", en: "Filters" },
+  category: { fa: "دسته‌بندی", en: "Category" },
+  brand: { fa: "برند", en: "Brand" },
+  allCategory: { fa: "همه", en: "All" },
+  productsFound: { fa: "محصول یافت شد", en: "products found" },
+  noProductsFound: { fa: "محصولی با این فیلتر پیدا نشد.", en: "No products match this filter." },
+  backToShop: { fa: "بازگشت به فروشگاه", en: "Back to Shop" },
+  warranty: { fa: "گارانتی", en: "Warranty" },
+  technology: { fa: "تکنولوژی", en: "Technology" },
+  resolution: { fa: "رزولوشن", en: "Resolution" },
+  brightness: { fa: "روشنایی", en: "Brightness" },
+  stock: { fa: "موجودی", en: "Stock" },
+  units: { fa: "عدد", en: "units" },
+  outOfStock: { fa: "ناموجود", en: "Out of stock" },
+  relatedProducts: { fa: "محصولات مرتبط", en: "Related Products" },
+  aboutUs: { fa: "درباره ما", en: "About Us" },
+  whyNovin: { fa: "چرا نوین پلی‌تکنیک؟", en: "Why Novin Polytechnic?" },
+  contactUs: { fa: "تماس با ما", en: "Contact Us" },
+  contactUsNow: { fa: "همین حالا با ما در ارتباط باشید", en: "Get in Touch Right Now" },
+  phoneCall: { fa: "تماس تلفنی", en: "Phone" },
+  address: { fa: "آدرس", en: "Address" },
+  yourName: { fa: "نام شما", en: "Your Name" },
+  yourPhone: { fa: "شماره تماس", en: "Your Phone" },
+  yourMessage: { fa: "پیام شما", en: "Your Message" },
+  sendMessage: { fa: "ارسال پیام", en: "Send Message" },
+  messageSent: { fa: "پیام شما ارسال شد، به‌زودی با شما تماس می‌گیریم.", en: "Your message has been sent — we'll contact you soon." },
+  signInFirst: { fa: "برای مشاهده این صفحه ابتدا وارد شوید.", en: "Please sign in to view this page." },
+  myOrders: { fa: "سفارش‌های من", en: "My Orders" },
+  loading: { fa: "در حال بارگذاری...", en: "Loading..." },
+  noOrdersYet: { fa: "هنوز سفارشی ثبت نکرده‌اید.", en: "You haven't placed any orders yet." },
+  goToShop: { fa: "رفتن به فروشگاه", en: "Go to Shop" },
+  itemsCount: { fa: "قلم کالا", en: "items" },
+  blogTitle: { fa: "وبلاگ نوین پلی‌تکنیک", en: "Novin Polytechnic Blog" },
+  articlesTitle: { fa: "مقالات آموزشی", en: "Learning Articles" },
+  articlesSubtitle: { fa: "نکات نگهداری، راهنمای خرید و آموزش‌های تخصصی کامپیوتر، پلی‌استیشن و پروژکتور", en: "Maintenance tips, buying guides, and expert know-how on computers, PlayStation, and projectors" },
+  noArticlesYet: { fa: "هنوز مقاله‌ای منتشر نشده است.", en: "No articles published yet." },
+  readMore: { fa: "ادامه مطلب", en: "Read More" },
+  support: { fa: "پشتیبانی", en: "Support" },
+  faqTitle: { fa: "سوالات متداول", en: "Frequently Asked Questions" },
+  faqSubtitle: { fa: "پاسخ سوالات پرتکرار درباره‌ی خدمات تعمیر و خرید از فروشگاه", en: "Answers to the questions we hear most often about repairs and shopping with us" },
+  noFaqYet: { fa: "فعلاً سوالی ثبت نشده است.", en: "No questions added yet." },
+  contactInfo: { fa: "اطلاعات تماس", en: "Contact Info" },
+  finalizeOrder: { fa: "نهایی‌سازی خرید", en: "Finalize Order" },
+  enterShippingInfo: { fa: "اطلاعات ارسال را وارد کنید", en: "Enter your shipping details" },
+  fullName: { fa: "نام و نام خانوادگی", en: "Full Name" },
+  mobileNumber: { fa: "شماره موبایل", en: "Mobile Number" },
+  exactAddress: { fa: "آدرس دقیق", en: "Exact Address" },
+  payableAmount: { fa: "مبلغ قابل پرداخت", en: "Amount Due" },
+  connectingToGateway: { fa: "در حال اتصال به درگاه...", en: "Connecting to payment gateway..." },
+  payOnline: { fa: "پرداخت آنلاین", en: "Pay Online" },
+  payWith: { fa: "پرداخت با", en: "Pay with" },
+  gatewaySimNote: { fa: "این بخش شبیه‌سازی درگاه پرداخت است؛ مدیر سایت هنوز اطلاعات درگاه واقعی را در پنل وارد نکرده است.", en: "This is a simulated payment gateway; the site admin hasn't configured a real gateway yet." },
+  gatewayRealNote: { fa: "پرداخت شما از طریق درگاه بانکی معتبر انجام می‌شود.", en: "Your payment will be processed through a secure bank gateway." },
+  orderPlaced: { fa: "سفارش شما ثبت شد!", en: "Your order has been placed!" },
+  orderPlacedDesc: { fa: "همکاران ما به‌زودی برای هماهنگی ارسال با شما تماس می‌گیرند.", en: "Our team will contact you soon to arrange delivery." },
+  gotIt: { fa: "متوجه شدم", en: "Got it" },
+  signInToAccount: { fa: "ورود به حساب کاربری", en: "Sign In to Your Account" },
+  registerNewUser: { fa: "ثبت‌نام کاربر جدید", en: "Create a New Account" },
+  username: { fa: "نام کاربری", en: "Username" },
+  password: { fa: "رمز عبور", en: "Password" },
+  checking: { fa: "در حال بررسی...", en: "Checking..." },
+  signIn: { fa: "ورود", en: "Sign In" },
+  createAccount: { fa: "ثبت‌نام", en: "Register" },
+  pageNotFound: { fa: "صفحه یافت نشد.", en: "Page not found." },
+  productNotFound: { fa: "محصول یافت نشد.", en: "Product not found." },
+  backToHome: { fa: "بازگشت به خانه", en: "Back to Home" },
+  viewSite: { fa: "مشاهده سایت", en: "View Site" },
+  savingDots: { fa: "در حال ذخیره...", en: "Saving..." },
+  loadingSite: { fa: "در حال بارگذاری نوین پلی‌تکنیک...", en: "Loading Novin Polytechnic..." },
+  heroFragment1: { fa: "دقیق دیده می‌شود", en: "Seen with precision" },
+  heroFragment2: { fa: "دقیق تعمیر می‌شود", en: "Repaired with precision" },
+  galleryKicker: { fa: "دسته‌بندی خدمات", en: "SERVICE CATEGORIES" },
+  feedKicker: { fa: "همین حالا در نوین پلی‌تکنیک", en: "RIGHT NOW AT NOVIN POLYTECHNIC" },
+  feedTitle: { fa: "چه خبر است؟", en: "What's Happening" },
+};
+const ui = (key, lang) => UI[key]?.[lang] || UI[key]?.fa || key;
+
+const ADMIN_UI = {
+  dashboard: { fa: "داشبورد", en: "Dashboard" },
+  pages: { fa: "صفحات", en: "Pages" },
+  hero: { fa: "بخش هیرو", en: "Hero Section" },
+  services: { fa: "خدمات", en: "Services" },
+  products: { fa: "محصولات", en: "Products" },
+  menu: { fa: "منو", en: "Menu" },
+  footer: { fa: "فوتر", en: "Footer" },
+  faq: { fa: "سوالات رایج", en: "FAQ" },
+  orders: { fa: "سفارشات", en: "Orders" },
+  messages: { fa: "پیام‌ها", en: "Messages" },
+  reviews: { fa: "نظرات", en: "Reviews" },
+  tickets: { fa: "تیکت‌ها", en: "Tickets" },
+  notifications: { fa: "اعلان‌ها", en: "Notifications" },
+  users: { fa: "کاربران", en: "Users" },
+  payment: { fa: "درگاه پرداخت", en: "Payment Gateway" },
+  settings: { fa: "تنظیمات", en: "Settings" },
+  welcome: { fa: "خوش آمدید", en: "Welcome" },
+  yourRole: { fa: "نقش شما", en: "Your role" },
+  addService: { fa: "افزودن خدمت", en: "Add Service" },
+  addProduct: { fa: "افزودن محصول", en: "Add Product" },
+  newPage: { fa: "صفحه جدید", en: "New Page" },
+  save: { fa: "ذخیره", en: "Save" },
+  saveSettings: { fa: "ذخیره تنظیمات", en: "Save Settings" },
+  savePage: { fa: "ذخیره صفحه", en: "Save Page" },
+  cancel: { fa: "انصراف", en: "Cancel" },
+  edit: { fa: "ویرایش", en: "Edit" },
+  delete: { fa: "حذف", en: "Delete" },
+  newQuestion: { fa: "سوال جدید", en: "New Question" },
+  newColumn: { fa: "ستون جدید", en: "New Column" },
+  newLink: { fa: "لینک جدید", en: "New Link" },
+  faPersian: { fa: "فارسی", en: "Persian" },
+  enEnglish: { fa: "انگلیسی", en: "English" },
+  title: { fa: "عنوان", en: "Title" },
+  description: { fa: "توضیحات", en: "Description" },
+  icon: { fa: "آیکون", en: "Icon" },
+  bgImage: { fa: "تصویر زمینه", en: "Background Image" },
+  saved: { fa: "ذخیره شد", en: "Saved" },
+  loadFailed: { fa: "ذخیره ناموفق بود", en: "Save failed" },
+};
+const aui = (key, lang) => ADMIN_UI[key]?.[lang] || ADMIN_UI[key]?.fa || key;
+
 const DEFAULT_CONTENT = {
-  settings: {
-    siteName: "نوین پلی‌تکنیک",
-    tagline: "مرکز تخصصی تعمیر و اورهال تجهیزات، فروشگاه ویدئو پروژکتور",
-    phone: "021-91234567",
-    address: "تهران، خیابان ولیعصر، پاساژ فناوری، طبقه دوم",
-    instagram: "novin.polytechnic",
-    telegram: "novinpolytechnic",
-  },
-  hero: {
-    eyebrow: "تعمیرگاه تخصصی و فروشگاه پروژکتور",
-    title: "نوین پلی‌تکنیک",
-    subtitle: "تشخیص دقیق، تعمیر تخصصی و اورهال حرفه‌ای کامپیوتر و پلی‌استیشن — همراه با فروشگاه اورجینال ویدئو پروژکتور",
-    ctaText: "مشاهده خدمات",
-    ctaText2: "ورود به فروشگاه",
-  },
+  settings: { siteName: { fa: "نوین پلی‌تکنیک", en: "Novin Polytechnic" }, tagline: { fa: "", en: "" }, phone: "", address: { fa: "", en: "" }, instagram: "", telegram: "" },
+  hero: { eyebrow: { fa: "", en: "" }, title: { fa: "نوین پلی‌تکنیک", en: "Novin Polytechnic" }, subtitle: { fa: "", en: "" }, ctaText: { fa: "", en: "" }, ctaText2: { fa: "", en: "" } },
   services: [],
   products: [],
   menu: [],
-  footer: { about: "", columns: [], copyright: "" },
-  about: { content: "", stats: [] },
+  footer: { about: { fa: "", en: "" }, columns: [], copyright: { fa: "", en: "" } },
+  about: { content: { fa: "", en: "" }, stats: [] },
   faq: [],
 };
 
@@ -80,7 +226,16 @@ function Reveal({ children, className = "", delay = 0 }) {
     </div>
   );
 }
-function PatternBox({ pattern, className = "", children }) {
+function PatternBox({ pattern, image, className = "", children }) {
+  if (image) {
+    return (
+      <div className={`relative overflow-hidden ${className}`}>
+        <img src={resolveImageUrl(image)} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+        {children}
+      </div>
+    );
+  }
   return (
     <div className={`relative overflow-hidden ${className}`} style={patternStyle(pattern)}>
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
@@ -104,7 +259,7 @@ function TiltCard({ children, className = "" }) {
   const onLeave = () => { if (ref.current) ref.current.style.transform = "perspective(800px) rotateY(0deg) rotateX(0deg)"; };
   return <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave} className={className} style={{ transition: "transform 0.2s ease-out", transformStyle: "preserve-3d" }}>{children}</div>;
 }
-function Logo({ size = 44, dark = false }) {
+function Logo({ size = 44, dark = false, name = "Novin Polytechnic" }) {
   return (
     <div className="flex items-center gap-2 select-none">
       <svg width={size} height={size} viewBox="0 0 100 100" className="shrink-0">
@@ -114,7 +269,7 @@ function Logo({ size = 44, dark = false }) {
         <rect x="18" y="68" width="64" height="3" fill="#dc2626" />
       </svg>
       <div className="leading-tight">
-        <div className={`font-black text-lg tracking-tight ${dark ? "text-white" : "text-black"}`}>نوین پلی‌تکنیک</div>
+        <div className={`font-black text-lg tracking-tight ${dark ? "text-white" : "text-black"}`}>{name}</div>
         <div className="text-[10px] tracking-widest text-red-600">TECH & PROJECTOR</div>
       </div>
     </div>
@@ -123,31 +278,46 @@ function Logo({ size = 44, dark = false }) {
 
 /* ============================== پوستر انیمیشنی هیرو ============================== */
 
-function HeroPoster() {
+function HeroPoster({ stats, lang }) {
+  const s1 = stats?.[2]; // "۹۸٪ رضایت مشتری"
+  const s2 = stats?.[1]; // "+۵۰۰۰ تعمیر موفق"
   return (
-    <div className="relative mx-auto w-full max-w-md aspect-[4/3] select-none">
-      <svg viewBox="0 0 400 300" className="absolute inset-0 w-full h-full drop-shadow-xl">
+    <div className="relative mx-auto w-full max-w-lg aspect-[4/3] select-none">
+      <div className="absolute inset-0 bg-red-50 rounded-[3rem] blur-2xl scale-90 opacity-70" />
+      <svg viewBox="0 0 400 300" className="absolute inset-0 w-full h-full drop-shadow-2xl">
         <defs>
           <linearGradient id="beamGrad" x1="0%" y1="50%" x2="100%" y2="50%">
-            <stop offset="0%" stopColor="#dc2626" stopOpacity="0.03" />
-            <stop offset="100%" stopColor="#dc2626" stopOpacity="0.32" />
+            <stop offset="0%" stopColor="#dc2626" stopOpacity="0.02" />
+            <stop offset="100%" stopColor="#dc2626" stopOpacity="0.35" />
           </linearGradient>
         </defs>
-        <polygon points="70,175 250,95 250,150 70,220" fill="url(#beamGrad)" className="poster-beam" />
-        <rect x="248" y="68" width="112" height="82" rx="10" fill="#0a0a0a" />
-        <rect x="256" y="76" width="96" height="66" rx="4" fill="#dc2626" opacity="0.18" className="poster-screen-glow" />
-        <rect x="18" y="163" width="82" height="52" rx="12" fill="#0a0a0a" />
-        <circle cx="36" cy="189" r="12" fill="#dc2626" className="poster-lens" />
-        <rect x="52" y="182" width="34" height="14" rx="4" fill="#ffffff" opacity="0.12" />
+        <polygon points="60,178 255,92 255,148 60,222" fill="url(#beamGrad)" className="poster-beam" />
+        <rect x="252" y="66" width="120" height="88" rx="12" fill="#0a0a0a" />
+        <rect x="261" y="75" width="102" height="70" rx="5" fill="#dc2626" opacity="0.18" className="poster-screen-glow" />
+        <rect x="10" y="160" width="88" height="56" rx="14" fill="#0a0a0a" />
+        <circle cx="30" cy="188" r="13" fill="#dc2626" className="poster-lens" />
+        <rect x="48" y="180" width="36" height="16" rx="4" fill="#ffffff" opacity="0.12" />
+        <rect x="10" y="160" width="88" height="6" rx="3" fill="#dc2626" opacity="0.6" />
       </svg>
-      <div className="absolute -top-3 right-4 bg-white border border-black/10 shadow-lg rounded-2xl p-3 poster-float-1">
-        <Monitor className="text-red-600" size={22} />
+
+      <div className="absolute -top-4 right-2 sm:right-8 bg-white border border-black/10 shadow-xl rounded-2xl px-4 py-3 poster-float-1 flex items-center gap-2.5 max-w-[170px]">
+        <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0"><ShieldCheck className="text-red-600" size={16} /></div>
+        <div>
+          <p className="font-black text-sm leading-none">{s1 ? tr(s1.value, lang) : "98%"}</p>
+          <p className="text-[10px] text-black/50 mt-0.5">{s1 ? tr(s1.label, lang) : (lang === "fa" ? "رضایت مشتری" : "Satisfaction")}</p>
+        </div>
       </div>
-      <div className="absolute bottom-6 left-0 bg-black shadow-lg rounded-2xl p-3 poster-float-2">
-        <Gamepad2 className="text-red-500" size={22} />
+
+      <div className="absolute bottom-2 left-0 sm:-left-4 bg-black border border-white/10 shadow-xl rounded-2xl px-4 py-3 poster-float-2 flex items-center gap-2.5 max-w-[170px]">
+        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0"><Wrench className="text-red-500" size={16} /></div>
+        <div>
+          <p className="font-black text-sm leading-none text-white">{s2 ? tr(s2.value, lang) : "5,000+"}</p>
+          <p className="text-[10px] text-white/50 mt-0.5">{s2 ? tr(s2.label, lang) : (lang === "fa" ? "تعمیر موفق" : "Repairs Done")}</p>
+        </div>
       </div>
-      <div className="absolute top-[38%] left-[28%] bg-white border border-black/10 shadow-lg rounded-2xl p-2.5 poster-float-3">
-        <Cpu className="text-red-600" size={18} />
+
+      <div className="absolute top-[40%] left-[24%] bg-white border border-black/10 shadow-lg rounded-2xl p-2.5 poster-float-3">
+        <Gamepad2 className="text-red-600" size={18} />
       </div>
     </div>
   );
@@ -183,6 +353,9 @@ export default function NovinPolytechnic() {
   const [loadError, setLoadError] = useState("");
   const route = useHashRoute();
 
+  const [lang, setLang] = useState(() => localStorage.getItem("novin_lang") || "fa");
+  useEffect(() => { localStorage.setItem("novin_lang", lang); }, [lang]);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cart, setCart] = useState([]);
   const [showCart, setShowCart] = useState(false);
@@ -206,7 +379,7 @@ export default function NovinPolytechnic() {
         const data = await api.getContent();
         setContent(data);
       } catch (e) {
-        setLoadError("اتصال به سرور برقرار نشد. سایت با محتوای پیش‌فرض (آفلاین) نمایش داده می‌شود.");
+        setLoadError(lang === "fa" ? "اتصال به سرور برقرار نشد. سایت با محتوای پیش‌فرض نمایش داده می‌شود." : "Could not connect to the server. Showing default content.");
         setContent(DEFAULT_CONTENT);
       }
       await refreshPages();
@@ -216,12 +389,13 @@ export default function NovinPolytechnic() {
       }
       setLoading(false);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshPages]);
 
   const persist = useCallback(async (next) => {
     setContent(next);
     setSaving(true);
-    try { await api.updateContent(next); } catch (e) { setLoadError("ذخیره‌سازی روی سرور ناموفق بود: " + e.message); }
+    try { await api.updateContent(next); } catch (e) { setLoadError("Save failed: " + e.message); }
     setSaving(false);
   }, []);
 
@@ -245,13 +419,13 @@ export default function NovinPolytechnic() {
 
   if (loading || !content) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-white flex items-center justify-center" dir={lang === "fa" ? "rtl" : "ltr"}>
         <div className="flex flex-col items-center gap-3">
           <div className="relative w-12 h-12">
             <div className="absolute inset-0 rounded-full border-2 border-red-100" />
             <div className="absolute inset-0 rounded-full border-2 border-t-red-600 animate-spin" />
           </div>
-          <div className="text-black/50 text-sm tracking-widest">در حال بارگذاری نوین پلی‌تکنیک...</div>
+          <div className="text-black/50 text-sm tracking-widest">{ui("loadingSite", lang)}</div>
         </div>
       </div>
     );
@@ -298,21 +472,28 @@ export default function NovinPolytechnic() {
 
   const placeOrder = async (form) => {
     try {
-      await api.createOrder({ items: cart, total: cartTotal, customer: form });
+      await api.createOrder({ orderType: "shop", items: cart, total: cartTotal, customer: form });
       setOrderDone(true); setCart([]);
-    } catch (e) { alert("ثبت سفارش ناموفق بود: " + e.message); }
+    } catch (e) { alert("Order failed: " + e.message); }
+  };
+  const placeServiceRequest = async (form) => {
+    await api.createOrder({
+      orderType: "service",
+      customer: { name: form.name, phone: form.phone, email: form.email },
+      deviceInfo: form.deviceInfo,
+      issueDescription: form.issueDescription,
+    });
   };
   const sendMessage = async (form) => {
-    try { await api.sendMessage(form); } catch (e) { /* خطا در خود فرم مدیریت می‌شود */ }
+    try { await api.sendMessage(form); } catch (e) { /* handled inline in the form */ }
   };
 
   const role = currentUser?.role;
   const canPanel = ["admin", "editor", "author"].includes(role);
-  const isAdmin = role === "admin";
   const activePage = route[0] || "home";
 
   return (
-    <div dir="rtl" lang="fa" className="min-h-screen bg-white text-black font-sans" style={{ fontFamily: "'Segoe UI', Tahoma, Arial, sans-serif" }}>
+    <div dir={lang === "fa" ? "rtl" : "ltr"} lang={lang} className="min-h-screen bg-white text-black font-sans" style={{ fontFamily: "'Segoe UI', Tahoma, Arial, sans-serif" }}>
       <GlobalStyles />
 
       {loadError && (
@@ -330,32 +511,34 @@ export default function NovinPolytechnic() {
         userMenuOpen={userMenuOpen} setUserMenuOpen={setUserMenuOpen}
         onAuthClick={() => setShowAuth(true)} onLogout={doLogout} onAdminClick={() => { setShowAdmin(true); setUserMenuOpen(false); }}
         onAccountClick={() => { navigate("account"); setUserMenuOpen(false); }}
+        lang={lang} setLang={setLang}
       />
 
-      <main key={route.join("/")} className="page-fade">
-        {activePage === "home" && <HomePage content={content} navigate={navigate} />}
-        {activePage === "services" && <ServicesPage content={content} />}
-        {activePage === "shop" && <ShopPage content={content} addToCart={addToCart} />}
-        {activePage === "articles" && <ArticlesPage pages={pages} />}
-        {activePage === "faq" && <FAQPage content={content} />}
-        {activePage === "about" && <AboutPage content={content} />}
-        {activePage === "contact" && <ContactPage content={content} onSend={sendMessage} />}
-        {activePage === "account" && <AccountPage currentUser={currentUser} onGoShop={() => navigate("shop")} />}
-        {activePage === "product" && <ProductDetailPage content={content} id={route[1]} addToCart={addToCart} />}
-        {activePage === "page" && <CustomPageView page={pages.find((p) => p.id === route[1])} />}
+      <main key={route.join("/") + lang} className="page-fade">
+        {activePage === "home" && <HomePage content={content} navigate={navigate} lang={lang} />}
+        {activePage === "services" && <ServicesPage content={content} lang={lang} onRequestService={placeServiceRequest} />}
+        {activePage === "shop" && <ShopPage content={content} addToCart={addToCart} lang={lang} />}
+        {activePage === "articles" && <ArticlesPage pages={pages} lang={lang} />}
+        {activePage === "faq" && <FAQPage content={content} lang={lang} />}
+        {activePage === "about" && <AboutPage content={content} lang={lang} />}
+        {activePage === "contact" && <ContactPage content={content} onSend={sendMessage} lang={lang} />}
+        {activePage === "account" && <AccountPage currentUser={currentUser} onGoShop={() => navigate("shop")} lang={lang} />}
+        {activePage === "product" && <ProductDetailPage content={content} id={route[1]} addToCart={addToCart} lang={lang} currentUser={currentUser} onNeedAuth={() => setShowAuth(true)} />}
+        {activePage === "page" && <CustomPageView page={pages.find((p) => p.id === route[1])} lang={lang} />}
       </main>
 
-      <Footer content={content} goToUrl={goToUrl} />
+      <ReviewsStrip lang={lang} />
+      <Footer content={content} goToUrl={goToUrl} lang={lang} />
 
-      {showCart && <CartDrawer cart={cart} total={cartTotal} onClose={() => setShowCart(false)} onChangeQty={changeQty} onRemove={removeFromCart} onCheckout={() => { setShowCart(false); setShowCheckout(true); }} />}
-      {showCheckout && <CheckoutModal total={cartTotal} orderDone={orderDone} onClose={() => { setShowCheckout(false); setOrderDone(false); }} onSubmit={placeOrder} currentUser={currentUser} paymentStatus={paymentStatus} />}
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={doLogin} onRegister={doRegister} />}
+      {showCart && <CartDrawer cart={cart} total={cartTotal} onClose={() => setShowCart(false)} onChangeQty={changeQty} onRemove={removeFromCart} onCheckout={() => { setShowCart(false); setShowCheckout(true); }} lang={lang} />}
+      {showCheckout && <CheckoutModal total={cartTotal} orderDone={orderDone} onClose={() => { setShowCheckout(false); setOrderDone(false); }} onSubmit={placeOrder} currentUser={currentUser} paymentStatus={paymentStatus} lang={lang} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={doLogin} onRegister={doRegister} lang={lang} />}
 
       {canPanel && showAdmin && (
         <AdminPanel
           content={content} update={update} saving={saving} role={role} currentUser={currentUser}
           onClose={() => setShowAdmin(false)} onLogout={doLogout} tab={adminTab} setTab={setAdminTab}
-          refreshPages={refreshPages}
+          refreshPages={refreshPages} lang={lang}
         />
       )}
     </div>
@@ -388,26 +571,34 @@ function GlobalStyles() {
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: #f4f4f4; }
       ::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 8px; }
+      @keyframes marqueeScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+      .marquee-track { animation: marqueeScroll 22s linear infinite; }
+      @keyframes fadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      .feed-row { animation: fadeSlide 0.5s ease-out both; }
     `}</style>
   );
 }
 
 /* ============================== هدر ============================== */
 
-function Header({ visibleMenu, goTo, activePage, mobileMenuOpen, setMobileMenuOpen, cartCount, setShowCart, currentUser, canPanel, userMenuOpen, setUserMenuOpen, onAuthClick, onLogout, onAdminClick, onAccountClick }) {
+function Header({ content, visibleMenu, goTo, activePage, mobileMenuOpen, setMobileMenuOpen, cartCount, setShowCart, currentUser, canPanel, userMenuOpen, setUserMenuOpen, onAuthClick, onLogout, onAdminClick, onAccountClick, lang, setLang }) {
+  const siteName = tr(content.settings.siteName, lang) || "Novin Polytechnic";
   return (
     <header className="fixed top-0 inset-x-0 z-40 backdrop-blur-md bg-white/90 border-b border-black/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
-        <button onClick={() => navigate("")}><Logo /></button>
-        <nav className="hidden lg:flex items-center gap-8">
+        <button onClick={() => navigate("")}><Logo name={siteName} /></button>
+        <nav className="hidden lg:flex items-center gap-7">
           {visibleMenu.map((m) => (
             <button key={m.id} onClick={() => goTo(m)} className={`relative text-sm transition-colors group ${activePage === m.target || (m.type === "page" && activePage === "page") ? "text-red-600" : "text-black/70 hover:text-black"}`}>
-              {m.label}
+              {tr(m.label, lang)}
               <span className={`absolute -bottom-1 right-0 h-[2px] bg-red-600 transition-all duration-300 ${activePage === m.target ? "w-full" : "w-0 group-hover:w-full"}`} />
             </button>
           ))}
         </nav>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <button onClick={() => setLang(lang === "fa" ? "en" : "fa")} className="flex items-center gap-1.5 text-xs px-2.5 py-2 rounded-lg border border-black/15 hover:border-red-600 transition-colors font-bold">
+            <Globe size={14} /> {lang === "fa" ? "EN" : "فا"}
+          </button>
           <button onClick={() => setShowCart(true)} className="relative p-2 rounded-lg border border-black/15 hover:border-red-600 hover:bg-red-50 transition-colors">
             <ShoppingCart size={20} />
             {cartCount > 0 && <span className="absolute -top-2 -left-2 bg-red-600 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">{cartCount}</span>}
@@ -415,19 +606,19 @@ function Header({ visibleMenu, goTo, activePage, mobileMenuOpen, setMobileMenuOp
 
           {!currentUser ? (
             <button onClick={onAuthClick} className="hidden sm:flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors font-bold">
-              <User size={14} /> ورود / ثبت‌نام
+              <User size={14} /> {ui("loginRegister", lang)}
             </button>
           ) : (
             <div className="relative hidden sm:block">
               <button onClick={() => setUserMenuOpen((v) => !v)} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-black/15 hover:border-red-600 transition-colors font-bold">
                 <User size={14} /> {currentUser.name}
-                {canPanel && <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-50 text-red-600">{ROLE_LABELS[currentUser.role]}</span>}
+                {canPanel && <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-50 text-red-600">{tr(ROLE_LABELS[currentUser.role], lang)}</span>}
               </button>
               {userMenuOpen && (
                 <div className="absolute left-0 mt-2 w-44 bg-white border border-black/10 rounded-xl overflow-hidden shadow-xl">
-                  <button onClick={onAccountClick} className="w-full text-right px-4 py-2.5 text-xs hover:bg-neutral-50 flex items-center gap-2"><User size={13} /> حساب من</button>
-                  {canPanel && <button onClick={onAdminClick} className="w-full text-right px-4 py-2.5 text-xs hover:bg-neutral-50 flex items-center gap-2 text-red-600"><Settings size={13} /> پنل مدیریت</button>}
-                  <button onClick={onLogout} className="w-full text-right px-4 py-2.5 text-xs hover:bg-neutral-50 flex items-center gap-2 text-black/60"><LogOut size={13} /> خروج</button>
+                  <button onClick={onAccountClick} className="w-full text-right px-4 py-2.5 text-xs hover:bg-neutral-50 flex items-center gap-2"><User size={13} /> {ui("myAccount", lang)}</button>
+                  {canPanel && <button onClick={onAdminClick} className="w-full text-right px-4 py-2.5 text-xs hover:bg-neutral-50 flex items-center gap-2 text-red-600"><Settings size={13} /> {ui("adminPanel", lang)}</button>}
+                  <button onClick={onLogout} className="w-full text-right px-4 py-2.5 text-xs hover:bg-neutral-50 flex items-center gap-2 text-black/60"><LogOut size={13} /> {ui("logout", lang)}</button>
                 </div>
               )}
             </div>
@@ -437,14 +628,15 @@ function Header({ visibleMenu, goTo, activePage, mobileMenuOpen, setMobileMenuOp
       </div>
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-black/10 bg-white px-4 py-4 flex flex-col gap-3">
-          {visibleMenu.map((m) => <button key={m.id} onClick={() => goTo(m)} className="text-right text-black/70 hover:text-red-600 py-1">{m.label}</button>)}
+          {visibleMenu.map((m) => <button key={m.id} onClick={() => goTo(m)} className="text-right text-black/70 hover:text-red-600 py-1">{tr(m.label, lang)}</button>)}
+          <button onClick={() => setLang(lang === "fa" ? "en" : "fa")} className="text-right text-black/70 py-1 flex items-center gap-1.5"><Globe size={14} /> {lang === "fa" ? "English" : "فارسی"}</button>
           {!currentUser ? (
-            <button onClick={onAuthClick} className="text-right text-red-600 font-bold py-1">ورود / ثبت‌نام</button>
+            <button onClick={onAuthClick} className="text-right text-red-600 font-bold py-1">{ui("loginRegister", lang)}</button>
           ) : (
             <>
-              <button onClick={onAccountClick} className="text-right text-black/70 py-1">حساب من ({currentUser.name})</button>
-              {canPanel && <button onClick={onAdminClick} className="text-right py-1 font-bold text-red-600">پنل مدیریت</button>}
-              <button onClick={onLogout} className="text-right text-black/60 py-1">خروج</button>
+              <button onClick={onAccountClick} className="text-right text-black/70 py-1">{ui("myAccount", lang)} ({currentUser.name})</button>
+              {canPanel && <button onClick={onAdminClick} className="text-right py-1 font-bold text-red-600">{ui("adminPanel", lang)}</button>}
+              <button onClick={onLogout} className="text-right text-black/60 py-1">{ui("logout", lang)}</button>
             </>
           )}
         </div>
@@ -455,12 +647,12 @@ function Header({ visibleMenu, goTo, activePage, mobileMenuOpen, setMobileMenuOp
 
 /* ============================== صفحه خانه ============================== */
 
-function TrustBar() {
+function TrustBar({ lang }) {
   const items = [
-    { icon: BadgeCheck, label: "اصالت کالا تضمینی" },
-    { icon: ShieldCheck, label: "گارانتی معتبر" },
-    { icon: Truck, label: "ارسال سریع سراسری" },
-    { icon: RotateCcw, label: "۷ روز مهلت بازگشت" },
+    { icon: BadgeCheck, key: "trustAuthenticity" },
+    { icon: ShieldCheck, key: "trustWarranty" },
+    { icon: Truck, key: "trustShipping" },
+    { icon: RotateCcw, key: "trustReturn" },
   ];
   return (
     <div className="border-y border-black/10 bg-neutral-50">
@@ -468,7 +660,7 @@ function TrustBar() {
         {items.map((it, i) => (
           <div key={i} className="flex items-center gap-2.5 text-black/70 text-xs sm:text-sm">
             <it.icon size={18} className="shrink-0 text-red-600" />
-            <span>{it.label}</span>
+            <span>{ui(it.key, lang)}</span>
           </div>
         ))}
       </div>
@@ -476,59 +668,157 @@ function TrustBar() {
   );
 }
 
-function HomePage({ content, navigate }) {
+const HOME_LINKS = [
+  { icon: Wrench, key: "services", pattern: "circuit", title: { fa: "خدمات تعمیر و اورهال", en: "Repair & Overhaul Services" }, desc: { fa: "لیست کامل خدمات تعمیرگاه", en: "The full list of our repair services" }, route: "services" },
+  { icon: Package, key: "shop", pattern: "hex", title: { fa: "فروشگاه پروژکتور", en: "Projector Shop" }, desc: { fa: "خرید اورجینال با گارانتی", en: "Genuine products with warranty" }, route: "shop" },
+  { icon: FileText, key: "articles", pattern: "scan", title: { fa: "مقالات آموزشی", en: "Learning Articles" }, desc: { fa: "نکات نگهداری و راهنمای خرید", en: "Maintenance tips & buying guides" }, route: "articles" },
+  { icon: MessageCircle, key: "faq", pattern: "dots", title: { fa: "سوالات رایج", en: "FAQ" }, desc: { fa: "پاسخ سوالات پرتکرار مشتریان", en: "Answers to common questions" }, route: "faq" },
+  { icon: UsersIcon, key: "about", pattern: "grid", title: { fa: "درباره ما", en: "About Us" }, desc: { fa: "آشنایی با نوین پلی‌تکنیک", en: "Get to know Novin Polytechnic" }, route: "about" },
+  { icon: Mail, key: "contact", pattern: "wave", title: { fa: "تماس با ما", en: "Contact Us" }, desc: { fa: "راه‌های ارتباطی و آدرس", en: "How to reach us" }, route: "contact" },
+];
+
+function BrandMarquee({ content, lang }) {
+  const brands = Array.from(new Set(content.products.map((p) => p.brand)));
+  if (brands.length === 0) return null;
+  const loop = [...brands, ...brands];
+  return (
+    <div className="border-y border-black/10 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex items-center gap-8">
+        <span className="text-[11px] text-black/40 tracking-widest shrink-0 whitespace-nowrap">{lang === "fa" ? "برندهای موجود در فروشگاه" : "BRANDS WE CARRY"}</span>
+        <div className="relative overflow-hidden flex-1">
+          <div className="flex items-center gap-10 marquee-track whitespace-nowrap">
+            {loop.map((b, i) => <span key={i} className="text-black/30 font-black text-lg tracking-tight shrink-0">{b}</span>)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TechGalleryCarousel({ content, lang }) {
+  const items = content.services.slice(0, 6);
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    if (items.length < 2) return;
+    const t = setInterval(() => setActive((i) => (i + 1) % items.length), 3200);
+    return () => clearInterval(t);
+  }, [items.length]);
+  if (items.length === 0) return null;
+  const current = items[active];
+  return (
+    <section className="bg-[#111111] py-16 px-4 sm:px-6 border-b border-white/10">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <span className="text-white/40 text-xs tracking-[0.3em] font-bold">{ui("galleryKicker", lang)}</span>
+          <span className="text-white/30 text-sm font-mono">{String(active + 1).padStart(2, "0")} / {String(items.length).padStart(2, "0")}</span>
+        </div>
+        <div className="relative rounded-2xl overflow-hidden">
+          <PatternBox pattern={current.pattern} image={current.image} className="h-72 sm:h-96 flex items-end">
+            <div className="relative z-10 p-8">
+              <IconBadge name={current.icon} className="text-white mb-4" size={36} />
+              <h3 className="text-2xl sm:text-3xl font-black text-white mb-2">{tr(current.title, lang)}</h3>
+              <p className="text-white/60 max-w-md text-sm leading-relaxed">{tr(current.desc, lang)}</p>
+            </div>
+          </PatternBox>
+        </div>
+        <div className="flex items-center gap-2 mt-5">
+          {items.map((it, i) => (
+            <button key={it.id} onClick={() => setActive(i)} className={`h-1 rounded-full transition-all ${i === active ? "w-10 bg-red-600" : "w-4 bg-white/15"}`} aria-label={tr(it.title, lang)} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LiveStatusFeed({ content, lang }) {
+  const rows = [
+    ...content.services.slice(0, 2).map((s) => ({ tag: lang === "fa" ? "خدمت" : "Service", title: tr(s.title, lang), desc: tr(s.desc, lang) })),
+    ...content.products.slice(0, 2).map((p) => ({ tag: lang === "fa" ? "محصول" : "Product", title: tr(p.name, lang), desc: tr(p.desc, lang) })),
+  ];
+  if (rows.length === 0) return null;
+  return (
+    <section className="py-24 px-4 sm:px-6 bg-white">
+      <div className="max-w-4xl mx-auto">
+        <Reveal className="mb-12">
+          <span className="text-red-600 text-xs tracking-[0.3em] font-bold">{ui("feedKicker", lang)}</span>
+          <h2 className="text-3xl sm:text-4xl font-black mt-3">{ui("feedTitle", lang)}</h2>
+        </Reveal>
+        <div className="divide-y divide-black/10 border-t border-b border-black/10">
+          {rows.map((r, i) => (
+            <Reveal key={i} delay={i * 70}>
+              <div className="feed-row py-6 flex items-start gap-6" style={{ animationDelay: `${i * 100}ms` }}>
+                <span className="font-mono text-black/25 text-sm shrink-0 pt-0.5">{String(i + 1).padStart(2, "0")}</span>
+                <span className="text-[10px] tracking-widest font-bold text-red-600 border border-red-200 bg-red-50 rounded-full px-2.5 py-1 shrink-0 mt-0.5">{r.tag}</span>
+                <div className="min-w-0">
+                  <h4 className="font-bold mb-1">{r.title}</h4>
+                  <p className="text-black/50 text-sm leading-relaxed line-clamp-2">{r.desc}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HomePage({ content, navigate, lang }) {
   const h = content.hero;
   return (
     <>
-      <section className="relative pt-40 pb-24 px-4 sm:px-6 overflow-hidden bg-gradient-to-b from-white to-neutral-50">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-red-100 rounded-full blur-3xl blob" />
-        <div className="absolute bottom-0 -left-20 w-80 h-80 bg-red-50 rounded-full blur-3xl blob" style={{ animationDelay: "2s" }} />
-        <div className="relative max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+      <section className="relative pt-40 pb-24 px-4 sm:px-6 overflow-hidden bg-[#0b0b0c] text-white">
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-red-900/30 rounded-full blur-3xl blob" />
+        <div className="absolute bottom-0 -left-20 w-80 h-80 bg-red-950/40 rounded-full blur-3xl blob" style={{ animationDelay: "2s" }} />
+        <div className="relative max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
           <div className="text-center lg:text-right">
             <Reveal>
-              <span className="inline-flex items-center gap-2 text-xs tracking-widest border border-red-200 bg-red-50 text-red-600 rounded-full px-4 py-1.5 mb-6">
-                <Zap size={14} /> {h.eyebrow}
+              <span className="inline-flex items-center gap-2 text-xs tracking-widest border border-red-800/50 bg-red-950/40 text-red-400 rounded-full px-4 py-1.5 mb-8">
+                <Zap size={14} /> {tr(h.eyebrow, lang)}
               </span>
             </Reveal>
-            <Reveal delay={100}><h1 className="text-4xl sm:text-6xl font-black tracking-tight mb-6 text-black">{h.title}</h1></Reveal>
-            <Reveal delay={200}><p className="text-black/60 text-lg max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed">{h.subtitle}</p></Reveal>
-            <Reveal delay={300}>
+            <Reveal delay={80}>
+              <p className="text-2xl sm:text-3xl font-light text-white/50 leading-tight mb-1">{ui("heroFragment1", lang)}</p>
+            </Reveal>
+            <Reveal delay={160}>
+              <p className="text-3xl sm:text-4xl font-black text-white leading-tight mb-6">{ui("heroFragment2", lang)}</p>
+            </Reveal>
+            <Reveal delay={220}><h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-6 text-red-500">{tr(h.title, lang)}</h1></Reveal>
+            <Reveal delay={280}><p className="text-white/50 text-lg max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed">{tr(h.subtitle, lang)}</p></Reveal>
+            <Reveal delay={340}>
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
-                <button onClick={() => navigate("services")} className="glow-pulse bg-red-600 hover:bg-red-700 text-white transition-all px-8 py-3.5 rounded-xl font-bold hover:scale-105">{h.ctaText}</button>
-                <button onClick={() => navigate("shop")} className="border border-black/20 hover:border-red-600 hover:text-red-600 transition-all px-8 py-3.5 rounded-xl font-bold hover:scale-105">{h.ctaText2}</button>
+                <button onClick={() => navigate("services")} className="glow-pulse bg-red-600 hover:bg-red-700 text-white transition-all px-8 py-3.5 rounded-xl font-bold hover:scale-105">{tr(h.ctaText, lang)}</button>
+                <button onClick={() => navigate("shop")} className="border border-white/20 hover:border-red-500 hover:text-red-500 transition-all px-8 py-3.5 rounded-xl font-bold hover:scale-105">{tr(h.ctaText2, lang)}</button>
               </div>
             </Reveal>
           </div>
-          <Reveal delay={150}><HeroPoster /></Reveal>
+          <Reveal delay={200}><HeroPoster stats={content.about.stats} lang={lang} /></Reveal>
         </div>
       </section>
 
-      <TrustBar />
+      <TechGalleryCarousel content={content} lang={lang} />
+      <BrandMarquee content={content} lang={lang} />
+      <TrustBar lang={lang} />
+      <LiveStatusFeed content={content} lang={lang} />
 
-      <section className="py-20 px-4 sm:px-6">
+      <section className="py-24 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <Reveal className="text-center mb-12">
-            <span className="text-red-600 text-xs tracking-[0.3em] font-bold">همه‌چیز در یک نگاه</span>
-            <h2 className="text-2xl sm:text-3xl font-black mt-2">به کدوم بخش نیاز داری؟</h2>
+          <Reveal className="text-center mb-14">
+            <span className="text-red-600 text-xs tracking-[0.3em] font-bold">{ui("everythingAtGlance", lang)}</span>
+            <h2 className="text-3xl sm:text-4xl font-black mt-3">{ui("whichSectionHome", lang)}</h2>
           </Reveal>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              { icon: Wrench, title: "خدمات تعمیر و اورهال", desc: "لیست کامل خدمات تعمیرگاه", route: "services", pattern: "circuit" },
-              { icon: Package, title: "فروشگاه پروژکتور", desc: "خرید اورجینال با گارانتی", route: "shop", pattern: "hex" },
-              { icon: FileText, title: "مقالات آموزشی", desc: "نکات نگهداری و راهنمای خرید", route: "articles", pattern: "scan" },
-              { icon: MessageCircle, title: "سوالات رایج", desc: "پاسخ سوالات پرتکرار مشتریان", route: "faq", pattern: "dots" },
-              { icon: UsersIcon, title: "درباره ما", desc: "آشنایی با نوین پلی‌تکنیک", route: "about", pattern: "grid" },
-              { icon: Mail, title: "تماس با ما", desc: "راه‌های ارتباطی و آدرس", route: "contact", pattern: "wave" },
-            ].map((item, idx) => (
+            {HOME_LINKS.map((item, idx) => (
               <Reveal key={item.route} delay={idx * 60}>
-                <button onClick={() => navigate(item.route)} className="group w-full text-right rounded-2xl overflow-hidden border border-black/10 hover:border-red-600 hover:shadow-lg transition-all duration-300 bg-white">
-                  <PatternBox pattern={item.pattern} className="h-20 flex items-center justify-center">
+                <button onClick={() => navigate(item.route)} className="group relative w-full text-right rounded-2xl overflow-hidden border border-black/10 hover:border-red-600 hover:shadow-xl transition-all duration-300 bg-white">
+                  <PatternBox pattern={item.pattern} className="h-24 flex items-center justify-between px-5">
                     <item.icon className="text-white group-hover:scale-110 transition-transform duration-300" size={30} />
+                    <span className="text-white/25 font-black text-3xl">{String(idx + 1).padStart(2, "0")}</span>
                   </PatternBox>
                   <div className="p-5 flex items-center justify-between">
                     <div>
-                      <h3 className="font-bold mb-1">{item.title}</h3>
-                      <p className="text-black/50 text-xs">{item.desc}</p>
+                      <h3 className="font-bold mb-1">{tr(item.title, lang)}</h3>
+                      <p className="text-black/50 text-xs">{tr(item.desc, lang)}</p>
                     </div>
                     <ChevronLeft className="text-black/20 group-hover:text-red-600 group-hover:-translate-x-1 transition-all shrink-0" size={18} />
                   </div>
@@ -542,15 +832,15 @@ function HomePage({ content, navigate }) {
   );
 }
 
-function ServiceCard({ s }) {
+function ServiceCard({ s, lang }) {
   return (
     <TiltCard className="group relative rounded-2xl overflow-hidden border border-black/10 hover:border-red-600 hover:shadow-lg transition-all duration-300 h-full bg-white">
-      <PatternBox pattern={s.pattern} className="h-28 flex items-center justify-center">
+      <PatternBox pattern={s.pattern} image={s.image} className="h-28 flex items-center justify-center">
         <IconBadge name={s.icon} className="text-white relative z-10 group-hover:scale-110 transition-transform duration-300" size={38} />
       </PatternBox>
       <div className="p-6">
-        <h3 className="font-bold text-lg mb-2">{s.title}</h3>
-        <p className="text-black/60 text-sm leading-relaxed">{s.desc}</p>
+        <h3 className="font-bold text-lg mb-2">{tr(s.title, lang)}</h3>
+        <p className="text-black/60 text-sm leading-relaxed">{tr(s.desc, lang)}</p>
       </div>
     </TiltCard>
   );
@@ -571,53 +861,105 @@ function PageHeader({ eyebrow, title, subtitle }) {
   );
 }
 
-function ServicesPage({ content }) {
+function ServicesPage({ content, lang, onRequestService }) {
+  const [showRequest, setShowRequest] = useState(false);
   return (
     <div>
-      <PageHeader eyebrow="خدمات ما" title="تعمیر، اورهال و سرویس تخصصی" subtitle="تیم فنی نوین پلی‌تکنیک با ابزار تشخیص پیشرفته، مشکل شما را دقیق پیدا و مطمئن رفع می‌کند." />
-      <section className="py-16 px-4 sm:px-6">
+      <PageHeader eyebrow={ui("ourServices", lang)} title={ui("servicesTitle", lang)} subtitle={ui("servicesSubtitle", lang)} />
+      <section className="py-10 px-4 sm:px-6 text-center">
+        <button onClick={() => setShowRequest(true)} className="glow-pulse bg-red-600 hover:bg-red-700 text-white transition-all px-8 py-3.5 rounded-xl font-bold inline-flex items-center gap-2">
+          <Wrench size={16} /> {lang === "fa" ? "درخواست تعمیر" : "Request a Repair"}
+        </button>
+      </section>
+      <section className="pb-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {content.services.map((s, idx) => <Reveal key={s.id} delay={idx * 70}><ServiceCard s={s} /></Reveal>)}
+          {content.services.map((s, idx) => <Reveal key={s.id} delay={idx * 70}><ServiceCard s={s} lang={lang} /></Reveal>)}
         </div>
       </section>
-      <TrustBar />
+      <TrustBar lang={lang} />
+      {showRequest && <ServiceRequestModal onClose={() => setShowRequest(false)} onSubmit={onRequestService} lang={lang} />}
+    </div>
+  );
+}
+
+function ServiceRequestModal({ onClose, onSubmit, lang }) {
+  const [form, setForm] = useState({ name: "", phone: "", email: "", deviceInfo: "", issueDescription: "" });
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const set = (k, v) => setForm({ ...form, [k]: v });
+  const submit = async (e) => {
+    e.preventDefault(); setBusy(true);
+    try { await onSubmit(form); setDone(true); } catch (err) { alert(err.message); }
+    setBusy(false);
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white border border-black/10 rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <button onClick={onClose} className="absolute top-4 left-4 text-black/40 hover:text-black"><X size={18} /></button>
+        {done ? (
+          <div className="text-center py-8">
+            <div className="w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-4"><Check className="text-red-600" size={28} /></div>
+            <h3 className="text-xl font-black mb-2">{lang === "fa" ? "درخواست شما ثبت شد!" : "Your request has been submitted!"}</h3>
+            <p className="text-black/50 text-sm">{lang === "fa" ? "به‌زودی برای هماهنگی با شما تماس می‌گیریم." : "We'll contact you soon to arrange the details."}</p>
+            <button onClick={onClose} className="mt-6 bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-bold">{ui("gotIt", lang)}</button>
+          </div>
+        ) : (
+          <>
+            <h3 className="font-bold text-lg mb-1 flex items-center gap-2"><Wrench size={18} className="text-red-600" /> {lang === "fa" ? "درخواست تعمیر" : "Request a Repair"}</h3>
+            <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "دستگاه و مشکل رو توضیح بدید تا سریع باهاتون تماس بگیریم." : "Describe your device and the issue, and we'll get back to you quickly."}</p>
+            <form onSubmit={submit} className="space-y-3">
+              <input required placeholder={ui("fullName", lang)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.name} onChange={(e) => set("name", e.target.value)} />
+              <div className="grid grid-cols-2 gap-3">
+                <input required placeholder={ui("mobileNumber", lang)} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+                <input type="email" placeholder={lang === "fa" ? "ایمیل (اختیاری)" : "Email (optional)"} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.email} onChange={(e) => set("email", e.target.value)} />
+              </div>
+              <input required placeholder={lang === "fa" ? "نوع دستگاه (مثلاً لپ‌تاپ ایسوس / PS5)" : "Device (e.g. Asus laptop / PS5)"} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.deviceInfo} onChange={(e) => set("deviceInfo", e.target.value)} />
+              <textarea required rows={3} placeholder={lang === "fa" ? "توضیح مشکل" : "Describe the issue"} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm resize-none" value={form.issueDescription} onChange={(e) => set("issueDescription", e.target.value)} />
+              <button disabled={busy} className="w-full bg-red-600 hover:bg-red-700 text-white disabled:opacity-60 transition-colors py-3 rounded-xl font-bold">{busy ? ui("checking", lang) : (lang === "fa" ? "ارسال درخواست" : "Submit Request")}</button>
+            </form>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
 /* ============================== محیط فروشگاه ============================== */
 
-function ProductCard({ p, onAdd, dark }) {
+function ProductCard({ p, onAdd, dark, lang }) {
   return (
     <TiltCard className={`group rounded-2xl overflow-hidden border transition-colors duration-300 h-full flex flex-col ${dark ? "border-white/10 hover:border-red-600 bg-neutral-900" : "border-black/10 hover:border-red-600 bg-white"}`}>
       <button onClick={() => navigate(`product/${p.id}`)} className="text-right">
-        <PatternBox pattern={p.pattern} className="h-40 flex items-center justify-center">
+        <PatternBox pattern={p.pattern} image={p.image} className="h-40 flex items-center justify-center">
           <IconBadge name={p.icon} className="text-white group-hover:scale-110 transition-transform duration-300" size={52} />
-          <span className="absolute top-3 left-3 text-[10px] bg-white/90 text-red-600 rounded-full px-2 py-1 font-bold">{p.warranty} گارانتی</span>
-          <span className="absolute top-3 right-3 text-[10px] bg-black/70 border border-red-500/50 rounded-full px-2 py-1 text-red-400">{p.category}</span>
+          <span className="absolute top-3 left-3 text-[10px] bg-white/90 text-red-600 rounded-full px-2 py-1 font-bold">{tr(p.warranty, lang)}</span>
+          <span className="absolute top-3 right-3 text-[10px] bg-black/70 border border-red-500/50 rounded-full px-2 py-1 text-red-400">{tr(p.category, lang)}</span>
         </PatternBox>
       </button>
       <div className="p-5 flex flex-col flex-1">
         <div className={`flex items-center justify-between mb-1 text-[11px] ${dark ? "text-white/40" : "text-black/40"}`}>
           <span>{p.brand}</span><span>{p.resolution}</span>
         </div>
-        <button onClick={() => navigate(`product/${p.id}`)} className="text-right"><h3 className={`font-bold mb-2 hover:text-red-600 transition-colors ${dark ? "text-white" : "text-black"}`}>{p.name}</h3></button>
+        <button onClick={() => navigate(`product/${p.id}`)} className="text-right"><h3 className={`font-bold mb-2 hover:text-red-600 transition-colors ${dark ? "text-white" : "text-black"}`}>{tr(p.name, lang)}</h3></button>
         <div className="flex flex-wrap gap-1.5 mb-4">
           <span className={`text-[10px] rounded-full px-2 py-0.5 ${dark ? "bg-white/5 border border-white/10 text-white/50" : "bg-black/5 border border-black/10 text-black/50"}`}>{p.technology}</span>
-          <span className={`text-[10px] rounded-full px-2 py-0.5 ${dark ? "bg-white/5 border border-white/10 text-white/50" : "bg-black/5 border border-black/10 text-black/50"}`}>{p.lumens} لومن</span>
+          <span className={`text-[10px] rounded-full px-2 py-0.5 ${dark ? "bg-white/5 border border-white/10 text-white/50" : "bg-black/5 border border-black/10 text-black/50"}`}>{fmtNum(p.lumens, lang)} {lang === "fa" ? "لومن" : "Lumens"}</span>
         </div>
         <div className="mt-auto flex items-center justify-between">
-          <span className="text-red-600 font-black">{toman(p.price)}</span>
-          <button onClick={onAdd} className="text-xs bg-red-600 hover:bg-red-700 text-white transition-colors px-3 py-2 rounded-lg font-bold flex items-center gap-1"><Plus size={14} /> افزودن</button>
+          <span className="text-red-600 font-black">{fmtPrice(p.price, lang)}</span>
+          <button onClick={onAdd} className="text-xs bg-red-600 hover:bg-red-700 text-white transition-colors px-3 py-2 rounded-lg font-bold flex items-center gap-1"><Plus size={14} /> {ui("add", lang)}</button>
         </div>
       </div>
     </TiltCard>
   );
 }
 
-function ShopPage({ content, addToCart }) {
+function ShopPage({ content, addToCart, lang }) {
   const products = content.products;
-  const categories = ["همه", ...Array.from(new Set(products.map((p) => p.category)))];
+  const catMap = new Map();
+  products.forEach((p) => catMap.set(p.category.fa, p.category));
+  const categories = [{ fa: "همه", en: "All" }, ...Array.from(catMap.values())];
   const brands = Array.from(new Set(products.map((p) => p.brand)));
   const [activeCat, setActiveCat] = useState("همه");
   const [activeBrands, setActiveBrands] = useState([]);
@@ -625,9 +967,9 @@ function ShopPage({ content, addToCart }) {
 
   const toggleBrand = (b) => setActiveBrands((prev) => (prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]));
   const filtered = products.filter((p) => {
-    if (activeCat !== "همه" && p.category !== activeCat) return false;
+    if (activeCat !== "همه" && p.category.fa !== activeCat) return false;
     if (activeBrands.length && !activeBrands.includes(p.brand)) return false;
-    if (q && !(p.name + p.brand).toLowerCase().includes(q.toLowerCase())) return false;
+    if (q && !(tr(p.name, lang) + p.brand).toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
 
@@ -635,31 +977,31 @@ function ShopPage({ content, addToCart }) {
     <div className="bg-white min-h-screen">
       <section className="relative pt-36 pb-10 px-4 sm:px-6 overflow-hidden border-b border-black/10 bg-black">
         <div className="relative max-w-7xl mx-auto text-center">
-          <span className="text-xs tracking-[0.3em] font-bold text-red-500">فروشگاه اورجینال</span>
-          <h1 className="text-3xl sm:text-5xl font-black mt-3 text-white">ویدئو پروژکتور</h1>
-          <p className="text-white/60 mt-3 max-w-xl mx-auto">واردات مستقیم و مرجع فروش معتبرترین برندهای ویدئو پروژکتور با گارانتی معتبر</p>
+          <span className="text-xs tracking-[0.3em] font-bold text-red-500">{ui("originalShop", lang)}</span>
+          <h1 className="text-3xl sm:text-5xl font-black mt-3 text-white">{ui("shopTitle", lang)}</h1>
+          <p className="text-white/60 mt-3 max-w-xl mx-auto">{ui("shopSubtitle", lang)}</p>
           <div className="max-w-md mx-auto mt-6 relative">
             <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="جستجوی مدل یا برند..." className="w-full bg-neutral-900 border border-white/15 focus:border-red-600 outline-none rounded-xl pr-9 pl-4 py-3 text-sm text-white" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={ui("searchPlaceholder", lang)} className="w-full bg-neutral-900 border border-white/15 focus:border-red-600 outline-none rounded-xl pr-9 pl-4 py-3 text-sm text-white" />
           </div>
         </div>
       </section>
 
-      <TrustBar />
+      <TrustBar lang={lang} />
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid lg:grid-cols-[240px_1fr] gap-8">
         <aside className="lg:sticky lg:top-24 h-fit bg-neutral-50 border border-black/10 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-4 text-sm font-bold"><SlidersHorizontal size={15} className="text-red-600" /> فیلترها</div>
+          <div className="flex items-center gap-2 mb-4 text-sm font-bold"><SlidersHorizontal size={15} className="text-red-600" /> {ui("filters", lang)}</div>
           <div className="mb-6">
-            <p className="text-xs text-black/40 mb-2">دسته‌بندی</p>
+            <p className="text-xs text-black/40 mb-2">{ui("category", lang)}</p>
             <div className="flex flex-wrap gap-2">
               {categories.map((c) => (
-                <button key={c} onClick={() => setActiveCat(c)} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${activeCat === c ? "bg-red-600 border-red-600 text-white" : "border-black/15 text-black/60 hover:border-red-600"}`}>{c}</button>
+                <button key={c.fa} onClick={() => setActiveCat(c.fa)} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${activeCat === c.fa ? "bg-red-600 border-red-600 text-white" : "border-black/15 text-black/60 hover:border-red-600"}`}>{tr(c, lang)}</button>
               ))}
             </div>
           </div>
           <div>
-            <p className="text-xs text-black/40 mb-2">برند</p>
+            <p className="text-xs text-black/40 mb-2">{ui("brand", lang)}</p>
             <div className="space-y-2">
               {brands.map((b) => (
                 <label key={b} className="flex items-center gap-2 text-sm text-black/70 cursor-pointer">
@@ -670,12 +1012,12 @@ function ShopPage({ content, addToCart }) {
           </div>
         </aside>
         <div>
-          <p className="text-black/40 text-xs mb-4">{filtered.length} محصول یافت شد</p>
+          <p className="text-black/40 text-xs mb-4">{fmtNum(filtered.length, lang)} {ui("productsFound", lang)}</p>
           {filtered.length === 0 ? (
-            <div className="text-center py-20 text-black/40 text-sm">محصولی با این فیلتر پیدا نشد.</div>
+            <div className="text-center py-20 text-black/40 text-sm">{ui("noProductsFound", lang)}</div>
           ) : (
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filtered.map((p, idx) => <Reveal key={p.id} delay={Math.min(idx, 6) * 60}><ProductCard p={p} onAdd={() => addToCart(p)} /></Reveal>)}
+              {filtered.map((p, idx) => <Reveal key={p.id} delay={Math.min(idx, 6) * 60}><ProductCard p={p} onAdd={() => addToCart(p)} lang={lang} /></Reveal>)}
             </div>
           )}
         </div>
@@ -684,41 +1026,48 @@ function ShopPage({ content, addToCart }) {
   );
 }
 
-function ProductDetailPage({ content, id, addToCart }) {
+function ProductDetailPage({ content, id, addToCart, lang, currentUser, onNeedAuth }) {
   const p = content.products.find((x) => x.id === id);
-  if (!p) return <div className="pt-40 pb-24 text-center text-black/50">محصول یافت نشد.</div>;
-  const related = content.products.filter((x) => x.id !== p.id && x.category === p.category).slice(0, 3);
-  const specs = [["برند", p.brand], ["دسته‌بندی", p.category], ["تکنولوژی", p.technology], ["رزولوشن", p.resolution], ["روشنایی", `${p.lumens} لومن`], ["گارانتی", p.warranty], ["موجودی", p.stock > 0 ? `${p.stock} عدد` : "ناموجود"]];
+  if (!p) return <div className="pt-40 pb-24 text-center text-black/50">{ui("productNotFound", lang)}</div>;
+  const related = content.products.filter((x) => x.id !== p.id && x.category.fa === p.category.fa).slice(0, 3);
+  const specs = [
+    [ui("brand", lang), p.brand], [ui("category", lang), tr(p.category, lang)], [ui("technology", lang), p.technology],
+    [ui("resolution", lang), p.resolution], [ui("brightness", lang), `${fmtNum(p.lumens, lang)} ${lang === "fa" ? "لومن" : "Lumens"}`],
+    [ui("warranty", lang), tr(p.warranty, lang)], [ui("stock", lang), p.stock > 0 ? `${fmtNum(p.stock, lang)} ${ui("units", lang)}` : ui("outOfStock", lang)],
+  ];
   return (
     <div className="pt-32 pb-20 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
-        <button onClick={() => navigate("shop")} className="flex items-center gap-1.5 text-black/50 hover:text-red-600 text-sm mb-8"><ChevronRight size={16} /> بازگشت به فروشگاه</button>
+        <button onClick={() => navigate("shop")} className="flex items-center gap-1.5 text-black/50 hover:text-red-600 text-sm mb-8"><ChevronRight size={16} /> {ui("backToShop", lang)}</button>
         <div className="grid md:grid-cols-2 gap-10">
-          <PatternBox pattern={p.pattern} className="h-80 md:h-full min-h-[320px] rounded-2xl flex items-center justify-center">
+          <PatternBox pattern={p.pattern} image={p.image} className="h-80 md:h-full min-h-[320px] rounded-2xl flex items-center justify-center">
             <IconBadge name={p.icon} size={110} className="text-white" />
           </PatternBox>
           <div>
             <div className="flex gap-2 mb-3">
-              <span className="text-[11px] border border-red-200 bg-red-50 rounded-full px-2.5 py-1 text-red-600">{p.warranty} گارانتی</span>
-              <span className="text-[11px] border border-black/15 rounded-full px-2.5 py-1 text-black/60">{p.category}</span>
+              <span className="text-[11px] border border-red-200 bg-red-50 rounded-full px-2.5 py-1 text-red-600">{tr(p.warranty, lang)} {ui("warranty", lang)}</span>
+              <span className="text-[11px] border border-black/15 rounded-full px-2.5 py-1 text-black/60">{tr(p.category, lang)}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black mb-3">{p.name}</h1>
-            <p className="text-black/60 leading-relaxed mb-6">{p.desc}</p>
+            <h1 className="text-2xl sm:text-3xl font-black mb-3">{tr(p.name, lang)}</h1>
+            <p className="text-black/60 leading-relaxed mb-6">{tr(p.desc, lang)}</p>
             <div className="border border-black/10 rounded-xl overflow-hidden mb-6">
               {specs.map(([k, v], i) => (
                 <div key={k} className={`flex justify-between text-sm px-4 py-2.5 ${i % 2 ? "bg-neutral-50" : ""}`}><span className="text-black/40">{k}</span><span className="font-bold">{v}</span></div>
               ))}
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-black text-red-600">{toman(p.price)}</span>
-              <button onClick={() => addToCart(p)} className="glow-pulse bg-red-600 hover:bg-red-700 text-white transition-colors px-6 py-3 rounded-xl font-bold flex items-center gap-2"><Plus size={16} /> افزودن به سبد</button>
+              <span className="text-2xl font-black text-red-600">{fmtPrice(p.price, lang)}</span>
+              <button onClick={() => addToCart(p)} className="glow-pulse bg-red-600 hover:bg-red-700 text-white transition-colors px-6 py-3 rounded-xl font-bold flex items-center gap-2"><Plus size={16} /> {ui("addToCart", lang)}</button>
             </div>
           </div>
         </div>
+
+        <ProductReviews productId={p.id} lang={lang} currentUser={currentUser} onNeedAuth={onNeedAuth} />
+
         {related.length > 0 && (
           <div className="mt-20">
-            <h3 className="font-bold text-lg mb-6">محصولات مرتبط</h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">{related.map((r) => <ProductCard key={r.id} p={r} onAdd={() => addToCart(r)} />)}</div>
+            <h3 className="font-bold text-lg mb-6">{ui("relatedProducts", lang)}</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">{related.map((r) => <ProductCard key={r.id} p={r} onAdd={() => addToCart(r)} lang={lang} />)}</div>
           </div>
         )}
       </div>
@@ -726,20 +1075,69 @@ function ProductDetailPage({ content, id, addToCart }) {
   );
 }
 
+function ProductReviews({ productId, lang, currentUser, onNeedAuth }) {
+  const [reviews, setReviews] = useState(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const load = async () => { try { const { reviews: list } = await api.getReviews(productId); setReviews(list); } catch (e) { setReviews([]); } };
+  useEffect(() => { load(); }, [productId]); // eslint-disable-line
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!currentUser) { onNeedAuth(); return; }
+    setBusy(true);
+    try { await api.submitReview({ productId, rating, comment }); setSent(true); setComment(""); } catch (e) { alert(e.message); }
+    setBusy(false);
+  };
+
+  return (
+    <div className="mt-16 border-t border-black/10 pt-10">
+      <h3 className="font-bold text-lg mb-6">{lang === "fa" ? "نظرات خریداران" : "Customer Reviews"}</h3>
+      {reviews === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      {reviews && reviews.length === 0 && <p className="text-black/40 text-sm mb-6">{lang === "fa" ? "هنوز نظری برای این محصول ثبت نشده." : "No reviews for this product yet."}</p>}
+      <div className="space-y-4 mb-8">
+        {reviews?.map((r) => (
+          <div key={r.id} className="border border-black/10 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-1"><StarRow rating={r.rating} /><span className="text-xs font-bold">{r.userName}</span></div>
+            <p className="text-black/60 text-sm">{r.comment}</p>
+          </div>
+        ))}
+      </div>
+      {sent ? (
+        <p className="text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-xs inline-block">{lang === "fa" ? "نظر شما ثبت شد و پس از تایید مدیر نمایش داده می‌شود." : "Your review was submitted and will appear after admin approval."}</p>
+      ) : (
+        <form onSubmit={submit} className="border border-black/10 rounded-xl p-4 max-w-md space-y-3">
+          <p className="text-sm font-bold">{lang === "fa" ? "نظر خودتون رو ثبت کنید" : "Leave a review"}</p>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button type="button" key={n} onClick={() => setRating(n)} className={n <= rating ? "text-yellow-500" : "text-black/20"}><Star size={20} fill={n <= rating ? "currentColor" : "none"} /></button>
+            ))}
+          </div>
+          <textarea required rows={3} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-3 py-2 text-sm resize-none" placeholder={lang === "fa" ? "نظرتون رو بنویسید..." : "Write your review..."} value={comment} onChange={(e) => setComment(e.target.value)} />
+          <button disabled={busy} className={btnPrimary}>{busy ? ui("checking", lang) : (lang === "fa" ? "ثبت نظر" : "Submit Review")}</button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 /* ============================== درباره ما ============================== */
 
-function AboutPage({ content }) {
+function AboutPage({ content, lang }) {
   const a = content.about;
   return (
     <div>
-      <PageHeader eyebrow="درباره ما" title="چرا نوین پلی‌تکنیک؟" />
+      <PageHeader eyebrow={ui("aboutUs", lang)} title={ui("whyNovin", lang)} />
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <Reveal><p className="text-black/65 leading-loose text-lg">{a.content}</p></Reveal>
+          <Reveal><p className="text-black/65 leading-loose text-lg">{tr(a.content, lang)}</p></Reveal>
           <Reveal delay={150}>
             <div className="grid grid-cols-3 gap-4 mt-12 max-w-lg mx-auto">
-              {a.stats.map(([n, l]) => (
-                <div key={l} className="border border-black/10 rounded-xl py-5"><div className="text-2xl font-black text-red-600">{n}</div><div className="text-xs text-black/50 mt-1">{l}</div></div>
+              {a.stats.map((st, i) => (
+                <div key={i} className="border border-black/10 rounded-xl py-5"><div className="text-2xl font-black text-red-600">{tr(st.value, lang)}</div><div className="text-xs text-black/50 mt-1">{tr(st.label, lang)}</div></div>
               ))}
             </div>
           </Reveal>
@@ -749,103 +1147,29 @@ function AboutPage({ content }) {
   );
 }
 
-/* ============================== مقالات ============================== */
-
-function getExcerpt(blocks) {
-  const p = blocks.find((b) => b.type === "paragraph");
-  if (!p) return "";
-  return p.content.length > 130 ? p.content.slice(0, 130) + "..." : p.content;
-}
-
-function ArticlesPage({ pages }) {
-  const articles = pages.filter((p) => p.isArticle).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-  return (
-    <div>
-      <PageHeader eyebrow="وبلاگ نوین پلی‌تکنیک" title="مقالات آموزشی" subtitle="نکات نگهداری، راهنمای خرید و آموزش‌های تخصصی کامپیوتر، پلی‌استیشن و پروژکتور" />
-      <section className="py-16 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto">
-          {articles.length === 0 ? (
-            <p className="text-black/40 text-sm text-center py-12">هنوز مقاله‌ای منتشر نشده است.</p>
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-6">
-              {articles.map((a, idx) => (
-                <Reveal key={a.id} delay={idx * 70}>
-                  <TiltCard className="group rounded-2xl overflow-hidden border border-black/10 hover:border-red-600 hover:shadow-lg transition-all duration-300 h-full bg-white">
-                    <button onClick={() => navigate(`page/${a.id}`)} className="text-right w-full">
-                      <PatternBox pattern="scan" className="h-32 flex items-center justify-center">
-                        <FileText className="text-white group-hover:scale-110 transition-transform duration-300" size={30} />
-                      </PatternBox>
-                      <div className="p-5">
-                        <p className="text-[11px] text-black/40 mb-1">{new Date(a.updatedAt).toLocaleDateString("fa-IR")} · {a.authorName}</p>
-                        <h3 className="font-bold mb-2 group-hover:text-red-600 transition-colors">{a.title}</h3>
-                        <p className="text-black/55 text-sm leading-relaxed">{getExcerpt(a.blocks)}</p>
-                        <span className="mt-3 inline-flex items-center gap-1 text-red-600 text-xs">ادامه مطلب <ChevronLeft size={13} /></span>
-                      </div>
-                    </button>
-                  </TiltCard>
-                </Reveal>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-/* ============================== سوالات رایج ============================== */
-
-function FAQItem({ item }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border border-black/10 rounded-xl overflow-hidden bg-white">
-      <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between text-right p-4 font-bold text-sm">
-        {item.question}
-        <ChevronDown className={`text-red-600 transition-transform shrink-0 ${open ? "rotate-180" : ""}`} size={18} />
-      </button>
-      {open && <div className="px-4 pb-4 text-black/60 text-sm leading-relaxed">{item.answer}</div>}
-    </div>
-  );
-}
-
-function FAQPage({ content }) {
-  return (
-    <div>
-      <PageHeader eyebrow="پشتیبانی" title="سوالات متداول" subtitle="پاسخ سوالات پرتکرار درباره‌ی خدمات تعمیر و خرید از فروشگاه" />
-      <section className="py-16 px-4 sm:px-6">
-        <div className="max-w-2xl mx-auto space-y-3">
-          {content.faq.length === 0 ? (
-            <p className="text-black/40 text-sm text-center py-12">فعلاً سوالی ثبت نشده است.</p>
-          ) : content.faq.map((item, idx) => <Reveal key={item.id} delay={idx * 50}><FAQItem item={item} /></Reveal>)}
-        </div>
-      </section>
-    </div>
-  );
-}
-
 /* ============================== تماس با ما ============================== */
 
-function ContactPage({ content, onSend }) {
+function ContactPage({ content, onSend, lang }) {
   const s = content.settings;
   const [form, setForm] = useState({ name: "", phone: "", message: "" });
   const [sent, setSent] = useState(false);
   const submit = async (e) => { e.preventDefault(); await onSend(form); setSent(true); setForm({ name: "", phone: "", message: "" }); };
   return (
     <div>
-      <PageHeader eyebrow="تماس با ما" title="همین حالا با ما در ارتباط باشید" />
+      <PageHeader eyebrow={ui("contactUs", lang)} title={ui("contactUsNow", lang)} />
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10">
           <div className="space-y-4">
-            <InfoCard icon={<Phone size={20} />} title="تماس تلفنی" value={s.phone} />
-            <InfoCard icon={<MapPin size={20} />} title="آدرس" value={s.address} />
-            <InfoCard icon={<Instagram size={20} />} title="اینستاگرام" value={`@${s.instagram}`} />
+            <InfoCard icon={<Phone size={20} />} title={ui("phoneCall", lang)} value={s.phone} />
+            <InfoCard icon={<MapPin size={20} />} title={ui("address", lang)} value={tr(s.address, lang)} />
+            <InfoCard icon={<Instagram size={20} />} title="Instagram" value={`@${s.instagram}`} />
           </div>
           <form onSubmit={submit} className="border border-black/10 rounded-2xl p-6 bg-neutral-50 space-y-3">
-            {sent && <p className="text-xs bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2">پیام شما ارسال شد، به‌زودی با شما تماس می‌گیریم.</p>}
-            <input required placeholder="نام شما" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            <input required placeholder="شماره تماس" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            <textarea required rows={4} placeholder="پیام شما" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm resize-none" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
-            <button className="w-full bg-red-600 hover:bg-red-700 text-white transition-colors py-3 rounded-xl font-bold flex items-center justify-center gap-2"><Mail size={16} /> ارسال پیام</button>
+            {sent && <p className="text-xs bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2">{ui("messageSent", lang)}</p>}
+            <input required placeholder={ui("yourName", lang)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <input required placeholder={ui("yourPhone", lang)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <textarea required rows={4} placeholder={ui("yourMessage", lang)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm resize-none" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+            <button className="w-full bg-red-600 hover:bg-red-700 text-white transition-colors py-3 rounded-xl font-bold flex items-center justify-center gap-2"><Mail size={16} /> {ui("sendMessage", lang)}</button>
           </form>
         </div>
       </section>
@@ -863,14 +1187,27 @@ function InfoCard({ icon, title, value }) {
 
 /* ============================== حساب کاربری ============================== */
 
-function AccountPage({ currentUser, onGoShop }) {
+function AccountPage({ currentUser, onGoShop, lang }) {
   const [orders, setOrders] = useState(null);
+  const [tickets, setTickets] = useState(null);
+  const [activeTicket, setActiveTicket] = useState(null);
+  const [showNewTicket, setShowNewTicket] = useState(false);
+
+  const loadTickets = async () => { try { const { tickets: list } = await api.myTickets(); setTickets(list); } catch (e) { setTickets([]); } };
+
   useEffect(() => {
     if (!currentUser) return;
     (async () => { try { const { orders: list } = await api.myOrders(); setOrders(list); } catch (e) { setOrders([]); } })();
+    loadTickets();
   }, [currentUser]);
 
-  if (!currentUser) return <div className="pt-40 pb-24 text-center text-black/50">برای مشاهده این صفحه ابتدا وارد شوید.</div>;
+  if (!currentUser) return <div className="pt-40 pb-24 text-center text-black/50">{ui("signInFirst", lang)}</div>;
+
+  if (activeTicket) return (
+    <div className="pt-32 pb-20 px-4 sm:px-6 max-w-3xl mx-auto">
+      <TicketThread ticketId={activeTicket} onBack={() => { setActiveTicket(null); loadTickets(); }} isAdmin={false} lang={lang} />
+    </div>
+  );
 
   return (
     <div className="pt-32 pb-20 px-4 sm:px-6 max-w-3xl mx-auto">
@@ -878,55 +1215,223 @@ function AccountPage({ currentUser, onGoShop }) {
         <div className="w-14 h-14 rounded-full bg-red-50 border border-red-200 flex items-center justify-center"><User className="text-red-600" size={24} /></div>
         <div>
           <h1 className="font-black text-xl">{currentUser.name}</h1>
-          <p className="text-black/40 text-xs">{currentUser.username} — {ROLE_LABELS[currentUser.role]}</p>
+          <p className="text-black/40 text-xs">{currentUser.username} — {tr(ROLE_LABELS[currentUser.role], lang)}</p>
         </div>
       </div>
-      <h3 className="font-bold mb-4">سفارش‌های من</h3>
-      {orders === null && <p className="text-black/40 text-sm">در حال بارگذاری...</p>}
+      <h3 className="font-bold mb-4">{ui("myOrders", lang)}</h3>
+      {orders === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
       {orders && orders.length === 0 && (
-        <div className="text-center py-12 border border-black/10 rounded-xl">
-          <p className="text-black/40 text-sm mb-4">هنوز سفارشی ثبت نکرده‌اید.</p>
-          <button onClick={onGoShop} className="text-red-600 text-sm">رفتن به فروشگاه</button>
+        <div className="text-center py-12 border border-black/10 rounded-xl mb-10">
+          <p className="text-black/40 text-sm mb-4">{ui("noOrdersYet", lang)}</p>
+          <button onClick={onGoShop} className="text-red-600 text-sm">{ui("goToShop", lang)}</button>
         </div>
       )}
-      <div className="space-y-3">
+      <div className="space-y-3 mb-10">
         {orders?.map((o) => (
           <div key={o.id} className="border border-black/10 rounded-xl p-4">
-            <div className="flex justify-between text-sm mb-1"><span className="font-bold">{o.items.length} قلم کالا</span><span className="text-red-600 font-black">{toman(o.total)}</span></div>
-            <p className="text-black/30 text-[11px]">{new Date(o.date).toLocaleString("fa-IR")}</p>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="font-bold">{o.orderType === "service" ? (lang === "fa" ? "درخواست تعمیر" : "Repair Request") : `${fmtNum(o.items.length, lang)} ${ui("itemsCount", lang)}`}</span>
+              <span className="text-red-600 font-black">{o.orderType === "service" ? tr(STATUS_LABELS[o.status], lang) : fmtPrice(o.total, lang)}</span>
+            </div>
+            <p className="text-black/40 text-xs">{tr(STATUS_LABELS[o.status], lang)}</p>
+            <p className="text-black/30 text-[11px]">{fmtDateTime(o.date, lang)}</p>
           </div>
         ))}
+      </div>
+
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold">{lang === "fa" ? "تیکت‌های پشتیبانی" : "Support Tickets"}</h3>
+        <button onClick={() => setShowNewTicket(true)} className={btnPrimary}><Plus size={14} /> {lang === "fa" ? "تیکت جدید" : "New Ticket"}</button>
+      </div>
+      {tickets === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      {tickets && tickets.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز تیکتی ثبت نکرده‌اید." : "You haven't created any tickets yet."}</p>}
+      <div className="space-y-2">
+        {tickets?.map((t) => (
+          <button key={t.id} onClick={() => setActiveTicket(t.id)} className="w-full text-right border border-black/10 rounded-xl p-4 hover:border-red-600 transition-colors flex items-center justify-between">
+            <div>
+              <p className="font-bold text-sm">{t.subject}</p>
+              <p className="text-black/30 text-[11px]">{fmtDateTime(t.updatedAt, lang)}</p>
+            </div>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${t.status === "open" ? "bg-red-50 text-red-600 border border-red-200" : t.status === "answered" ? "bg-green-50 text-green-700 border border-green-200" : "bg-black/5 text-black/50 border border-black/10"}`}>
+              {t.status === "open" ? (lang === "fa" ? "باز" : "Open") : t.status === "answered" ? (lang === "fa" ? "پاسخ داده شد" : "Answered") : (lang === "fa" ? "بسته" : "Closed")}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {showNewTicket && <NewTicketModal lang={lang} onClose={() => setShowNewTicket(false)} onCreated={() => { setShowNewTicket(false); loadTickets(); }} />}
+    </div>
+  );
+}
+
+function NewTicketModal({ onClose, onCreated, lang }) {
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault(); setBusy(true);
+    try { await api.createTicket({ subject, message }); onCreated(); } catch (e) { alert(e.message); }
+    setBusy(false);
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white border border-black/10 rounded-2xl p-6">
+        <button onClick={onClose} className="absolute top-4 left-4 text-black/40 hover:text-black"><X size={18} /></button>
+        <h3 className="font-bold text-lg mb-4">{lang === "fa" ? "تیکت جدید" : "New Ticket"}</h3>
+        <form onSubmit={submit} className="space-y-3">
+          <input required placeholder={lang === "fa" ? "موضوع" : "Subject"} className={inputCls} value={subject} onChange={(e) => setSubject(e.target.value)} />
+          <textarea required rows={4} placeholder={lang === "fa" ? "پیام شما" : "Your message"} className={inputCls + " resize-none"} value={message} onChange={(e) => setMessage(e.target.value)} />
+          <button disabled={busy} className={btnPrimary + " w-full justify-center"}>{busy ? ui("checking", lang) : (lang === "fa" ? "ارسال تیکت" : "Send Ticket")}</button>
+        </form>
       </div>
     </div>
   );
 }
 
-/* ============================== صفحه سفارشی (بلوک‌محور، مثل وردپرس) ============================== */
+/* ============================== مقالات ============================== */
 
-function BlockRenderer({ block }) {
-  switch (block.type) {
-    case "heading": return <h2 className="text-2xl sm:text-3xl font-black mb-4 mt-8 first:mt-0">{block.content}</h2>;
-    case "image": return (
-      <PatternBox pattern="grid" className="h-56 rounded-2xl flex items-center justify-center mb-6">
-        <div className="text-center">
-          <ImageIcon className="text-white/70 mx-auto mb-2" size={32} />
-          {block.content && <p className="text-white/70 text-xs">{block.content}</p>}
+function getExcerpt(blocks, lang) {
+  const p = blocks.find((b) => b.type === "paragraph");
+  if (!p) return "";
+  const text = tr(p.content, lang);
+  return text.length > 130 ? text.slice(0, 130) + "..." : text;
+}
+
+function ArticlesPage({ pages, lang }) {
+  const articles = pages.filter((p) => p.isArticle).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  return (
+    <div>
+      <PageHeader eyebrow={ui("blogTitle", lang)} title={ui("articlesTitle", lang)} subtitle={ui("articlesSubtitle", lang)} />
+      <section className="py-16 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          {articles.length === 0 ? (
+            <p className="text-black/40 text-sm text-center py-12">{ui("noArticlesYet", lang)}</p>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-6">
+              {articles.map((a, idx) => (
+                <Reveal key={a.id} delay={idx * 70}>
+                  <TiltCard className="group rounded-2xl overflow-hidden border border-black/10 hover:border-red-600 hover:shadow-lg transition-all duration-300 h-full bg-white">
+                    <button onClick={() => navigate(`page/${a.id}`)} className="text-right w-full">
+                      <PatternBox pattern="scan" className="h-32 flex items-center justify-center">
+                        <FileText className="text-white group-hover:scale-110 transition-transform duration-300" size={30} />
+                      </PatternBox>
+                      <div className="p-5">
+                        <p className="text-[11px] text-black/40 mb-1">{fmtDate(a.updatedAt, lang)} · {a.authorName}</p>
+                        <h3 className="font-bold mb-2 group-hover:text-red-600 transition-colors">{tr(a.title, lang)}</h3>
+                        <p className="text-black/55 text-sm leading-relaxed">{getExcerpt(a.blocks, lang)}</p>
+                        <span className="mt-3 inline-flex items-center gap-1 text-red-600 text-xs">{ui("readMore", lang)} <ChevronLeft size={13} /></span>
+                      </div>
+                    </button>
+                  </TiltCard>
+                </Reveal>
+              ))}
+            </div>
+          )}
         </div>
-      </PatternBox>
+      </section>
+    </div>
+  );
+}
+
+/* ============================== سوالات رایج ============================== */
+
+function FAQItem({ item, lang }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-black/10 rounded-xl overflow-hidden bg-white">
+      <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between text-right p-4 font-bold text-sm">
+        {tr(item.question, lang)}
+        <ChevronDown className={`text-red-600 transition-transform shrink-0 ${open ? "rotate-180" : ""}`} size={18} />
+      </button>
+      {open && <div className="px-4 pb-4 text-black/60 text-sm leading-relaxed">{tr(item.answer, lang)}</div>}
+    </div>
+  );
+}
+
+function FAQPage({ content, lang }) {
+  return (
+    <div>
+      <PageHeader eyebrow={ui("support", lang)} title={ui("faqTitle", lang)} subtitle={ui("faqSubtitle", lang)} />
+      <section className="py-16 px-4 sm:px-6">
+        <div className="max-w-2xl mx-auto space-y-3">
+          {content.faq.length === 0 ? (
+            <p className="text-black/40 text-sm text-center py-12">{ui("noFaqYet", lang)}</p>
+          ) : content.faq.map((item, idx) => <Reveal key={item.id} delay={idx * 50}><FAQItem item={item} lang={lang} /></Reveal>)}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* ============================== صفحه سفارشی (بلوک‌محور، دوزبانه) ============================== */
+
+function BlockRenderer({ block, lang }) {
+  switch (block.type) {
+    case "heading": return <h2 className="text-2xl sm:text-3xl font-black mb-4 mt-8 first:mt-0">{tr(block.content, lang)}</h2>;
+    case "image": return (
+      block.imageUrl ? (
+        <div className="mb-6">
+          <img src={resolveImageUrl(block.imageUrl)} alt={tr(block.content, lang)} className="w-full h-auto rounded-2xl" />
+          {tr(block.content, lang) && <p className="text-black/40 text-xs mt-2">{tr(block.content, lang)}</p>}
+        </div>
+      ) : (
+        <PatternBox pattern="grid" className="h-56 rounded-2xl flex items-center justify-center mb-6">
+          <div className="text-center">
+            <ImageIcon className="text-white/70 mx-auto mb-2" size={32} />
+            {tr(block.content, lang) && <p className="text-white/70 text-xs">{tr(block.content, lang)}</p>}
+          </div>
+        </PatternBox>
+      )
     );
-    case "button": return <a href={block.url || "#"} className="inline-block bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold mb-6 transition-colors">{block.content}</a>;
-    default: return <p className="text-black/70 leading-loose mb-4 whitespace-pre-line">{block.content}</p>;
+    case "button": return <a href={block.url || "#"} className="inline-block bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold mb-6 transition-colors">{tr(block.content, lang)}</a>;
+    default: return <p className="text-black/70 leading-loose mb-4 whitespace-pre-line">{tr(block.content, lang)}</p>;
   }
 }
 
-function CustomPageView({ page }) {
-  if (!page) return <div className="pt-40 pb-24 text-center text-black/50">صفحه یافت نشد.</div>;
+function CustomPageView({ page, lang }) {
+  if (!page) return <div className="pt-40 pb-24 text-center text-black/50">{ui("pageNotFound", lang)}</div>;
   return (
     <section className="pt-36 pb-24 px-4 sm:px-6 min-h-[60vh]">
       <div className="max-w-3xl mx-auto">
-        <button onClick={() => navigate("")} className="flex items-center gap-1.5 text-red-600 text-sm mb-8"><ChevronRight size={16} /> بازگشت به خانه</button>
-        <h1 className="text-3xl sm:text-4xl font-black mb-6">{page.title}</h1>
-        {page.blocks.map((b) => <BlockRenderer key={b.id} block={b} />)}
+        <button onClick={() => navigate("")} className="flex items-center gap-1.5 text-red-600 text-sm mb-8"><ChevronRight size={16} /> {ui("backToHome", lang)}</button>
+        <h1 className="text-3xl sm:text-4xl font-black mb-6">{tr(page.title, lang)}</h1>
+        {page.blocks.map((b) => <BlockRenderer key={b.id} block={b} lang={lang} />)}
+      </div>
+    </section>
+  );
+}
+
+function StarRow({ rating, size = 14 }) {
+  return <span className="text-yellow-500 inline-flex" style={{ fontSize: size }}>{"★".repeat(rating)}{"☆".repeat(5 - rating)}</span>;
+}
+
+function ReviewsStrip({ lang }) {
+  const [reviews, setReviews] = useState(null);
+  useEffect(() => { api.getReviews().then(({ reviews: list }) => setReviews(list)).catch(() => setReviews([])); }, []);
+  if (reviews && reviews.length === 0) return null;
+  return (
+    <section className="py-16 px-4 sm:px-6 bg-neutral-50 border-t border-black/10 overflow-hidden">
+      <div className="max-w-7xl mx-auto">
+        <Reveal className="text-center mb-10">
+          <span className="text-red-600 text-xs tracking-[0.3em] font-bold">{lang === "fa" ? "نظرات مشتریان" : "Customer Reviews"}</span>
+          <h2 className="text-2xl sm:text-3xl font-black mt-2">{lang === "fa" ? "چه کسانی به ما اعتماد کردن؟" : "What Our Customers Say"}</h2>
+        </Reveal>
+        {reviews === null ? (
+          <p className="text-center text-black/40 text-sm">{ui("loading", lang)}</p>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {reviews.slice(0, 6).map((r, idx) => (
+              <Reveal key={r.id} delay={idx * 60}>
+                <div className="bg-white border border-black/10 rounded-2xl p-5 h-full">
+                  <StarRow rating={r.rating} />
+                  <p className="text-black/70 text-sm leading-relaxed mt-3 mb-4">"{r.comment}"</p>
+                  <p className="text-black/40 text-xs font-bold">{r.userName}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -934,15 +1439,15 @@ function CustomPageView({ page }) {
 
 /* ============================== فوتر ============================== */
 
-function Footer({ content, goToUrl }) {
+function Footer({ content, goToUrl, lang }) {
   const f = content.footer;
   const s = content.settings;
   return (
     <footer className="border-t border-black/10 bg-black text-white pt-16 pb-8 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
         <div>
-          <Logo size={40} dark />
-          <p className="text-white/50 text-sm leading-relaxed mt-4">{f.about}</p>
+          <Logo size={40} dark name={tr(s.siteName, lang)} />
+          <p className="text-white/50 text-sm leading-relaxed mt-4">{tr(f.about, lang)}</p>
           <div className="flex gap-3 mt-4">
             <a className="p-2 border border-white/15 rounded-lg hover:border-red-500 hover:text-red-500 transition-colors" href="#"><Instagram size={16} /></a>
             <a className="p-2 border border-white/15 rounded-lg hover:border-red-500 hover:text-red-500 transition-colors" href="#"><Send size={16} /></a>
@@ -951,42 +1456,42 @@ function Footer({ content, goToUrl }) {
         </div>
         {f.columns.map((col) => (
           <div key={col.id}>
-            <h4 className="font-bold mb-4">{col.title}</h4>
-            <ul className="space-y-2">{col.links.map((l, i) => <li key={i}><button onClick={() => goToUrl(l.url)} className="text-white/50 hover:text-red-500 text-sm transition-colors">{l.label}</button></li>)}</ul>
+            <h4 className="font-bold mb-4">{tr(col.title, lang)}</h4>
+            <ul className="space-y-2">{col.links.map((l, i) => <li key={i}><button onClick={() => goToUrl(l.url)} className="text-white/50 hover:text-red-500 text-sm transition-colors">{tr(l.label, lang)}</button></li>)}</ul>
           </div>
         ))}
         <div>
-          <h4 className="font-bold mb-4">اطلاعات تماس</h4>
-          <ul className="space-y-2 text-sm text-white/50"><li>{s.phone}</li><li>{s.address}</li></ul>
+          <h4 className="font-bold mb-4">{ui("contactInfo", lang)}</h4>
+          <ul className="space-y-2 text-sm text-white/50"><li>{s.phone}</li><li>{tr(s.address, lang)}</li></ul>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto border-t border-white/10 pt-6 text-center"><p className="text-white/40 text-xs">{f.copyright}</p></div>
+      <div className="max-w-7xl mx-auto border-t border-white/10 pt-6 text-center"><p className="text-white/40 text-xs">{tr(f.copyright, lang)}</p></div>
     </footer>
   );
 }
 
 /* ============================== سبد خرید ============================== */
 
-function CartDrawer({ cart, total, onClose, onChangeQty, onRemove, onCheckout }) {
+function CartDrawer({ cart, total, onClose, onChangeQty, onRemove, onCheckout, lang }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-sm h-full bg-white border-l border-black/10 flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-black/10">
-          <h3 className="font-bold flex items-center gap-2"><ShoppingCart size={18} className="text-red-600" /> سبد خرید</h3>
+          <h3 className="font-bold flex items-center gap-2"><ShoppingCart size={18} className="text-red-600" /> {ui("cart", lang)}</h3>
           <button onClick={onClose}><X size={20} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {cart.length === 0 && <p className="text-black/40 text-sm text-center mt-10">سبد خرید شما خالی است</p>}
+          {cart.length === 0 && <p className="text-black/40 text-sm text-center mt-10">{ui("cartEmpty", lang)}</p>}
           {cart.map((item) => (
             <div key={item.id} className="flex items-center gap-3 border-b border-black/10 pb-4">
               <PatternBox pattern={item.pattern} className="w-14 h-14 rounded-lg flex items-center justify-center shrink-0"><IconBadge name={item.icon} size={22} className="text-white" /></PatternBox>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate">{item.name}</p>
-                <p className="text-red-600 text-xs font-bold mt-1">{toman(item.price)}</p>
+                <p className="text-sm font-bold truncate">{tr(item.name, lang)}</p>
+                <p className="text-red-600 text-xs font-bold mt-1">{fmtPrice(item.price, lang)}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <button onClick={() => onChangeQty(item.id, -1)} className="w-6 h-6 rounded bg-black/5 hover:bg-black/10">-</button>
-                  <span className="text-xs w-4 text-center">{item.qty}</span>
+                  <span className="text-xs w-4 text-center">{fmtNum(item.qty, lang)}</span>
                   <button onClick={() => onChangeQty(item.id, 1)} className="w-6 h-6 rounded bg-black/5 hover:bg-black/10">+</button>
                   <button onClick={() => onRemove(item.id)} className="mr-auto text-black/30 hover:text-red-600"><Trash2 size={14} /></button>
                 </div>
@@ -996,8 +1501,8 @@ function CartDrawer({ cart, total, onClose, onChangeQty, onRemove, onCheckout })
         </div>
         {cart.length > 0 && (
           <div className="p-5 border-t border-black/10">
-            <div className="flex justify-between mb-4 text-sm"><span className="text-black/60">جمع کل</span><span className="font-black text-red-600">{toman(total)}</span></div>
-            <button onClick={onCheckout} className="w-full bg-red-600 hover:bg-red-700 text-white transition-colors py-3 rounded-xl font-bold flex items-center justify-center gap-2"><CreditCard size={16} /> تسویه حساب</button>
+            <div className="flex justify-between mb-4 text-sm"><span className="text-black/60">{ui("total", lang)}</span><span className="font-black text-red-600">{fmtPrice(total, lang)}</span></div>
+            <button onClick={onCheckout} className="w-full bg-red-600 hover:bg-red-700 text-white transition-colors py-3 rounded-xl font-bold flex items-center justify-center gap-2"><CreditCard size={16} /> {ui("checkout", lang)}</button>
           </div>
         )}
       </div>
@@ -1007,36 +1512,45 @@ function CartDrawer({ cart, total, onClose, onChangeQty, onRemove, onCheckout })
 
 /* ============================== پرداخت ============================== */
 
-function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, paymentStatus }) {
-  const [form, setForm] = useState({ name: currentUser?.name || "", phone: "", address: "" });
+function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, paymentStatus, lang }) {
+  const [form, setForm] = useState({ name: currentUser?.name || "", phone: "", email: "", province: "", city: "", postalCode: "", address: "" });
   const [processing, setProcessing] = useState(false);
+  const set = (k, v) => setForm({ ...form, [k]: v });
   const submit = async (e) => { e.preventDefault(); setProcessing(true); await new Promise((r) => setTimeout(r, 1200)); await onSubmit(form); setProcessing(false); };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white border border-black/10 rounded-2xl p-6">
+      <div className="relative w-full max-w-md bg-white border border-black/10 rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
         <button onClick={onClose} className="absolute top-4 left-4 text-black/40 hover:text-black"><X size={18} /></button>
         {orderDone ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-4"><Check className="text-red-600" size={28} /></div>
-            <h3 className="text-xl font-black mb-2">سفارش شما ثبت شد!</h3>
-            <p className="text-black/50 text-sm">همکاران ما به‌زودی برای هماهنگی ارسال با شما تماس می‌گیرند.</p>
-            <button onClick={onClose} className="mt-6 bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-bold">متوجه شدم</button>
+            <h3 className="text-xl font-black mb-2">{ui("orderPlaced", lang)}</h3>
+            <p className="text-black/50 text-sm">{ui("orderPlacedDesc", lang)}</p>
+            <button onClick={onClose} className="mt-6 bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-bold">{ui("gotIt", lang)}</button>
           </div>
         ) : (
           <>
-            <h3 className="font-bold text-lg mb-1 flex items-center gap-2"><CreditCard size={18} className="text-red-600" /> نهایی‌سازی خرید</h3>
-            <p className="text-black/40 text-xs mb-5">اطلاعات ارسال را وارد کنید</p>
+            <h3 className="font-bold text-lg mb-1 flex items-center gap-2"><CreditCard size={18} className="text-red-600" /> {ui("finalizeOrder", lang)}</h3>
+            <p className="text-black/40 text-xs mb-5">{ui("enterShippingInfo", lang)}</p>
             <form onSubmit={submit} className="space-y-3">
-              <input required placeholder="نام و نام خانوادگی" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              <input required placeholder="شماره موبایل" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-              <textarea required placeholder="آدرس دقیق" rows={3} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm resize-none" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-              <div className="flex justify-between items-center py-3 border-t border-black/10 text-sm"><span className="text-black/60">مبلغ قابل پرداخت</span><span className="font-black text-red-600">{toman(total)}</span></div>
+              <input required placeholder={ui("fullName", lang)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.name} onChange={(e) => set("name", e.target.value)} />
+              <div className="grid grid-cols-2 gap-3">
+                <input required placeholder={ui("mobileNumber", lang)} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+                <input type="email" placeholder={lang === "fa" ? "ایمیل (اختیاری)" : "Email (optional)"} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.email} onChange={(e) => set("email", e.target.value)} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input required placeholder={lang === "fa" ? "استان" : "Province"} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.province} onChange={(e) => set("province", e.target.value)} />
+                <input required placeholder={lang === "fa" ? "شهر" : "City"} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.city} onChange={(e) => set("city", e.target.value)} />
+              </div>
+              <input required placeholder={lang === "fa" ? "کد پستی" : "Postal Code"} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} />
+              <textarea required placeholder={ui("exactAddress", lang)} rows={3} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm resize-none" value={form.address} onChange={(e) => set("address", e.target.value)} />
+              <div className="flex justify-between items-center py-3 border-t border-black/10 text-sm"><span className="text-black/60">{ui("payableAmount", lang)}</span><span className="font-black text-red-600">{fmtPrice(total, lang)}</span></div>
               <button disabled={processing} className="w-full bg-red-600 hover:bg-red-700 text-white disabled:opacity-60 transition-colors py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                {processing ? "در حال اتصال به درگاه..." : paymentStatus?.enabled ? `پرداخت با ${paymentStatus.provider}` : "پرداخت آنلاین"}
+                {processing ? ui("connectingToGateway", lang) : paymentStatus?.enabled ? `${ui("payWith", lang)} ${paymentStatus.provider}` : ui("payOnline", lang)}
               </button>
               <p className="text-black/30 text-[11px] text-center leading-relaxed pt-1">
-                {paymentStatus?.enabled ? "پرداخت شما از طریق درگاه بانکی معتبر انجام می‌شود." : "این بخش شبیه‌سازی درگاه پرداخت است؛ مدیر سایت هنوز اطلاعات درگاه واقعی را در پنل وارد نکرده است."}
+                {paymentStatus?.enabled ? ui("gatewayRealNote", lang) : ui("gatewaySimNote", lang)}
               </p>
             </form>
           </>
@@ -1048,7 +1562,7 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
 
 /* ============================== ورود / ثبت‌نام عمومی ============================== */
 
-function AuthModal({ onClose, onLogin, onRegister }) {
+function AuthModal({ onClose, onLogin, onRegister, lang }) {
   const [mode, setMode] = useState("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -1073,56 +1587,59 @@ function AuthModal({ onClose, onLogin, onRegister }) {
           <div className="w-14 h-14 rounded-full bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-3">
             {mode === "login" ? <Lock className="text-red-600" size={22} /> : <UserPlus className="text-red-600" size={22} />}
           </div>
-          <h3 className="font-bold text-lg">{mode === "login" ? "ورود به حساب کاربری" : "ثبت‌نام کاربر جدید"}</h3>
+          <h3 className="font-bold text-lg">{mode === "login" ? ui("signInToAccount", lang) : ui("registerNewUser", lang)}</h3>
         </div>
         <div className="flex bg-black/5 rounded-lg p-1 mb-5">
-          <button onClick={() => { setMode("login"); setError(""); }} className={`flex-1 text-xs py-2 rounded-md transition-colors ${mode === "login" ? "bg-red-600 text-white font-bold" : "text-black/50"}`}>ورود</button>
-          <button onClick={() => { setMode("register"); setError(""); }} className={`flex-1 text-xs py-2 rounded-md transition-colors ${mode === "register" ? "bg-red-600 text-white font-bold" : "text-black/50"}`}>ثبت‌نام</button>
+          <button onClick={() => { setMode("login"); setError(""); }} className={`flex-1 text-xs py-2 rounded-md transition-colors ${mode === "login" ? "bg-red-600 text-white font-bold" : "text-black/50"}`}>{ui("signIn", lang)}</button>
+          <button onClick={() => { setMode("register"); setError(""); }} className={`flex-1 text-xs py-2 rounded-md transition-colors ${mode === "register" ? "bg-red-600 text-white font-bold" : "text-black/50"}`}>{ui("createAccount", lang)}</button>
         </div>
         <form onSubmit={submit} className="space-y-3">
-          {mode === "register" && <input required placeholder="نام و نام خانوادگی" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" />}
-          <input required placeholder="نام کاربری" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" />
-          <input required type="password" placeholder="رمز عبور" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" />
+          {mode === "register" && <input required placeholder={ui("fullName", lang)} value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" />}
+          <input required placeholder={ui("username", lang)} value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" />
+          <input required type="password" placeholder={ui("password", lang)} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" />
           {error && <p className="text-red-600 text-xs text-center">{error}</p>}
-          <button disabled={busy} className="w-full bg-red-600 hover:bg-red-700 text-white disabled:opacity-60 transition-colors py-2.5 rounded-xl font-bold">{busy ? "در حال بررسی..." : mode === "login" ? "ورود" : "ثبت‌نام"}</button>
+          <button disabled={busy} className="w-full bg-red-600 hover:bg-red-700 text-white disabled:opacity-60 transition-colors py-2.5 rounded-xl font-bold">{busy ? ui("checking", lang) : mode === "login" ? ui("signIn", lang) : ui("createAccount", lang)}</button>
         </form>
       </div>
     </div>
   );
 }
 
-/* ============================== پنل مدیریت (طراحی شبیه وردپرس) ============================== */
+/* ============================== پنل مدیریت ============================== */
 
 const ALL_ADMIN_TABS = [
-  { id: "dashboard", label: "داشبورد", icon: LayoutGrid, roles: ["admin", "editor", "author"] },
-  { id: "pages", label: "صفحات", icon: FileText, roles: ["admin", "editor", "author"] },
-  { id: "hero", label: "بخش هیرو", icon: Zap, roles: ["admin", "editor"] },
-  { id: "services", label: "خدمات", icon: Wrench, roles: ["admin", "editor"] },
-  { id: "products", label: "محصولات", icon: Package, roles: ["admin", "editor"] },
-  { id: "menu", label: "منو", icon: ListOrdered, roles: ["admin", "editor"] },
-  { id: "footer", label: "فوتر", icon: Layers, roles: ["admin", "editor"] },
-  { id: "faq", label: "سوالات رایج", icon: MessageCircle, roles: ["admin", "editor"] },
-  { id: "orders", label: "سفارشات", icon: ShoppingCart, roles: ["admin"] },
-  { id: "messages", label: "پیام‌ها", icon: Mail, roles: ["admin"] },
-  { id: "users", label: "کاربران", icon: UsersIcon, roles: ["admin"] },
-  { id: "payment", label: "درگاه پرداخت", icon: CreditCard, roles: ["admin"] },
-  { id: "settings", label: "تنظیمات", icon: Settings, roles: ["admin"] },
+  { id: "dashboard", icon: LayoutGrid, roles: ["admin", "editor", "author"] },
+  { id: "pages", icon: FileText, roles: ["admin", "editor", "author"] },
+  { id: "hero", icon: Zap, roles: ["admin", "editor"] },
+  { id: "services", icon: Wrench, roles: ["admin", "editor"] },
+  { id: "products", icon: Package, roles: ["admin", "editor"] },
+  { id: "menu", icon: ListOrdered, roles: ["admin", "editor"] },
+  { id: "footer", icon: Layers, roles: ["admin", "editor"] },
+  { id: "faq", icon: MessageCircle, roles: ["admin", "editor"] },
+  { id: "orders", icon: ShoppingCart, roles: ["admin"] },
+  { id: "messages", icon: Mail, roles: ["admin"] },
+  { id: "reviews", icon: MessageCircle, roles: ["admin"] },
+  { id: "tickets", icon: LifeBuoy, roles: ["admin"] },
+  { id: "users", icon: UsersIcon, roles: ["admin"] },
+  { id: "payment", icon: CreditCard, roles: ["admin"] },
+  { id: "notifications", icon: Send, roles: ["admin"] },
+  { id: "settings", icon: Settings, roles: ["admin"] },
 ];
 
-function AdminPanel({ content, update, onClose, onLogout, tab, setTab, saving, role, currentUser, refreshPages }) {
+function AdminPanel({ content, update, onClose, onLogout, tab, setTab, saving, role, currentUser, refreshPages, lang }) {
   const tabs = ALL_ADMIN_TABS.filter((t) => t.roles.includes(role));
   useEffect(() => { if (!tabs.find((t) => t.id === tab)) setTab("dashboard"); }, []); // eslint-disable-line
   return (
-    <div className="fixed inset-0 z-[60] bg-white flex flex-col" dir="rtl">
+    <div className="fixed inset-0 z-[60] bg-white flex flex-col" dir={lang === "fa" ? "rtl" : "ltr"}>
       <div className="h-16 border-b border-black/10 flex items-center justify-between px-4 sm:px-6 shrink-0 bg-neutral-900 text-white">
         <div className="flex items-center gap-3">
-          <Logo size={32} dark />
-          <span className="text-xs text-white/40 hidden sm:inline">پنل مدیریت · {ROLE_LABELS[role]}</span>
-          {saving && <span className="text-[10px] text-red-400 flex items-center gap-1"><RotateCcw size={10} className="animate-spin" /> در حال ذخیره...</span>}
+          <Logo size={32} dark name={tr(content.settings.siteName, lang)} />
+          <span className="text-xs text-white/40 hidden sm:inline">{ui("adminPanel", lang)} · {tr(ROLE_LABELS[role], lang)}</span>
+          {saving && <span className="text-[10px] text-red-400 flex items-center gap-1"><RotateCcw size={10} className="animate-spin" /> {ui("savingDots", lang)}</span>}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={onClose} className="text-xs border border-white/20 hover:border-red-500 rounded-lg px-3 py-2">مشاهده سایت</button>
-          <button onClick={onLogout} className="text-xs bg-red-600 hover:bg-red-500 rounded-lg px-3 py-2 flex items-center gap-1.5 font-bold"><LogOut size={14} /> خروج</button>
+          <button onClick={onClose} className="text-xs border border-white/20 hover:border-red-500 rounded-lg px-3 py-2">{ui("viewSite", lang)}</button>
+          <button onClick={onLogout} className="text-xs bg-red-600 hover:bg-red-500 rounded-lg px-3 py-2 flex items-center gap-1.5 font-bold"><LogOut size={14} /> {ui("logout", lang)}</button>
         </div>
       </div>
       <div className="flex-1 flex overflow-hidden">
@@ -1131,25 +1648,28 @@ function AdminPanel({ content, update, onClose, onLogout, tab, setTab, saving, r
             const Ico = t.icon;
             return (
               <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${tab === t.id ? "bg-red-600/15 text-red-400 border-r-2 border-red-500" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
-                <Ico size={16} className="shrink-0" /> <span className="hidden sm:inline">{t.label}</span>
+                <Ico size={16} className="shrink-0" /> <span className="hidden sm:inline">{aui(t.id, lang)}</span>
               </button>
             );
           })}
         </div>
         <div className="flex-1 overflow-y-auto p-5 sm:p-8 bg-neutral-50">
-          {tab === "dashboard" && <AdminDashboard content={content} role={role} currentUser={currentUser} />}
-          {tab === "pages" && <AdminPages role={role} currentUser={currentUser} refreshPages={refreshPages} />}
-          {tab === "hero" && <AdminHero content={content} update={update} />}
-          {tab === "services" && <AdminServices content={content} update={update} />}
-          {tab === "products" && <AdminProducts content={content} update={update} />}
-          {tab === "menu" && <AdminMenu content={content} update={update} />}
-          {tab === "footer" && <AdminFooter content={content} update={update} />}
-          {tab === "faq" && <AdminFAQ content={content} update={update} />}
-          {tab === "orders" && <AdminOrders />}
-          {tab === "messages" && <AdminMessages />}
-          {tab === "users" && <AdminUsers />}
-          {tab === "payment" && <AdminPayment />}
-          {tab === "settings" && <AdminSettings content={content} update={update} />}
+          {tab === "dashboard" && <AdminDashboard content={content} role={role} currentUser={currentUser} lang={lang} />}
+          {tab === "pages" && <AdminPages role={role} currentUser={currentUser} refreshPages={refreshPages} lang={lang} />}
+          {tab === "hero" && <AdminHero content={content} update={update} lang={lang} />}
+          {tab === "services" && <AdminServices content={content} update={update} lang={lang} />}
+          {tab === "products" && <AdminProducts content={content} update={update} lang={lang} />}
+          {tab === "menu" && <AdminMenu content={content} update={update} lang={lang} />}
+          {tab === "footer" && <AdminFooter content={content} update={update} lang={lang} />}
+          {tab === "faq" && <AdminFAQ content={content} update={update} lang={lang} />}
+          {tab === "orders" && <AdminOrders lang={lang} />}
+          {tab === "messages" && <AdminMessages lang={lang} />}
+          {tab === "reviews" && <AdminReviews lang={lang} />}
+          {tab === "tickets" && <AdminTickets lang={lang} />}
+          {tab === "users" && <AdminUsers lang={lang} />}
+          {tab === "payment" && <AdminPayment lang={lang} />}
+          {tab === "notifications" && <AdminNotifications lang={lang} />}
+          {tab === "settings" && <AdminSettings content={content} update={update} lang={lang} />}
         </div>
       </div>
     </div>
@@ -1164,20 +1684,44 @@ const cardCls = "border border-black/10 rounded-xl p-4 bg-white";
 const btnPrimary = "bg-red-600 hover:bg-red-700 text-white transition-colors px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5";
 const btnGhost = "border border-black/15 hover:border-red-600 transition-colors px-3 py-2 rounded-lg text-xs flex items-center gap-1.5";
 
-function AdminDashboard({ content, role, currentUser }) {
+// فیلد دوزبانه‌ی استاندارد پنل مدیریت: یک ورودی فارسی و یک ورودی انگلیسی کنار هم
+function BField({ label, value, onChange, multiline, lang }) {
+  const v = value || { fa: "", en: "" };
+  const Comp = multiline ? "textarea" : "input";
+  return (
+    <div>
+      {label && <span className="text-xs text-black/50 mb-1.5 block">{label}</span>}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <span className="text-[10px] text-black/30 mb-0.5 block">{aui("faPersian", lang)}</span>
+          <Comp dir="rtl" rows={multiline ? 3 : undefined} className={inputCls} value={v.fa} onChange={(e) => onChange({ ...v, fa: e.target.value })} />
+        </div>
+        <div>
+          <span className="text-[10px] text-black/30 mb-0.5 block">{aui("enEnglish", lang)}</span>
+          <Comp dir="ltr" rows={multiline ? 3 : undefined} className={inputCls} value={v.en} onChange={(e) => onChange({ ...v, en: e.target.value })} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminDashboard({ content, role, currentUser, lang }) {
   const [userCount, setUserCount] = useState(null);
   useEffect(() => { if (role === "admin") api.listUsers().then(({ users }) => setUserCount(users.length)).catch(() => {}); }, [role]);
   const stats = [
-    { label: "خدمات", value: content.services.length, icon: Wrench },
-    { label: "محصولات", value: content.products.length, icon: Package },
+    { label: aui("services", lang), value: content.services.length, icon: Wrench },
+    { label: aui("products", lang), value: content.products.length, icon: Package },
   ];
-  if (role === "admin") stats.push({ label: "کاربران", value: userCount ?? "…", icon: UsersIcon });
+  if (role === "admin") stats.push({ label: aui("users", lang), value: userCount ?? "…", icon: UsersIcon });
+  const roleDesc = {
+    admin: { fa: "دسترسی کامل به همه‌ی بخش‌ها.", en: "Full access to every section." },
+    editor: { fa: "می‌توانید همه‌ی محتوای سایت را ویرایش کنید.", en: "You can edit all site content." },
+    author: { fa: "می‌توانید صفحات جدید بسازید و فقط صفحات خودتان را ویرایش کنید.", en: "You can create new pages and edit only your own pages." },
+  };
   return (
     <div>
-      <SectionTitle>خوش آمدید، {currentUser?.name} 👋</SectionTitle>
-      <p className="text-black/50 text-sm mb-8">
-        نقش شما: <b>{ROLE_LABELS[role]}</b> — {role === "admin" && "دسترسی کامل به همه‌ی بخش‌ها."} {role === "editor" && "می‌توانید همه‌ی محتوای سایت (خدمات، محصولات، منو، فوتر، صفحات) را ویرایش کنید."} {role === "author" && "می‌توانید صفحات جدید بسازید و فقط صفحات خودتان را ویرایش کنید."}
-      </p>
+      <SectionTitle>{aui("welcome", lang)}, {currentUser?.name} 👋</SectionTitle>
+      <p className="text-black/50 text-sm mb-8">{aui("yourRole", lang)}: <b>{tr(ROLE_LABELS[role], lang)}</b> — {tr(roleDesc[role], lang)}</p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {stats.map((s) => <div key={s.label} className={cardCls}><s.icon className="text-red-600 mb-2" size={20} /><div className="text-2xl font-black">{s.value}</div><div className="text-xs text-black/40 mt-1">{s.label}</div></div>)}
       </div>
@@ -1185,21 +1729,18 @@ function AdminDashboard({ content, role, currentUser }) {
   );
 }
 
-function AdminHero({ content, update }) {
+function AdminHero({ content, update, lang }) {
   const h = content.hero;
   const set = (k, v) => update(["hero", k], v);
   return (
-    <div className="max-w-xl">
-      <SectionTitle>ویرایش بخش هیرو</SectionTitle>
+    <div className="max-w-2xl">
+      <SectionTitle>{aui("hero", lang)}</SectionTitle>
       <div className="space-y-4">
-        <Field label="برچسب بالای عنوان"><input className={inputCls} value={h.eyebrow} onChange={(e) => set("eyebrow", e.target.value)} /></Field>
-        <Field label="عنوان اصلی"><input className={inputCls} value={h.title} onChange={(e) => set("title", e.target.value)} /></Field>
-        <Field label="توضیح زیر عنوان"><textarea rows={3} className={inputCls} value={h.subtitle} onChange={(e) => set("subtitle", e.target.value)} /></Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="متن دکمه اول"><input className={inputCls} value={h.ctaText} onChange={(e) => set("ctaText", e.target.value)} /></Field>
-          <Field label="متن دکمه دوم"><input className={inputCls} value={h.ctaText2} onChange={(e) => set("ctaText2", e.target.value)} /></Field>
-        </div>
-        <p className="text-xs text-black/40">پوستر انیمیشنی هیرو (تصویر پروژکتور و نور) خودکار طراحی شده و همیشه با برند سایت هماهنگ می‌ماند.</p>
+        <BField label={lang === "fa" ? "برچسب بالای عنوان" : "Eyebrow label"} value={h.eyebrow} onChange={(v) => set("eyebrow", v)} lang={lang} />
+        <BField label={aui("title", lang)} value={h.title} onChange={(v) => set("title", v)} lang={lang} />
+        <BField label={lang === "fa" ? "توضیح زیر عنوان" : "Subtitle"} value={h.subtitle} onChange={(v) => set("subtitle", v)} multiline lang={lang} />
+        <BField label={lang === "fa" ? "متن دکمه اول" : "Button 1 text"} value={h.ctaText} onChange={(v) => set("ctaText", v)} lang={lang} />
+        <BField label={lang === "fa" ? "متن دکمه دوم" : "Button 2 text"} value={h.ctaText2} onChange={(v) => set("ctaText2", v)} lang={lang} />
       </div>
     </div>
   );
@@ -1216,23 +1757,60 @@ function IconPicker({ value, onChange }) {
   );
 }
 
-function AdminServices({ content, update }) {
+function ImageUploadField({ label, value, onChange, lang }) {
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef(null);
+  const pick = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      const { url } = await api.uploadImage(file);
+      onChange(url);
+    } catch (err) {
+      alert((lang === "fa" ? "آپلود ناموفق بود: " : "Upload failed: ") + err.message);
+    }
+    setBusy(false);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+  return (
+    <div>
+      {label && <span className="text-xs text-black/50 mb-1.5 block">{label}</span>}
+      {value ? (
+        <div className="relative w-full h-28 rounded-lg overflow-hidden border border-black/10 mb-2">
+          <img src={resolveImageUrl(value)} alt="" className="w-full h-full object-cover" />
+          <button type="button" onClick={() => onChange("")} className="absolute top-1.5 left-1.5 bg-black/70 text-white rounded-full p-1"><X size={12} /></button>
+        </div>
+      ) : null}
+      <label className={btnGhost + " cursor-pointer inline-flex"}>
+        <ImageIcon size={12} /> {busy ? ui("loading", lang) : (lang === "fa" ? (value ? "تغییر تصویر" : "بارگذاری تصویر") : (value ? "Change Image" : "Upload Image"))}
+        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={pick} disabled={busy} />
+      </label>
+    </div>
+  );
+}
+
+function AdminServices({ content, update, lang }) {
   const set = (list) => update(["services"], list);
-  const addItem = () => set([...content.services, { id: uid("srv"), icon: "Monitor", title: "خدمت جدید", desc: "توضیحات این خدمت را وارد کنید", pattern: "circuit" }]);
+  const addItem = () => set([...content.services, { id: uid("srv"), icon: "Monitor", title: { fa: "خدمت جدید", en: "New Service" }, desc: { fa: "", en: "" }, pattern: "circuit", image: "" }]);
   const removeItem = (id) => set(content.services.filter((s) => s.id !== id));
   const editItem = (id, key, val) => set(content.services.map((s) => (s.id === id ? { ...s, [key]: val } : s)));
   return (
     <div>
-      <SectionTitle action={<button onClick={addItem} className={btnPrimary}><Plus size={14} /> افزودن خدمت</button>}>مدیریت خدمات</SectionTitle>
+      <SectionTitle action={<button onClick={addItem} className={btnPrimary}><Plus size={14} /> {aui("addService", lang)}</button>}>{aui("services", lang)}</SectionTitle>
       <div className="grid sm:grid-cols-2 gap-4">
         {content.services.map((s) => (
           <div key={s.id} className={cardCls}>
-            <div className="flex justify-between items-start mb-3"><input className={inputCls + " font-bold"} value={s.title} onChange={(e) => editItem(s.id, "title", e.target.value)} /><button onClick={() => removeItem(s.id)} className="mr-2 text-black/30 hover:text-red-600 shrink-0"><Trash2 size={16} /></button></div>
-            <textarea rows={2} className={inputCls + " mb-3"} value={s.desc} onChange={(e) => editItem(s.id, "desc", e.target.value)} />
-            <div className="grid grid-cols-2 gap-3">
-              <div><span className="text-[10px] text-black/40 mb-1 block">آیکون</span><IconPicker value={s.icon} onChange={(v) => editItem(s.id, "icon", v)} /></div>
-              <div><span className="text-[10px] text-black/40 mb-1 block">تصویر زمینه</span><PatternPicker value={s.pattern} onChange={(v) => editItem(s.id, "pattern", v)} /></div>
+            <div className="flex justify-between items-start mb-3 gap-2">
+              <div className="flex-1"><BField label={aui("title", lang)} value={s.title} onChange={(v) => editItem(s.id, "title", v)} lang={lang} /></div>
+              <button onClick={() => removeItem(s.id)} className="mt-5 text-black/30 hover:text-red-600 shrink-0"><Trash2 size={16} /></button>
             </div>
+            <div className="mb-3"><BField label={aui("description", lang)} value={s.desc} onChange={(v) => editItem(s.id, "desc", v)} multiline lang={lang} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><span className="text-[10px] text-black/40 mb-1 block">{aui("icon", lang)}</span><IconPicker value={s.icon} onChange={(v) => editItem(s.id, "icon", v)} /></div>
+              <div><span className="text-[10px] text-black/40 mb-1 block">{aui("bgImage", lang)}</span><PatternPicker value={s.pattern} onChange={(v) => editItem(s.id, "pattern", v)} /></div>
+            </div>
+            <div className="mt-3"><ImageUploadField value={s.image} onChange={(v) => editItem(s.id, "image", v)} lang={lang} /></div>
           </div>
         ))}
       </div>
@@ -1240,33 +1818,41 @@ function AdminServices({ content, update }) {
   );
 }
 
-function AdminProducts({ content, update }) {
+function AdminProducts({ content, update, lang }) {
   const set = (list) => update(["products"], list);
-  const addItem = () => set([...content.products, { id: uid("prj"), name: "پروژکتور جدید", brand: "برند", category: "خانگی", technology: "3LCD", resolution: "Full HD", lumens: 2000, price: 10000000, warranty: "۱۲ ماه", desc: "توضیحات محصول", stock: 5, icon: "Monitor", pattern: "dots" }]);
+  const addItem = () => set([...content.products, {
+    id: uid("prj"), name: { fa: "پروژکتور جدید", en: "New Projector" }, brand: "Brand", category: { fa: "خانگی", en: "Home" },
+    technology: "3LCD", resolution: "Full HD", lumens: 2000, price: 10000000, warranty: { fa: "۱۲ ماه", en: "12 months" },
+    desc: { fa: "", en: "" }, stock: 5, icon: "Monitor", pattern: "dots", image: "",
+  }]);
   const removeItem = (id) => set(content.products.filter((p) => p.id !== id));
   const editItem = (id, key, val) => set(content.products.map((p) => (p.id === id ? { ...p, [key]: val } : p)));
   return (
     <div>
-      <SectionTitle action={<button onClick={addItem} className={btnPrimary}><Plus size={14} /> افزودن محصول</button>}>مدیریت فروشگاه پروژکتور</SectionTitle>
+      <SectionTitle action={<button onClick={addItem} className={btnPrimary}><Plus size={14} /> {aui("addProduct", lang)}</button>}>{aui("products", lang)}</SectionTitle>
       <div className="grid sm:grid-cols-2 gap-4">
         {content.products.map((p) => (
           <div key={p.id} className={cardCls}>
-            <div className="flex justify-between items-start mb-3"><input className={inputCls + " font-bold"} value={p.name} onChange={(e) => editItem(p.id, "name", e.target.value)} /><button onClick={() => removeItem(p.id)} className="mr-2 text-black/30 hover:text-red-600 shrink-0"><Trash2 size={16} /></button></div>
-            <textarea rows={2} className={inputCls + " mb-3"} value={p.desc} onChange={(e) => editItem(p.id, "desc", e.target.value)} />
+            <div className="flex justify-between items-start mb-3 gap-2">
+              <div className="flex-1"><BField label={aui("title", lang)} value={p.name} onChange={(v) => editItem(p.id, "name", v)} lang={lang} /></div>
+              <button onClick={() => removeItem(p.id)} className="mt-5 text-black/30 hover:text-red-600 shrink-0"><Trash2 size={16} /></button>
+            </div>
+            <div className="mb-3"><BField label={aui("description", lang)} value={p.desc} onChange={(v) => editItem(p.id, "desc", v)} multiline lang={lang} /></div>
+            <div className="mb-3"><BField label={ui("category", lang)} value={p.category} onChange={(v) => editItem(p.id, "category", v)} lang={lang} /></div>
+            <div className="mb-3"><BField label={ui("warranty", lang)} value={p.warranty} onChange={(v) => editItem(p.id, "warranty", v)} lang={lang} /></div>
             <div className="grid grid-cols-2 gap-2 mb-2">
-              <Field label="برند"><input className={inputCls} value={p.brand} onChange={(e) => editItem(p.id, "brand", e.target.value)} /></Field>
-              <Field label="دسته‌بندی"><input className={inputCls} value={p.category} onChange={(e) => editItem(p.id, "category", e.target.value)} /></Field>
-              <Field label="تکنولوژی"><input className={inputCls} value={p.technology} onChange={(e) => editItem(p.id, "technology", e.target.value)} /></Field>
-              <Field label="رزولوشن"><input className={inputCls} value={p.resolution} onChange={(e) => editItem(p.id, "resolution", e.target.value)} /></Field>
-              <Field label="لومن"><input type="number" className={inputCls} value={p.lumens} onChange={(e) => editItem(p.id, "lumens", Number(e.target.value))} /></Field>
-              <Field label="گارانتی"><input className={inputCls} value={p.warranty} onChange={(e) => editItem(p.id, "warranty", e.target.value)} /></Field>
-              <Field label="قیمت (تومان)"><input type="number" className={inputCls} value={p.price} onChange={(e) => editItem(p.id, "price", Number(e.target.value))} /></Field>
-              <Field label="موجودی"><input type="number" className={inputCls} value={p.stock} onChange={(e) => editItem(p.id, "stock", Number(e.target.value))} /></Field>
+              <Field label={ui("brand", lang)}><input className={inputCls} value={p.brand} onChange={(e) => editItem(p.id, "brand", e.target.value)} /></Field>
+              <Field label={ui("technology", lang)}><input className={inputCls} value={p.technology} onChange={(e) => editItem(p.id, "technology", e.target.value)} /></Field>
+              <Field label={ui("resolution", lang)}><input className={inputCls} value={p.resolution} onChange={(e) => editItem(p.id, "resolution", e.target.value)} /></Field>
+              <Field label={lang === "fa" ? "لومن" : "Lumens"}><input type="number" className={inputCls} value={p.lumens} onChange={(e) => editItem(p.id, "lumens", Number(e.target.value))} /></Field>
+              <Field label={lang === "fa" ? "قیمت (تومان)" : "Price (Toman)"}><input type="number" className={inputCls} value={p.price} onChange={(e) => editItem(p.id, "price", Number(e.target.value))} /></Field>
+              <Field label={ui("stock", lang)}><input type="number" className={inputCls} value={p.stock} onChange={(e) => editItem(p.id, "stock", Number(e.target.value))} /></Field>
             </div>
             <div className="grid grid-cols-2 gap-3 mt-2">
-              <div><span className="text-[10px] text-black/40 mb-1 block">آیکون محصول</span><IconPicker value={p.icon} onChange={(v) => editItem(p.id, "icon", v)} /></div>
-              <div><span className="text-[10px] text-black/40 mb-1 block">تصویر زمینه</span><PatternPicker value={p.pattern} onChange={(v) => editItem(p.id, "pattern", v)} /></div>
+              <div><span className="text-[10px] text-black/40 mb-1 block">{aui("icon", lang)}</span><IconPicker value={p.icon} onChange={(v) => editItem(p.id, "icon", v)} /></div>
+              <div><span className="text-[10px] text-black/40 mb-1 block">{aui("bgImage", lang)}</span><PatternPicker value={p.pattern} onChange={(v) => editItem(p.id, "pattern", v)} /></div>
             </div>
+            <div className="mt-3"><ImageUploadField value={p.image} onChange={(v) => editItem(p.id, "image", v)} lang={lang} /></div>
           </div>
         ))}
       </div>
@@ -1274,71 +1860,69 @@ function AdminProducts({ content, update }) {
   );
 }
 
-/* ---------- صفحات: ویرایشگر بلوکی مثل وردپرس ---------- */
+/* ---------- صفحات: ویرایشگر بلوکی دوزبانه ---------- */
 
 const BLOCK_TYPES = [
-  { type: "heading", label: "عنوان", icon: Type },
-  { type: "paragraph", label: "پاراگراف", icon: AlignLeft },
-  { type: "image", label: "تصویر", icon: ImageIcon },
-  { type: "button", label: "دکمه", icon: MousePointerClick },
+  { type: "heading", label: { fa: "عنوان", en: "Heading" }, icon: Type },
+  { type: "paragraph", label: { fa: "پاراگراف", en: "Paragraph" }, icon: AlignLeft },
+  { type: "image", label: { fa: "تصویر", en: "Image" }, icon: ImageIcon },
+  { type: "button", label: { fa: "دکمه", en: "Button" }, icon: MousePointerClick },
 ];
 
-function AdminPages({ role, currentUser, refreshPages }) {
+function AdminPages({ role, currentUser, refreshPages, lang }) {
   const [pages, setPages] = useState(null);
-  const [editing, setEditing] = useState(null); // page object being edited, or "new"
+  const [editing, setEditing] = useState(null);
 
   const load = async () => {
     try { const { pages: list } = await api.getPagesAdmin(); setPages(list); } catch (e) { setPages([]); }
   };
   useEffect(() => { load(); }, []);
 
-  const startNew = () => setEditing({ id: null, title: "صفحه جدید", slug: "", blocks: [{ id: uid("blk"), type: "paragraph", content: "" }], showInMenu: false, isArticle: false, status: "published" });
+  const startNew = () => setEditing({ id: null, title: { fa: "صفحه جدید", en: "New Page" }, slug: "", blocks: [{ id: uid("blk"), type: "paragraph", content: { fa: "", en: "" } }], showInMenu: false, isArticle: false, status: "published" });
   const startEdit = (p) => setEditing({ ...p, blocks: p.blocks.map((b) => ({ ...b })) });
 
   const save = async () => {
-    const payload = { title: editing.title, slug: editing.slug || slugify(editing.title), blocks: editing.blocks, showInMenu: editing.showInMenu, isArticle: editing.isArticle, status: editing.status };
+    const payload = { title: editing.title, slug: editing.slug || slugify(editing.title.fa), blocks: editing.blocks, showInMenu: editing.showInMenu, isArticle: editing.isArticle, status: editing.status };
     try {
       if (editing.id) await api.updatePage(editing.id, payload);
       else await api.createPage(payload);
       setEditing(null);
       await load();
       await refreshPages();
-    } catch (e) { alert("ذخیره ناموفق بود: " + e.message); }
+    } catch (e) { alert(aui("loadFailed", lang) + ": " + e.message); }
   };
   const remove = async (id) => {
-    if (!confirm("این صفحه حذف شود؟")) return;
-    try { await api.deletePage(id); await load(); await refreshPages(); } catch (e) { alert("حذف ناموفق بود: " + e.message); }
+    if (!confirm(lang === "fa" ? "این صفحه حذف شود؟" : "Delete this page?")) return;
+    try { await api.deletePage(id); await load(); await refreshPages(); } catch (e) { alert(aui("loadFailed", lang) + ": " + e.message); }
   };
 
   const canEditPage = (p) => role !== "author" || p.authorId === currentUser.id;
 
-  if (editing) {
-    return <PageEditor page={editing} setPage={setEditing} onSave={save} onCancel={() => setEditing(null)} />;
-  }
+  if (editing) return <PageEditor page={editing} setPage={setEditing} onSave={save} onCancel={() => setEditing(null)} lang={lang} />;
 
   return (
     <div>
-      <SectionTitle action={<button onClick={startNew} className={btnPrimary}><Plus size={14} /> صفحه جدید</button>}>مدیریت صفحات</SectionTitle>
-      {role === "author" && <p className="text-xs text-black/40 mb-4">شما فقط صفحاتی را می‌بینید که خودتان ساخته‌اید.</p>}
-      {pages === null && <p className="text-black/40 text-sm">در حال بارگذاری...</p>}
+      <SectionTitle action={<button onClick={startNew} className={btnPrimary}><Plus size={14} /> {aui("newPage", lang)}</button>}>{aui("pages", lang)}</SectionTitle>
+      {role === "author" && <p className="text-xs text-black/40 mb-4">{lang === "fa" ? "شما فقط صفحاتی را می‌بینید که خودتان ساخته‌اید." : "You only see pages you created yourself."}</p>}
+      {pages === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
       <div className="space-y-3">
         {pages?.map((p) => (
           <div key={p.id} className={cardCls + " flex items-center justify-between"}>
             <div>
               <div className="flex items-center gap-2">
-                <p className="font-bold text-sm">{p.title}</p>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.status === "published" ? "bg-green-50 text-green-700 border border-green-200" : "bg-yellow-50 text-yellow-700 border border-yellow-200"}`}>{p.status === "published" ? "منتشرشده" : "پیش‌نویس"}</span>
-                {p.showInMenu && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">در منو</span>}
-                {p.isArticle && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">مقاله</span>}
+                <p className="font-bold text-sm">{tr(p.title, lang)}</p>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.status === "published" ? "bg-green-50 text-green-700 border border-green-200" : "bg-yellow-50 text-yellow-700 border border-yellow-200"}`}>{p.status === "published" ? (lang === "fa" ? "منتشرشده" : "Published") : (lang === "fa" ? "پیش‌نویس" : "Draft")}</span>
+                {p.showInMenu && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">{lang === "fa" ? "در منو" : "In menu"}</span>}
+                {p.isArticle && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">{lang === "fa" ? "مقاله" : "Article"}</span>}
               </div>
-              <p className="text-black/40 text-xs mt-1">نویسنده: {p.authorName} · slug: {p.slug}</p>
+              <p className="text-black/40 text-xs mt-1">{lang === "fa" ? "نویسنده" : "Author"}: {p.authorName} · slug: {p.slug}</p>
             </div>
             {canEditPage(p) ? (
               <div className="flex items-center gap-2 shrink-0">
-                <button onClick={() => startEdit(p)} className={btnGhost}>ویرایش</button>
+                <button onClick={() => startEdit(p)} className={btnGhost}>{aui("edit", lang)}</button>
                 <button onClick={() => remove(p.id)} className="text-black/30 hover:text-red-600"><Trash2 size={16} /></button>
               </div>
-            ) : <span className="text-[10px] text-black/30">فقط قابل مشاهده</span>}
+            ) : <span className="text-[10px] text-black/30">{lang === "fa" ? "فقط قابل مشاهده" : "View only"}</span>}
           </div>
         ))}
       </div>
@@ -1346,10 +1930,10 @@ function AdminPages({ role, currentUser, refreshPages }) {
   );
 }
 
-function PageEditor({ page, setPage, onSave, onCancel }) {
+function PageEditor({ page, setPage, onSave, onCancel, lang }) {
   const set = (k, v) => setPage({ ...page, [k]: v });
   const setBlock = (id, patch) => set("blocks", page.blocks.map((b) => (b.id === id ? { ...b, ...patch } : b)));
-  const addBlock = (type) => set("blocks", [...page.blocks, { id: uid("blk"), type, content: "", url: "" }]);
+  const addBlock = (type) => set("blocks", [...page.blocks, { id: uid("blk"), type, content: { fa: "", en: "" }, url: "", imageUrl: "" }]);
   const removeBlock = (id) => set("blocks", page.blocks.filter((b) => b.id !== id));
   const moveBlock = (id, dir) => {
     const idx = page.blocks.findIndex((b) => b.id === id);
@@ -1364,62 +1948,57 @@ function PageEditor({ page, setPage, onSave, onCancel }) {
     <div className="max-w-2xl">
       <SectionTitle action={
         <div className="flex gap-2">
-          <button onClick={onCancel} className={btnGhost}>انصراف</button>
-          <button onClick={onSave} className={btnPrimary}>ذخیره صفحه</button>
+          <button onClick={onCancel} className={btnGhost}>{aui("cancel", lang)}</button>
+          <button onClick={onSave} className={btnPrimary}>{aui("savePage", lang)}</button>
         </div>
-      }>{page.id ? "ویرایش صفحه" : "صفحه جدید"}</SectionTitle>
+      }>{page.id ? aui("edit", lang) : aui("newPage", lang)}</SectionTitle>
 
       <div className="space-y-4 mb-8">
-        <Field label="عنوان صفحه"><input className={inputCls} value={page.title} onChange={(e) => set("title", e.target.value)} /></Field>
-        <Field label="نامک (slug) — در آدرس صفحه استفاده می‌شود"><input className={inputCls} value={page.slug} onChange={(e) => set("slug", e.target.value)} placeholder="مثلاً: rules" /></Field>
+        <BField label={aui("title", lang)} value={page.title} onChange={(v) => set("title", v)} lang={lang} />
+        <Field label={lang === "fa" ? "نامک (slug) — در آدرس صفحه استفاده می‌شود" : "Slug — used in the page URL"}><input className={inputCls} dir="ltr" value={page.slug} onChange={(e) => set("slug", e.target.value)} placeholder="e.g. rules" /></Field>
         <div className="flex items-center gap-6 flex-wrap">
-          <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={page.showInMenu} onChange={(e) => set("showInMenu", e.target.checked)} className="accent-red-600" /> نمایش در منوی سایت</label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={page.isArticle} onChange={(e) => set("isArticle", e.target.checked)} className="accent-red-600" /> نمایش در صفحه‌ی «مقالات»</label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={page.showInMenu} onChange={(e) => set("showInMenu", e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "نمایش در منوی سایت" : "Show in site menu"}</label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={page.isArticle} onChange={(e) => set("isArticle", e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "نمایش در صفحه‌ی «مقالات»" : "Show in Articles page"}</label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <span>وضعیت:</span>
+            <span>{lang === "fa" ? "وضعیت:" : "Status:"}</span>
             <select className={inputCls + " w-auto"} value={page.status} onChange={(e) => set("status", e.target.value)}>
-              <option value="published">منتشرشده</option>
-              <option value="draft">پیش‌نویس</option>
+              <option value="published">{lang === "fa" ? "منتشرشده" : "Published"}</option>
+              <option value="draft">{lang === "fa" ? "پیش‌نویس" : "Draft"}</option>
             </select>
           </label>
         </div>
       </div>
 
-      <h3 className="font-bold text-sm mb-3">بلوک‌های محتوا</h3>
+      <h3 className="font-bold text-sm mb-3">{lang === "fa" ? "بلوک‌های محتوا" : "Content Blocks"}</h3>
       <div className="space-y-3 mb-4">
         {page.blocks.map((b, i) => (
           <div key={b.id} className={cardCls}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-red-600">{BLOCK_TYPES.find((t) => t.type === b.type)?.label}</span>
+              <span className="text-[11px] font-bold text-red-600">{tr(BLOCK_TYPES.find((t) => t.type === b.type)?.label, lang)}</span>
               <div className="flex items-center gap-1">
                 <button onClick={() => moveBlock(b.id, -1)} disabled={i === 0} className="disabled:opacity-20"><ChevronUp size={14} /></button>
                 <button onClick={() => moveBlock(b.id, 1)} disabled={i === page.blocks.length - 1} className="disabled:opacity-20"><ChevronDown size={14} /></button>
                 <button onClick={() => removeBlock(b.id)} className="text-black/30 hover:text-red-600 mr-2"><Trash2 size={14} /></button>
               </div>
             </div>
-            {b.type === "paragraph" ? (
-              <textarea rows={3} className={inputCls} value={b.content} onChange={(e) => setBlock(b.id, { content: e.target.value })} placeholder="متن پاراگراف..." />
-            ) : b.type === "image" ? (
-              <input className={inputCls} value={b.content} onChange={(e) => setBlock(b.id, { content: e.target.value })} placeholder="زیرنویس تصویر (توضیح کوتاه)" />
-            ) : b.type === "button" ? (
-              <div className="grid grid-cols-2 gap-2">
-                <input className={inputCls} value={b.content} onChange={(e) => setBlock(b.id, { content: e.target.value })} placeholder="متن دکمه" />
-                <input className={inputCls} value={b.url} onChange={(e) => setBlock(b.id, { url: e.target.value })} placeholder="لینک (مثلاً #/shop)" />
-              </div>
-            ) : (
-              <input className={inputCls} value={b.content} onChange={(e) => setBlock(b.id, { content: e.target.value })} placeholder="متن عنوان" />
+            <BField value={b.content} onChange={(v) => setBlock(b.id, { content: v })} multiline={b.type === "paragraph"} lang={lang} />
+            {b.type === "image" && (
+              <div className="mt-2"><ImageUploadField value={b.imageUrl} onChange={(v) => setBlock(b.id, { imageUrl: v })} lang={lang} /></div>
+            )}
+            {b.type === "button" && (
+              <div className="mt-2"><Field label={lang === "fa" ? "لینک (مثلاً #/shop)" : "Link (e.g. #/shop)"}><input dir="ltr" className={inputCls} value={b.url} onChange={(e) => setBlock(b.id, { url: e.target.value })} /></Field></div>
             )}
           </div>
         ))}
       </div>
       <div className="flex flex-wrap gap-2">
-        {BLOCK_TYPES.map((t) => <button key={t.type} onClick={() => addBlock(t.type)} className={btnGhost}><t.icon size={12} /> افزودن {t.label}</button>)}
+        {BLOCK_TYPES.map((t) => <button key={t.type} onClick={() => addBlock(t.type)} className={btnGhost}><t.icon size={12} /> {lang === "fa" ? "افزودن" : "Add"} {tr(t.label, lang)}</button>)}
       </div>
     </div>
   );
 }
 
-function AdminMenu({ content, update }) {
+function AdminMenu({ content, update, lang }) {
   const set = (list) => update(["menu"], list);
   const toggle = (id) => set(content.menu.map((m) => (m.id === id ? { ...m, visible: !m.visible } : m)));
   const move = (id, dir) => {
@@ -1433,15 +2012,15 @@ function AdminMenu({ content, update }) {
   const editLabel = (id, label) => set(content.menu.map((m) => (m.id === id ? { ...m, label } : m)));
   const sorted = [...content.menu].sort((a, b) => a.order - b.order);
   return (
-    <div className="max-w-xl">
-      <SectionTitle>مدیریت منو</SectionTitle>
-      <p className="text-black/40 text-xs mb-5">ترتیب، عنوان و نمایش/عدم‌نمایش آیتم‌های ثابت منو را کنترل کنید. صفحاتی که در بخش «صفحات» گزینه‌ی «نمایش در منو» را فعال کرده باشند، خودکار به انتهای منو اضافه می‌شوند.</p>
+    <div className="max-w-2xl">
+      <SectionTitle>{aui("menu", lang)}</SectionTitle>
+      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "ترتیب، عنوان و نمایش/عدم‌نمایش آیتم‌های ثابت منو را کنترل کنید. صفحاتی که در بخش «صفحات» گزینه‌ی «نمایش در منو» را فعال کرده باشند، خودکار به منو اضافه می‌شوند." : "Control the order, labels, and visibility of the fixed menu items. Pages with \"Show in site menu\" enabled are added automatically."}</p>
       <div className="space-y-2">
         {sorted.map((m, i) => (
           <div key={m.id} className="flex items-center gap-3 border border-black/10 rounded-lg p-3 bg-white">
             <div className="flex flex-col"><button onClick={() => move(m.id, -1)} disabled={i === 0} className="disabled:opacity-20"><ChevronUp size={14} /></button><button onClick={() => move(m.id, 1)} disabled={i === sorted.length - 1} className="disabled:opacity-20"><ChevronDown size={14} /></button></div>
-            <input className={inputCls} value={m.label} onChange={(e) => editLabel(m.id, e.target.value)} />
-            <label className="flex items-center gap-1.5 text-xs text-black/50 shrink-0 cursor-pointer"><input type="checkbox" checked={m.visible} onChange={() => toggle(m.id)} className="accent-red-600" /> نمایش</label>
+            <div className="flex-1"><BField value={m.label} onChange={(v) => editLabel(m.id, v)} lang={lang} /></div>
+            <label className="flex items-center gap-1.5 text-xs text-black/50 shrink-0 cursor-pointer"><input type="checkbox" checked={m.visible} onChange={() => toggle(m.id)} className="accent-red-600" /> {lang === "fa" ? "نمایش" : "Show"}</label>
           </div>
         ))}
       </div>
@@ -1449,31 +2028,37 @@ function AdminMenu({ content, update }) {
   );
 }
 
-function AdminFooter({ content, update }) {
+function AdminFooter({ content, update, lang }) {
   const f = content.footer;
   const setF = (k, v) => update(["footer", k], v);
   const setColumns = (cols) => setF("columns", cols);
-  const addColumn = () => setColumns([...f.columns, { id: uid("col"), title: "ستون جدید", links: [] }]);
+  const addColumn = () => setColumns([...f.columns, { id: uid("col"), title: { fa: "ستون جدید", en: "New Column" }, links: [] }]);
   const removeColumn = (id) => setColumns(f.columns.filter((c) => c.id !== id));
   const editColTitle = (id, title) => setColumns(f.columns.map((c) => (c.id === id ? { ...c, title } : c)));
-  const addLink = (id) => setColumns(f.columns.map((c) => (c.id === id ? { ...c, links: [...c.links, { label: "لینک جدید", url: "home" }] } : c)));
+  const addLink = (id) => setColumns(f.columns.map((c) => (c.id === id ? { ...c, links: [...c.links, { label: { fa: "لینک جدید", en: "New Link" }, url: "home" }] } : c)));
   const editLink = (id, idx, key, val) => setColumns(f.columns.map((c) => (c.id === id ? { ...c, links: c.links.map((l, i) => (i === idx ? { ...l, [key]: val } : l)) } : c)));
   const removeLink = (id, idx) => setColumns(f.columns.map((c) => (c.id === id ? { ...c, links: c.links.filter((_, i) => i !== idx) } : c)));
   return (
     <div className="max-w-2xl">
-      <SectionTitle>مدیریت فوتر</SectionTitle>
-      <Field label="متن درباره ما در فوتر"><textarea rows={2} className={inputCls} value={f.about} onChange={(e) => setF("about", e.target.value)} /></Field>
-      <Field label="متن کپی‌رایت"><input className={inputCls + " mt-3"} value={f.copyright} onChange={(e) => setF("copyright", e.target.value)} /></Field>
-      <div className="flex items-center justify-between mt-8 mb-3"><h3 className="font-bold text-sm">ستون‌های لینک</h3><button onClick={addColumn} className={btnGhost}><Plus size={12} /> ستون جدید</button></div>
+      <SectionTitle>{aui("footer", lang)}</SectionTitle>
+      <BField label={lang === "fa" ? "متن درباره ما در فوتر" : "Footer about text"} value={f.about} onChange={(v) => setF("about", v)} multiline lang={lang} />
+      <div className="mt-4"><BField label={lang === "fa" ? "متن کپی‌رایت" : "Copyright text"} value={f.copyright} onChange={(v) => setF("copyright", v)} lang={lang} /></div>
+      <div className="flex items-center justify-between mt-8 mb-3"><h3 className="font-bold text-sm">{lang === "fa" ? "ستون‌های لینک" : "Link Columns"}</h3><button onClick={addColumn} className={btnGhost}><Plus size={12} /> {aui("newColumn", lang)}</button></div>
       <div className="space-y-4">
         {f.columns.map((c) => (
           <div key={c.id} className={cardCls}>
-            <div className="flex justify-between items-center mb-3"><input className={inputCls + " font-bold"} value={c.title} onChange={(e) => editColTitle(c.id, e.target.value)} /><button onClick={() => removeColumn(c.id)} className="mr-2 text-black/30 hover:text-red-600"><Trash2 size={16} /></button></div>
+            <div className="flex justify-between items-start gap-2 mb-3">
+              <div className="flex-1"><BField value={c.title} onChange={(v) => editColTitle(c.id, v)} lang={lang} /></div>
+              <button onClick={() => removeColumn(c.id)} className="mt-5 text-black/30 hover:text-red-600"><Trash2 size={16} /></button>
+            </div>
             <div className="space-y-2">
               {c.links.map((l, i) => (
-                <div key={i} className="flex gap-2"><input className={inputCls} value={l.label} onChange={(e) => editLink(c.id, i, "label", e.target.value)} /><button onClick={() => removeLink(c.id, i)} className="text-black/30 hover:text-red-600 shrink-0"><Trash2 size={14} /></button></div>
+                <div key={i} className="flex gap-2 items-start">
+                  <div className="flex-1"><BField value={l.label} onChange={(v) => editLink(c.id, i, "label", v)} lang={lang} /></div>
+                  <button onClick={() => removeLink(c.id, i)} className="text-black/30 hover:text-red-600 shrink-0 mt-5"><Trash2 size={14} /></button>
+                </div>
               ))}
-              <button onClick={() => addLink(c.id)} className={btnGhost}><Plus size={12} /> لینک جدید</button>
+              <button onClick={() => addLink(c.id)} className={btnGhost}><Plus size={12} /> {aui("newLink", lang)}</button>
             </div>
           </div>
         ))}
@@ -1482,65 +2067,129 @@ function AdminFooter({ content, update }) {
   );
 }
 
-function AdminFAQ({ content, update }) {
+function AdminFAQ({ content, update, lang }) {
   const set = (list) => update(["faq"], list);
-  const addItem = () => set([...content.faq, { id: uid("faq"), question: "سوال جدید", answer: "پاسخ این سوال را وارد کنید" }]);
+  const addItem = () => set([...content.faq, { id: uid("faq"), question: { fa: "سوال جدید", en: "New question" }, answer: { fa: "", en: "" } }]);
   const removeItem = (id) => set(content.faq.filter((f) => f.id !== id));
   const editItem = (id, key, val) => set(content.faq.map((f) => (f.id === id ? { ...f, [key]: val } : f)));
   return (
     <div className="max-w-2xl">
-      <SectionTitle action={<button onClick={addItem} className={btnPrimary}><Plus size={14} /> سوال جدید</button>}>مدیریت سوالات رایج</SectionTitle>
+      <SectionTitle action={<button onClick={addItem} className={btnPrimary}><Plus size={14} /> {aui("newQuestion", lang)}</button>}>{aui("faq", lang)}</SectionTitle>
       <div className="space-y-3">
         {content.faq.map((f) => (
           <div key={f.id} className={cardCls}>
-            <div className="flex justify-between items-start mb-2 gap-2">
-              <input className={inputCls + " font-bold"} value={f.question} onChange={(e) => editItem(f.id, "question", e.target.value)} placeholder="متن سوال" />
-              <button onClick={() => removeItem(f.id)} className="text-black/30 hover:text-red-600 shrink-0"><Trash2 size={16} /></button>
+            <div className="flex justify-between items-start gap-2 mb-2">
+              <div className="flex-1"><BField label={lang === "fa" ? "سوال" : "Question"} value={f.question} onChange={(v) => editItem(f.id, "question", v)} lang={lang} /></div>
+              <button onClick={() => removeItem(f.id)} className="mt-5 text-black/30 hover:text-red-600 shrink-0"><Trash2 size={16} /></button>
             </div>
-            <textarea rows={2} className={inputCls} value={f.answer} onChange={(e) => editItem(f.id, "answer", e.target.value)} placeholder="متن پاسخ" />
+            <BField label={lang === "fa" ? "پاسخ" : "Answer"} value={f.answer} onChange={(v) => editItem(f.id, "answer", v)} multiline lang={lang} />
           </div>
         ))}
-        {content.faq.length === 0 && <p className="text-black/40 text-sm">هنوز سوالی اضافه نشده است.</p>}
+        {content.faq.length === 0 && <p className="text-black/40 text-sm">{ui("noFaqYet", lang)}</p>}
       </div>
     </div>
   );
 }
 
-function AdminOrders() {
+const SHOP_STATUSES = ["reviewing", "registered", "packing", "shipped", "delivered"];
+const SERVICE_STATUSES = ["reviewing", "working", "ready", "delivered"];
+const STATUS_LABELS = {
+  reviewing: { fa: "در حال بررسی سفارش", en: "Order Under Review" },
+  registered: { fa: "سفارش ثبت شد", en: "Order Registered" },
+  packing: { fa: "در حال بسته‌بندی", en: "Packing" },
+  shipped: { fa: "ارسال سفارش", en: "Shipped" },
+  delivered: { fa: "سفارش تحویل شد", en: "Delivered" },
+  working: { fa: "تکنسین‌ها مشغول هستند", en: "Technicians Working" },
+  ready: { fa: "سفارش آماده تحویل هست", en: "Ready for Pickup" },
+};
+
+function AdminOrders({ lang }) {
   const [orders, setOrders] = useState(null);
-  useEffect(() => { (async () => { try { const { orders: list } = await api.allOrders(); setOrders(list); } catch (e) { setOrders([]); } })(); }, []);
+  const load = async () => { try { const { orders: list } = await api.allOrders(); setOrders(list); } catch (e) { setOrders([]); } };
+  useEffect(() => { load(); }, []);
   return (
     <div>
-      <SectionTitle>سفارشات ثبت‌شده</SectionTitle>
-      {orders === null && <p className="text-black/40 text-sm">در حال بارگذاری...</p>}
-      {orders && orders.length === 0 && <p className="text-black/40 text-sm">هنوز سفارشی ثبت نشده است.</p>}
+      <SectionTitle>{aui("orders", lang)}</SectionTitle>
+      {orders === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      {orders && orders.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز سفارشی ثبت نشده است." : "No orders yet."}</p>}
       <div className="space-y-3">
-        {orders?.map((o) => (
-          <div key={o.id} className={cardCls}>
-            <div className="flex justify-between text-sm mb-2"><span className="font-bold">{o.customer?.name} <span className="text-black/30">({o.username})</span></span><span className="text-red-600 font-black">{toman(o.total)}</span></div>
-            <p className="text-black/40 text-xs mb-1">{o.customer?.phone} — {o.customer?.address}</p>
-            <p className="text-black/30 text-[11px]">{o.items.length} قلم کالا • {new Date(o.date).toLocaleString("fa-IR")}</p>
-          </div>
-        ))}
+        {orders?.map((o) => <AdminOrderRow key={o.id} order={o} lang={lang} onChanged={load} />)}
       </div>
     </div>
   );
 }
 
-function AdminMessages() {
+function AdminOrderRow({ order: o, lang, onChanged }) {
+  const isService = o.orderType === "service";
+  const statuses = isService ? SERVICE_STATUSES : SHOP_STATUSES;
+  const [status, setStatus] = useState(o.status);
+  const [notifyEmail, setNotifyEmail] = useState(false);
+  const [notifySms, setNotifySms] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const apply = async () => {
+    setBusy(true); setResult(null);
+    try {
+      const { notifyResult } = await api.setOrderStatus(o.id, status, { email: notifyEmail, sms: notifySms });
+      setResult(notifyResult);
+      await onChanged();
+    } catch (e) { alert(e.message); }
+    setBusy(false);
+  };
+
+  return (
+    <div className={cardCls}>
+      <div className="flex justify-between text-sm mb-2">
+        <span className="font-bold flex items-center gap-2">
+          <span className={`text-[10px] px-2 py-0.5 rounded-full ${isService ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-red-50 text-red-600 border border-red-200"}`}>
+            {isService ? (lang === "fa" ? "خدمات" : "Service") : (lang === "fa" ? "فروشگاه" : "Shop")}
+          </span>
+          {o.customer?.name} <span className="text-black/30">({o.username})</span>
+        </span>
+        {!isService && <span className="text-red-600 font-black">{fmtPrice(o.total, lang)}</span>}
+      </div>
+      <p className="text-black/40 text-xs mb-1">{o.customer?.phone}{o.customer?.email ? ` · ${o.customer.email}` : ""}</p>
+      {isService ? (
+        <p className="text-black/40 text-xs mb-1">{lang === "fa" ? "دستگاه" : "Device"}: {o.deviceInfo} — {o.issueDescription}</p>
+      ) : (
+        <p className="text-black/40 text-xs mb-1">{[o.customer?.province, o.customer?.city, o.customer?.address, o.customer?.postalCode].filter(Boolean).join("، ")}</p>
+      )}
+      <p className="text-black/30 text-[11px] mb-3">{fmtDateTime(o.date, lang)}</p>
+
+      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-black/10">
+        <select value={status} onChange={(e) => setStatus(e.target.value)} className={inputCls + " w-auto"}>
+          {statuses.map((s) => <option key={s} value={s}>{tr(STATUS_LABELS[s], lang)}</option>)}
+        </select>
+        <label className="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" checked={notifyEmail} onChange={(e) => setNotifyEmail(e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "اطلاع ایمیل" : "Notify email"}</label>
+        <label className="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" checked={notifySms} onChange={(e) => setNotifySms(e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "اطلاع پیامک" : "Notify SMS"}</label>
+        <button onClick={apply} disabled={busy} className={btnPrimary}>{busy ? ui("checking", lang) : (lang === "fa" ? "اعمال تغییر" : "Apply")}</button>
+      </div>
+      {result && (
+        <p className="text-[11px] mt-2 text-black/50">
+          {result.email && (result.email.ok ? (lang === "fa" ? "✓ ایمیل ارسال شد" : "✓ Email sent") : `✗ ${result.email.error}`)}
+          {result.email && result.sms ? " · " : ""}
+          {result.sms && (result.sms.ok ? (lang === "fa" ? "✓ پیامک ارسال شد" : "✓ SMS sent") : `✗ ${result.sms.error}`)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function AdminMessages({ lang }) {
   const [messages, setMessages] = useState(null);
   useEffect(() => { (async () => { try { const { messages: list } = await api.allMessages(); setMessages(list); } catch (e) { setMessages([]); } })(); }, []);
   return (
     <div>
-      <SectionTitle>پیام‌های تماس با ما</SectionTitle>
-      {messages === null && <p className="text-black/40 text-sm">در حال بارگذاری...</p>}
-      {messages && messages.length === 0 && <p className="text-black/40 text-sm">هنوز پیامی دریافت نشده است.</p>}
+      <SectionTitle>{aui("messages", lang)}</SectionTitle>
+      {messages === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      {messages && messages.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز پیامی دریافت نشده است." : "No messages yet."}</p>}
       <div className="space-y-3">
         {messages?.map((m) => (
           <div key={m.id} className={cardCls}>
             <div className="flex justify-between text-sm mb-2"><span className="font-bold">{m.name}</span><span className="text-black/40 text-xs">{m.phone}</span></div>
             <p className="text-black/60 text-sm mb-1">{m.message}</p>
-            <p className="text-black/30 text-[11px]">{new Date(m.date).toLocaleString("fa-IR")}</p>
+            <p className="text-black/30 text-[11px]">{fmtDateTime(m.date, lang)}</p>
           </div>
         ))}
       </div>
@@ -1548,7 +2197,7 @@ function AdminMessages() {
   );
 }
 
-function AdminUsers() {
+function AdminUsers({ lang }) {
   const [users, setUsers] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const load = async () => { try { const { users: list } = await api.listUsers(); setUsers(list); } catch (e) { setUsers([]); } };
@@ -1556,23 +2205,25 @@ function AdminUsers() {
 
   const changeRole = async (u, role) => {
     setBusyId(u.id);
-    try { await api.setUserRole(u.id, role); await load(); } catch (e) { alert("تغییر نقش ناموفق بود: " + e.message); }
+    try { await api.setUserRole(u.id, role); await load(); } catch (e) { alert(aui("loadFailed", lang) + ": " + e.message); }
     setBusyId(null);
   };
 
   return (
     <div className="max-w-3xl">
-      <SectionTitle>مدیریت کاربران</SectionTitle>
+      <SectionTitle>{aui("users", lang)}</SectionTitle>
       <p className="text-black/40 text-xs mb-5">
-        نقش‌ها دقیقاً مثل وردپرس: <b>مدیر</b> (دسترسی کامل)، <b>ویرایشگر</b> (مدیریت کل محتوای سایت)، <b>نویسنده</b> (فقط ساخت و ویرایش صفحات خودش)، <b>مشترک</b> (فقط حساب کاربری و خرید، بدون دسترسی به پنل).
+        {lang === "fa"
+          ? <>نقش‌ها دقیقاً مثل وردپرس: <b>مدیر</b> (دسترسی کامل)، <b>ویرایشگر</b> (مدیریت کل محتوای سایت)، <b>نویسنده</b> (فقط ساخت و ویرایش صفحات خودش)، <b>مشترک</b> (فقط حساب کاربری و خرید).</>
+          : <>Roles work just like WordPress: <b>Admin</b> (full access), <b>Editor</b> (manages all site content), <b>Author</b> (creates and edits only their own pages), <b>Subscriber</b> (account and purchases only).</>}
       </p>
-      {users === null && <p className="text-black/40 text-sm">در حال بارگذاری...</p>}
+      {users === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
       <div className="space-y-2">
         {users?.map((u) => (
           <div key={u.id} className="flex items-center justify-between border border-black/10 rounded-lg p-3 bg-white">
             <div><p className="text-sm font-bold">{u.name}</p><p className="text-black/40 text-xs">{u.username}</p></div>
             <select disabled={busyId === u.id} value={u.role} onChange={(e) => changeRole(u, e.target.value)} className={inputCls + " w-auto"}>
-              {ROLE_ORDER.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+              {ROLE_ORDER.map((r) => <option key={r} value={r}>{tr(ROLE_LABELS[r], lang)}</option>)}
             </select>
           </div>
         ))}
@@ -1581,7 +2232,7 @@ function AdminUsers() {
   );
 }
 
-function AdminPayment() {
+function AdminPayment({ lang }) {
   const [cfg, setCfg] = useState(null);
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -1590,57 +2241,211 @@ function AdminPayment() {
 
   const set = (k, v) => setCfg({ ...cfg, [k]: v });
   const save = async () => {
-    try { await api.updatePaymentSettings(cfg); setSaved(true); setTimeout(() => setSaved(false), 2000); } catch (e) { alert("ذخیره ناموفق بود: " + e.message); }
+    try { await api.updatePaymentSettings(cfg); setSaved(true); setTimeout(() => setSaved(false), 2000); } catch (e) { alert(aui("loadFailed", lang) + ": " + e.message); }
   };
 
-  if (!cfg) return <p className="text-black/40 text-sm">در حال بارگذاری...</p>;
+  if (!cfg) return <p className="text-black/40 text-sm">{ui("loading", lang)}</p>;
 
   return (
     <div className="max-w-lg">
-      <SectionTitle>درگاه پرداخت بانکی</SectionTitle>
-      <p className="text-black/40 text-xs mb-5">این اطلاعات فقط برای مدیر قابل مشاهده است و هرگز در بخش عمومی سایت نمایش داده نمی‌شود.</p>
+      <SectionTitle>{aui("payment", lang)}</SectionTitle>
+      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "این اطلاعات فقط برای مدیر قابل مشاهده است و هرگز در بخش عمومی سایت نمایش داده نمی‌شود." : "This information is only visible to the admin and is never exposed on the public site."}</p>
       <div className="space-y-4">
-        <Field label="نام درگاه">
+        <Field label={lang === "fa" ? "نام درگاه" : "Gateway"}>
           <select className={inputCls} value={cfg.provider} onChange={(e) => set("provider", e.target.value)}>
-            <option value="">انتخاب کنید...</option>
-            <option value="زرین‌پال">زرین‌پال (ZarinPal)</option>
-            <option value="به‌پرداخت ملت">به‌پرداخت ملت (BehPardakht)</option>
-            <option value="آیدی‌پی">آی‌دی‌پی (IDPay)</option>
-            <option value="سایر">سایر</option>
+            <option value="">{lang === "fa" ? "انتخاب کنید..." : "Select..."}</option>
+            <option value="زرین‌پال">ZarinPal</option>
+            <option value="به‌پرداخت ملت">BehPardakht</option>
+            <option value="آیدی‌پی">IDPay</option>
+            <option value="سایر">{lang === "fa" ? "سایر" : "Other"}</option>
           </select>
         </Field>
-        <Field label="کد پذیرندگی (Merchant ID)"><input className={inputCls} value={cfg.merchantId} onChange={(e) => set("merchantId", e.target.value)} placeholder="مثلاً: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" /></Field>
-        <Field label="کلید API">
+        <Field label={lang === "fa" ? "کد پذیرندگی (Merchant ID)" : "Merchant ID"}><input dir="ltr" className={inputCls} value={cfg.merchantId} onChange={(e) => set("merchantId", e.target.value)} /></Field>
+        <Field label={lang === "fa" ? "کلید API" : "API Key"}>
           <div className="flex gap-2">
-            <input type={showKey ? "text" : "password"} className={inputCls} value={cfg.apiKey} onChange={(e) => set("apiKey", e.target.value)} />
+            <input dir="ltr" type={showKey ? "text" : "password"} className={inputCls} value={cfg.apiKey} onChange={(e) => set("apiKey", e.target.value)} />
             <button type="button" onClick={() => setShowKey((v) => !v)} className={btnGhost}>{showKey ? <EyeOff size={14} /> : <Eye size={14} />}</button>
           </div>
         </Field>
         <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" checked={cfg.enabled} onChange={(e) => set("enabled", e.target.checked)} className="accent-red-600" /> درگاه پرداخت فعال باشد
+          <input type="checkbox" checked={cfg.enabled} onChange={(e) => set("enabled", e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "درگاه پرداخت فعال باشد" : "Enable payment gateway"}
         </label>
-        <button onClick={save} className={btnPrimary}>ذخیره تنظیمات</button>
-        {saved && <span className="text-green-600 text-xs mr-2">ذخیره شد ✓</span>}
-        <p className="text-black/30 text-[11px] leading-relaxed pt-2">
-          نکته: فعلاً وارد کردن این اطلاعات فقط آن‌ها را در دیتابیس ذخیره می‌کند و وضعیت «فعال» را به کاربران نشان می‌دهد. برای اتصال واقعی به درگاه (دریافت لینک پرداخت و تایید تراکنش)، باید endpoint های شروع/تایید پرداخت هم در سرور پیاده‌سازی شود — وقتی آماده باشید بگویید تا این بخش را هم تکمیل کنم.
-        </p>
+        <button onClick={save} className={btnPrimary}>{aui("saveSettings", lang)}</button>
+        {saved && <span className="text-green-600 text-xs mr-2">{aui("saved", lang)} ✓</span>}
       </div>
     </div>
   );
 }
 
-function AdminSettings({ content, update }) {
+function AdminReviews({ lang }) {
+  const [reviews, setReviews] = useState(null);
+  const load = async () => { try { const { reviews: list } = await api.adminGetReviews(); setReviews(list); } catch (e) { setReviews([]); } };
+  useEffect(() => { load(); }, []);
+
+  const setApproved = async (id, approved) => { try { await api.adminSetReviewApproved(id, approved); await load(); } catch (e) { alert(e.message); } };
+  const remove = async (id) => { if (!confirm(lang === "fa" ? "این نظر حذف شود؟" : "Delete this review?")) return; try { await api.adminDeleteReview(id); await load(); } catch (e) { alert(e.message); } };
+
+  return (
+    <div className="max-w-2xl">
+      <SectionTitle>{aui("reviews", lang)}</SectionTitle>
+      {reviews === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      {reviews && reviews.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز نظری ثبت نشده است." : "No reviews yet."}</p>}
+      <div className="space-y-3">
+        {reviews?.map((r) => (
+          <div key={r.id} className={cardCls}>
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <p className="font-bold text-sm flex items-center gap-1">{r.userName} <span className="text-yellow-500">{"★".repeat(r.rating)}</span></p>
+                <p className="text-black/30 text-[11px]">{r.productId ? `${lang === "fa" ? "محصول" : "Product"}: ${r.productId}` : (lang === "fa" ? "نظر عمومی سایت" : "General site review")} · {fmtDateTime(r.date, lang)}</p>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full ${r.approved ? "bg-green-50 text-green-700 border border-green-200" : "bg-yellow-50 text-yellow-700 border border-yellow-200"}`}>
+                {r.approved ? (lang === "fa" ? "تاییدشده" : "Approved") : (lang === "fa" ? "در انتظار تایید" : "Pending")}
+              </span>
+            </div>
+            <p className="text-black/60 text-sm mb-3">{r.comment}</p>
+            <div className="flex gap-2">
+              {!r.approved && <button onClick={() => setApproved(r.id, true)} className={btnPrimary}>{lang === "fa" ? "تایید" : "Approve"}</button>}
+              {r.approved && <button onClick={() => setApproved(r.id, false)} className={btnGhost}>{lang === "fa" ? "لغو تایید" : "Unapprove"}</button>}
+              <button onClick={() => remove(r.id)} className="text-black/30 hover:text-red-600"><Trash2 size={16} /></button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AdminTickets({ lang }) {
+  const [tickets, setTickets] = useState(null);
+  const [active, setActive] = useState(null);
+  const load = async () => { try { const { tickets: list } = await api.allTickets(); setTickets(list); } catch (e) { setTickets([]); } };
+  useEffect(() => { load(); }, []);
+
+  if (active) return <TicketThread ticketId={active} onBack={() => { setActive(null); load(); }} isAdmin lang={lang} />;
+
+  return (
+    <div className="max-w-2xl">
+      <SectionTitle>{aui("tickets", lang)}</SectionTitle>
+      {tickets === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      {tickets && tickets.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز تیکتی ثبت نشده است." : "No tickets yet."}</p>}
+      <div className="space-y-2">
+        {tickets?.map((t) => (
+          <button key={t.id} onClick={() => setActive(t.id)} className={cardCls + " w-full text-right flex items-center justify-between hover:border-red-600 transition-colors"}>
+            <div>
+              <p className="font-bold text-sm">{t.subject}</p>
+              <p className="text-black/40 text-xs">{t.userName} · {fmtDateTime(t.updatedAt, lang)}</p>
+            </div>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${t.status === "open" ? "bg-red-50 text-red-600 border border-red-200" : t.status === "answered" ? "bg-green-50 text-green-700 border border-green-200" : "bg-black/5 text-black/50 border border-black/10"}`}>
+              {t.status === "open" ? (lang === "fa" ? "باز" : "Open") : t.status === "answered" ? (lang === "fa" ? "پاسخ داده شد" : "Answered") : (lang === "fa" ? "بسته" : "Closed")}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TicketThread({ ticketId, onBack, isAdmin, lang }) {
+  const [data, setData] = useState(null);
+  const [reply, setReply] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => { try { setData(await api.getTicket(ticketId)); } catch (e) { alert(e.message); onBack(); } };
+  useEffect(() => { load(); }, [ticketId]); // eslint-disable-line
+
+  const send = async (e) => {
+    e.preventDefault(); if (!reply.trim()) return;
+    setBusy(true);
+    try { await api.replyTicket(ticketId, reply); setReply(""); await load(); } catch (e) { alert(e.message); }
+    setBusy(false);
+  };
+  const changeStatus = async (status) => { try { await api.setTicketStatus(ticketId, status); await load(); } catch (e) { alert(e.message); } };
+
+  if (!data) return <p className="text-black/40 text-sm">{ui("loading", lang)}</p>;
+
+  return (
+    <div className="max-w-2xl">
+      <SectionTitle action={isAdmin && (
+        <select value={data.ticket.status} onChange={(e) => changeStatus(e.target.value)} className={inputCls + " w-auto"}>
+          <option value="open">{lang === "fa" ? "باز" : "Open"}</option>
+          <option value="answered">{lang === "fa" ? "پاسخ داده شد" : "Answered"}</option>
+          <option value="closed">{lang === "fa" ? "بسته" : "Closed"}</option>
+        </select>
+      )}>{data.ticket.subject}</SectionTitle>
+      <button onClick={onBack} className={btnGhost + " mb-4"}>{lang === "fa" ? "بازگشت" : "Back"}</button>
+      <div className="space-y-3 mb-4">
+        {data.messages.map((m) => (
+          <div key={m.id} className={`rounded-xl p-3 max-w-[80%] ${m.sender === "admin" ? "bg-red-50 border border-red-100 mr-auto" : "bg-black/5 ml-auto"}`}>
+            <p className="text-[11px] font-bold mb-1">{m.senderName}</p>
+            <p className="text-sm text-black/70">{m.message}</p>
+            <p className="text-[10px] text-black/30 mt-1">{fmtDateTime(m.date, lang)}</p>
+          </div>
+        ))}
+      </div>
+      {data.ticket.status !== "closed" && (
+        <form onSubmit={send} className="flex gap-2">
+          <input className={inputCls} placeholder={lang === "fa" ? "پاسخ..." : "Reply..."} value={reply} onChange={(e) => setReply(e.target.value)} />
+          <button disabled={busy} className={btnPrimary}>{lang === "fa" ? "ارسال" : "Send"}</button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function AdminNotifications({ lang }) {
+  const [cfg, setCfg] = useState(null);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => { api.getNotificationSettings().then(setCfg).catch(() => setCfg({ email: {}, sms: {} })); }, []);
+  if (!cfg) return <p className="text-black/40 text-sm">{ui("loading", lang)}</p>;
+
+  const setEmail = (k, v) => setCfg({ ...cfg, email: { ...cfg.email, [k]: v } });
+  const setSms = (k, v) => setCfg({ ...cfg, sms: { ...cfg.sms, [k]: v } });
+  const save = async () => { try { await api.updateNotificationSettings(cfg); setSaved(true); setTimeout(() => setSaved(false), 2000); } catch (e) { alert(e.message); } };
+
+  return (
+    <div className="max-w-lg">
+      <SectionTitle>{aui("notifications", lang)}</SectionTitle>
+      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "این تنظیمات برای ارسال خودکار پیامک/ایمیل تغییر وضعیت سفارش به مشتری استفاده می‌شود. می‌توانید فعلاً فقط فیلدها را آماده بگذارید و بعداً اطلاعات واقعی سرویس‌دهنده را وارد کنید." : "These settings are used to automatically notify customers about order status changes. You can leave the fields empty for now and fill in your real provider details later."}</p>
+
+      <h3 className="font-bold text-sm mb-3">{lang === "fa" ? "سرویس ایمیل (SMTP)" : "Email Service (SMTP)"}</h3>
+      <div className="space-y-3 mb-8">
+        <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={cfg.email.enabled || false} onChange={(e) => setEmail("enabled", e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "فعال باشد" : "Enabled"}</label>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="SMTP Host"><input dir="ltr" className={inputCls} value={cfg.email.host || ""} onChange={(e) => setEmail("host", e.target.value)} placeholder="smtp.gmail.com" /></Field>
+          <Field label="Port"><input dir="ltr" type="number" className={inputCls} value={cfg.email.port || 587} onChange={(e) => setEmail("port", Number(e.target.value))} /></Field>
+        </div>
+        <Field label={lang === "fa" ? "نام کاربری ایمیل" : "Email Username"}><input dir="ltr" className={inputCls} value={cfg.email.user || ""} onChange={(e) => setEmail("user", e.target.value)} /></Field>
+        <Field label={lang === "fa" ? "رمز عبور / App Password" : "Password / App Password"}><input dir="ltr" type="password" className={inputCls} value={cfg.email.pass || ""} onChange={(e) => setEmail("pass", e.target.value)} /></Field>
+        <Field label={lang === "fa" ? "آدرس فرستنده" : "From Address"}><input dir="ltr" className={inputCls} value={cfg.email.from || ""} onChange={(e) => setEmail("from", e.target.value)} /></Field>
+      </div>
+
+      <h3 className="font-bold text-sm mb-3">{lang === "fa" ? "سرویس پیامک" : "SMS Service"}</h3>
+      <div className="space-y-3 mb-8">
+        <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={cfg.sms.enabled || false} onChange={(e) => setSms("enabled", e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "فعال باشد" : "Enabled"}</label>
+        <Field label={lang === "fa" ? "آدرس Webhook سرویس پیامک" : "SMS Webhook URL"}><input dir="ltr" className={inputCls} value={cfg.sms.webhookUrl || ""} onChange={(e) => setSms("webhookUrl", e.target.value)} placeholder="https://api.provider.com/send" /></Field>
+        <Field label={lang === "fa" ? "کلید API" : "API Key"}><input dir="ltr" type="password" className={inputCls} value={cfg.sms.apiKey || ""} onChange={(e) => setSms("apiKey", e.target.value)} /></Field>
+        <Field label={lang === "fa" ? "شماره/نام فرستنده" : "Sender Number/Name"}><input dir="ltr" className={inputCls} value={cfg.sms.sender || ""} onChange={(e) => setSms("sender", e.target.value)} /></Field>
+        <p className="text-black/30 text-[11px]">{lang === "fa" ? "این فیلد به‌صورت عمومی برای هر سرویس پیامکی که یک آدرس API (webhook) بدهد کار می‌کند (مثلاً کاوه‌نگار، ippanel و...)." : "This works generically with any SMS provider that exposes an HTTP API endpoint (e.g. Kavenegar, ippanel, Twilio, etc.)."}</p>
+      </div>
+
+      <button onClick={save} className={btnPrimary}>{aui("saveSettings", lang)}</button>
+      {saved && <span className="text-green-600 text-xs mr-2">{aui("saved", lang)} ✓</span>}
+    </div>
+  );
+}
+
+function AdminSettings({ content, update, lang }) {
   const s = content.settings;
   const set = (k, v) => update(["settings", k], v);
   return (
-    <div className="max-w-lg">
-      <SectionTitle>تنظیمات کلی سایت</SectionTitle>
+    <div className="max-w-xl">
+      <SectionTitle>{aui("settings", lang)}</SectionTitle>
       <div className="space-y-4">
-        <Field label="نام سایت"><input className={inputCls} value={s.siteName} onChange={(e) => set("siteName", e.target.value)} /></Field>
-        <Field label="شعار سایت"><input className={inputCls} value={s.tagline} onChange={(e) => set("tagline", e.target.value)} /></Field>
-        <Field label="شماره تماس"><input className={inputCls} value={s.phone} onChange={(e) => set("phone", e.target.value)} /></Field>
-        <Field label="آدرس"><input className={inputCls} value={s.address} onChange={(e) => set("address", e.target.value)} /></Field>
-        <Field label="آیدی اینستاگرام"><input className={inputCls} value={s.instagram} onChange={(e) => set("instagram", e.target.value)} /></Field>
+        <BField label={lang === "fa" ? "نام سایت" : "Site Name"} value={s.siteName} onChange={(v) => set("siteName", v)} lang={lang} />
+        <BField label={lang === "fa" ? "شعار سایت" : "Tagline"} value={s.tagline} onChange={(v) => set("tagline", v)} lang={lang} />
+        <Field label={lang === "fa" ? "شماره تماس" : "Phone"}><input dir="ltr" className={inputCls} value={s.phone} onChange={(e) => set("phone", e.target.value)} /></Field>
+        <BField label={ui("address", lang)} value={s.address} onChange={(v) => set("address", v)} multiline lang={lang} />
+        <Field label="Instagram"><input dir="ltr" className={inputCls} value={s.instagram} onChange={(e) => set("instagram", e.target.value)} /></Field>
       </div>
     </div>
   );

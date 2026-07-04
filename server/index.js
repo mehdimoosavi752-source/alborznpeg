@@ -2,8 +2,11 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
+import multer from "multer";
+import nodemailer from "nodemailer";
 import { db, uid } from "./db.js";
 import { signToken, authenticate, optionalAuthenticate, requireAdmin, requireEditor, requireAuthor } from "./auth.js";
 
@@ -14,6 +17,32 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
+
+/* ============================== آپلود تصویر ============================== */
+
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+app.use("/uploads", express.static(uploadsDir));
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadsDir),
+    filename: (req, file, cb) => cb(null, `${uid("img")}${path.extname(file.originalname).slice(0, 10)}`),
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) return cb(new Error("فقط فایل تصویر مجاز است"));
+    cb(null, true);
+  },
+});
+
+app.post("/api/admin/upload", authenticate, requireEditor, (req, res) => {
+  upload.single("image")(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message || "آپلود ناموفق بود" });
+    if (!req.file) return res.status(400).json({ error: "فایلی ارسال نشد" });
+    res.json({ url: `/uploads/${req.file.filename}` });
+  });
+});
 
 const toPublicUser = (u) => ({ id: u.id, username: u.username, name: u.name, role: u.role, createdAt: u.created_at });
 
@@ -79,10 +108,18 @@ app.put("/api/content", authenticate, requireEditor, (req, res) => {
 
 /* ============================== صفحات (مثل ویرایشگر صفحات وردپرس) ============================== */
 
+function parseTitle(raw) {
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && ("fa" in parsed || "en" in parsed)) return parsed;
+  } catch (e) { /* legacy plain-string title */ }
+  return { fa: raw, en: raw };
+}
+
 function rowToPage(p) {
   return {
     id: p.id,
-    title: p.title,
+    title: parseTitle(p.title),
     slug: p.slug,
     blocks: JSON.parse(p.blocks),
     showInMenu: !!p.show_in_menu,
@@ -113,7 +150,7 @@ app.get("/api/pages/admin", authenticate, requireAuthor, (req, res) => {
 
 app.post("/api/pages", authenticate, requireAuthor, (req, res) => {
   const { title, slug, blocks, showInMenu, status, isArticle } = req.body || {};
-  if (!title || !slug) return res.status(400).json({ error: "عنوان و نامک صفحه الزامی است" });
+  if (!title || !title.fa || !slug) return res.status(400).json({ error: "عنوان (فارسی) و نامک صفحه الزامی است" });
   const exists = db.prepare("SELECT id FROM pages WHERE slug = ?").get(slug);
   if (exists) return res.status(409).json({ error: "این نامک (slug) قبلاً استفاده شده است" });
 
@@ -123,7 +160,7 @@ app.post("/api/pages", authenticate, requireAuthor, (req, res) => {
   db.prepare(
     `INSERT INTO pages (id, title, slug, blocks, show_in_menu, is_article, menu_order, status, author_id, author_name, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(id, title, slug, JSON.stringify(blocks || []), showInMenu ? 1 : 0, isArticle ? 1 : 0, maxOrder + 1, status === "draft" ? "draft" : "published", req.user.id, req.user.name, now, now);
+  ).run(id, JSON.stringify(title), slug, JSON.stringify(blocks || []), showInMenu ? 1 : 0, isArticle ? 1 : 0, maxOrder + 1, status === "draft" ? "draft" : "published", req.user.id, req.user.name, now, now);
   res.json({ ok: true, id });
 });
 
@@ -143,7 +180,7 @@ app.put("/api/pages/:id", authenticate, requireAuthor, (req, res) => {
   db.prepare(
     `UPDATE pages SET title = ?, slug = ?, blocks = ?, show_in_menu = ?, is_article = ?, menu_order = ?, status = ?, updated_at = ? WHERE id = ?`
   ).run(
-    title ?? page.title,
+    title ? JSON.stringify(title) : page.title,
     slug ?? page.slug,
     JSON.stringify(blocks ?? JSON.parse(page.blocks)),
     showInMenu === undefined ? page.show_in_menu : (showInMenu ? 1 : 0),
@@ -181,29 +218,47 @@ app.patch("/api/users/:id", authenticate, requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
-/* ============================== سفارشات ============================== */
+/* ============================== سفارشات (فروشگاه و خدمات) ============================== */
+
+const SHOP_STATUSES = ["reviewing", "registered", "packing", "shipped", "delivered"];
+const SERVICE_STATUSES = ["reviewing", "working", "ready", "delivered"];
 
 app.post("/api/orders", optionalAuthenticate, (req, res) => {
-  const { items, total, customer } = req.body || {};
-  if (!items?.length || !total || !customer?.name || !customer?.phone || !customer?.address) {
+  const { orderType, items, total, customer, deviceInfo, issueDescription } = req.body || {};
+  const type = orderType === "service" ? "service" : "shop";
+  if (!customer?.name || !customer?.phone) return res.status(400).json({ error: "اطلاعات مشتری ناقص است" });
+  if (type === "shop" && (!items?.length || !total || !customer?.address)) {
     return res.status(400).json({ error: "اطلاعات سفارش ناقص است" });
   }
+  if (type === "service" && (!deviceInfo || !issueDescription)) {
+    return res.status(400).json({ error: "توضیح دستگاه و مشکل الزامی است" });
+  }
   const id = uid("order");
+  const now = new Date().toISOString();
   db.prepare(
-    `INSERT INTO orders (id, username, items, total, customer_name, customer_phone, customer_address, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(id, req.user?.username || null, JSON.stringify(items), total, customer.name, customer.phone, customer.address, new Date().toISOString());
+    `INSERT INTO orders (id, order_type, status, username, items, total, customer_name, customer_phone, customer_email, customer_province, customer_city, customer_postal_code, customer_address, device_info, issue_description, created_at, updated_at)
+     VALUES (?, ?, 'reviewing', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    id, type, req.user?.username || null, JSON.stringify(items || []), total || 0,
+    customer.name, customer.phone, customer.email || "", customer.province || "", customer.city || "", customer.postalCode || "", customer.address || "",
+    deviceInfo || "", issueDescription || "", now, now
+  );
   res.json({ ok: true, id });
 });
 
 function rowToOrder(o) {
   return {
     id: o.id,
+    orderType: o.order_type,
+    status: o.status,
     username: o.username || "مهمان",
     items: JSON.parse(o.items),
     total: o.total,
-    customer: { name: o.customer_name, phone: o.customer_phone, address: o.customer_address },
+    customer: { name: o.customer_name, phone: o.customer_phone, email: o.customer_email, province: o.customer_province, city: o.customer_city, postalCode: o.customer_postal_code, address: o.customer_address },
+    deviceInfo: o.device_info,
+    issueDescription: o.issue_description,
     date: o.created_at,
+    updatedAt: o.updated_at,
   };
 }
 
@@ -215,6 +270,21 @@ app.get("/api/orders/mine", authenticate, (req, res) => {
 app.get("/api/orders", authenticate, requireAdmin, (req, res) => {
   const rows = db.prepare("SELECT * FROM orders ORDER BY created_at DESC").all();
   res.json({ orders: rows.map(rowToOrder) });
+});
+
+app.patch("/api/orders/:id/status", authenticate, requireAdmin, async (req, res) => {
+  const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(req.params.id);
+  if (!order) return res.status(404).json({ error: "سفارش یافت نشد" });
+  const { status, notify } = req.body || {};
+  const validStatuses = order.order_type === "service" ? SERVICE_STATUSES : SHOP_STATUSES;
+  if (!validStatuses.includes(status)) return res.status(400).json({ error: "وضعیت نامعتبر برای این نوع سفارش" });
+
+  db.prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?").run(status, new Date().toISOString(), order.id);
+
+  const notifyResult = { email: null, sms: null };
+  if (notify?.email) notifyResult.email = await sendEmailNotification(order, status);
+  if (notify?.sms) notifyResult.sms = await sendSmsNotification(order, status);
+  res.json({ ok: true, notifyResult });
 });
 
 /* ============================== پیام‌های تماس با ما ============================== */
@@ -232,6 +302,80 @@ app.post("/api/messages", (req, res) => {
 app.get("/api/messages", authenticate, requireAdmin, (req, res) => {
   const rows = db.prepare("SELECT * FROM messages ORDER BY created_at DESC").all();
   res.json({ messages: rows.map((m) => ({ id: m.id, name: m.name, phone: m.phone, message: m.message, date: m.created_at })) });
+});
+
+/* ============================== اعلان‌ها: ایمیل و پیامک ============================== */
+// نکته: اطلاعات این بخش حساس است (رمز ایمیل، کلید API پیامک) و فقط برای مدیر برگردانده می‌شود.
+
+const STATUS_LABELS_FA = {
+  reviewing: "در حال بررسی سفارش",
+  registered: "سفارش ثبت شد",
+  packing: "در حال بسته‌بندی",
+  shipped: "سفارش ارسال شد",
+  delivered: "سفارش تحویل شد",
+  working: "تکنسین‌ها مشغول بررسی و تعمیر هستند",
+  ready: "سفارش آماده‌ی تحویل است",
+};
+
+async function sendEmailNotification(order, status) {
+  const cfg = db.prepare("SELECT * FROM notification_settings WHERE id = 1").get();
+  if (!cfg.email_enabled || !cfg.email_host || !cfg.email_user) return { ok: false, error: "سرویس ایمیل هنوز تنظیم نشده است" };
+  // ایمیل مشتری در سفارش ذخیره نمی‌شود (فقط شماره تلفن)؛ اگر بعداً فیلد ایمیل به فرم اضافه شود، همینجا استفاده می‌شود.
+  if (!order.customer_email) return { ok: false, error: "برای این سفارش ایمیل مشتری ثبت نشده است" };
+  try {
+    const transporter = nodemailer.createTransport({
+      host: cfg.email_host, port: cfg.email_port || 587, secure: (cfg.email_port || 587) === 465,
+      auth: { user: cfg.email_user, pass: cfg.email_pass },
+    });
+    await transporter.sendMail({
+      from: cfg.email_from || cfg.email_user,
+      to: order.customer_email,
+      subject: `به‌روزرسانی سفارش شما`,
+      text: `وضعیت جدید سفارش شما: ${STATUS_LABELS_FA[status] || status}`,
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+async function sendSmsNotification(order, status) {
+  const cfg = db.prepare("SELECT * FROM notification_settings WHERE id = 1").get();
+  if (!cfg.sms_enabled || !cfg.sms_webhook_url) return { ok: false, error: "سرویس پیامک هنوز تنظیم نشده است" };
+  try {
+    const res2 = await fetch(cfg.sms_webhook_url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(cfg.sms_api_key ? { Authorization: `Bearer ${cfg.sms_api_key}` } : {}) },
+      body: JSON.stringify({ to: order.customer_phone, sender: cfg.sms_sender, message: `${STATUS_LABELS_FA[status] || status} — نوین پلی‌تکنیک` }),
+    });
+    if (!res2.ok) return { ok: false, error: `سرویس پیامک خطا داد (${res2.status})` };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+app.get("/api/admin/notification-settings", authenticate, requireAdmin, (req, res) => {
+  const row = db.prepare("SELECT * FROM notification_settings WHERE id = 1").get();
+  res.json({
+    email: { enabled: !!row.email_enabled, host: row.email_host, port: row.email_port, user: row.email_user, pass: row.email_pass, from: row.email_from },
+    sms: { enabled: !!row.sms_enabled, webhookUrl: row.sms_webhook_url, apiKey: row.sms_api_key, sender: row.sms_sender },
+  });
+});
+
+app.put("/api/admin/notification-settings", authenticate, requireAdmin, (req, res) => {
+  const { email = {}, sms = {} } = req.body || {};
+  db.prepare(
+    `UPDATE notification_settings SET
+      email_enabled = ?, email_host = ?, email_port = ?, email_user = ?, email_pass = ?, email_from = ?,
+      sms_enabled = ?, sms_webhook_url = ?, sms_api_key = ?, sms_sender = ?, updated_at = ?
+     WHERE id = 1`
+  ).run(
+    email.enabled ? 1 : 0, email.host || "", email.port || 587, email.user || "", email.pass || "", email.from || "",
+    sms.enabled ? 1 : 0, sms.webhookUrl || "", sms.apiKey || "", sms.sender || "",
+    new Date().toISOString()
+  );
+  res.json({ ok: true });
 });
 
 /* ============================== درگاه پرداخت (اطلاعات حساس، فقط مدیر) ============================== */
@@ -260,6 +404,116 @@ app.put("/api/admin/payment-settings", authenticate, requireAdmin, (req, res) =>
 app.get("/api/payment-status", (req, res) => {
   const row = db.prepare("SELECT provider, enabled FROM payment_settings WHERE id = 1").get();
   res.json({ enabled: !!row.enabled, provider: row.enabled ? row.provider : null });
+});
+
+/* ============================== نظرات مشتریان ============================== */
+
+function rowToReview(r) {
+  return { id: r.id, productId: r.product_id || null, username: r.username, userName: r.user_name, rating: r.rating, comment: r.comment, date: r.created_at };
+}
+
+// عمومی: فقط نظرات تاییدشده. اگر productId داده شود فقط نظرات همان محصول، وگرنه نظرات عمومی (بدون محصول) برای نوار نظرات بالای فوتر.
+app.get("/api/reviews", (req, res) => {
+  const { productId } = req.query;
+  const rows = productId
+    ? db.prepare("SELECT * FROM reviews WHERE approved = 1 AND product_id = ? ORDER BY created_at DESC").all(productId)
+    : db.prepare("SELECT * FROM reviews WHERE approved = 1 AND (product_id IS NULL OR product_id = '') ORDER BY created_at DESC LIMIT 12").all();
+  res.json({ reviews: rows.map(rowToReview) });
+});
+
+app.post("/api/reviews", authenticate, (req, res) => {
+  const { productId, rating, comment } = req.body || {};
+  const r = Number(rating);
+  if (!r || r < 1 || r > 5 || !comment) return res.status(400).json({ error: "امتیاز (۱ تا ۵) و متن نظر الزامی است" });
+  const id = uid("rev");
+  db.prepare(
+    "INSERT INTO reviews (id, product_id, username, user_name, rating, comment, approved, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, ?)"
+  ).run(id, productId || null, req.user.username, req.user.name, r, comment, new Date().toISOString());
+  res.json({ ok: true, id, pending: true });
+});
+
+app.get("/api/admin/reviews", authenticate, requireAdmin, (req, res) => {
+  const rows = db.prepare("SELECT * FROM reviews ORDER BY created_at DESC").all();
+  res.json({ reviews: rows.map((r) => ({ ...rowToReview(r), approved: !!r.approved })) });
+});
+
+app.patch("/api/admin/reviews/:id", authenticate, requireAdmin, (req, res) => {
+  const { approved } = req.body || {};
+  const result = db.prepare("UPDATE reviews SET approved = ? WHERE id = ?").run(approved ? 1 : 0, req.params.id);
+  if (result.changes === 0) return res.status(404).json({ error: "نظر یافت نشد" });
+  res.json({ ok: true });
+});
+
+app.delete("/api/admin/reviews/:id", authenticate, requireAdmin, (req, res) => {
+  db.prepare("DELETE FROM reviews WHERE id = ?").run(req.params.id);
+  res.json({ ok: true });
+});
+
+/* ============================== تیکت‌های پشتیبانی ============================== */
+
+function rowToTicket(t) {
+  return { id: t.id, username: t.username, userName: t.user_name, subject: t.subject, status: t.status, createdAt: t.created_at, updatedAt: t.updated_at };
+}
+
+app.post("/api/tickets", authenticate, (req, res) => {
+  const { subject, message } = req.body || {};
+  if (!subject || !message) return res.status(400).json({ error: "موضوع و متن پیام الزامی است" });
+  const id = uid("tic");
+  const now = new Date().toISOString();
+  db.prepare("INSERT INTO tickets (id, username, user_name, subject, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'open', ?, ?)")
+    .run(id, req.user.username, req.user.name, subject, now, now);
+  db.prepare("INSERT INTO ticket_messages (id, ticket_id, sender, sender_name, message, created_at) VALUES (?, ?, 'user', ?, ?, ?)")
+    .run(uid("tmsg"), id, req.user.name, message, now);
+  res.json({ ok: true, id });
+});
+
+app.get("/api/tickets/mine", authenticate, (req, res) => {
+  const rows = db.prepare("SELECT * FROM tickets WHERE username = ? ORDER BY updated_at DESC").all(req.user.username);
+  res.json({ tickets: rows.map(rowToTicket) });
+});
+
+app.get("/api/tickets", authenticate, requireAdmin, (req, res) => {
+  const rows = db.prepare("SELECT * FROM tickets ORDER BY updated_at DESC").all();
+  res.json({ tickets: rows.map(rowToTicket) });
+});
+
+function loadTicketWithAccess(id, user, res) {
+  const ticket = db.prepare("SELECT * FROM tickets WHERE id = ?").get(id);
+  if (!ticket) { res.status(404).json({ error: "تیکت یافت نشد" }); return null; }
+  if (user.role !== "admin" && ticket.username !== user.username) { res.status(403).json({ error: "دسترسی ندارید" }); return null; }
+  return ticket;
+}
+
+app.get("/api/tickets/:id", authenticate, (req, res) => {
+  const ticket = loadTicketWithAccess(req.params.id, req.user, res);
+  if (!ticket) return;
+  const messages = db.prepare("SELECT * FROM ticket_messages WHERE ticket_id = ? ORDER BY created_at ASC").all(ticket.id);
+  res.json({
+    ticket: rowToTicket(ticket),
+    messages: messages.map((m) => ({ id: m.id, sender: m.sender, senderName: m.sender_name, message: m.message, date: m.created_at })),
+  });
+});
+
+app.post("/api/tickets/:id/messages", authenticate, (req, res) => {
+  const ticket = loadTicketWithAccess(req.params.id, req.user, res);
+  if (!ticket) return;
+  const { message } = req.body || {};
+  if (!message) return res.status(400).json({ error: "متن پیام الزامی است" });
+  const now = new Date().toISOString();
+  const sender = req.user.role === "admin" ? "admin" : "user";
+  db.prepare("INSERT INTO ticket_messages (id, ticket_id, sender, sender_name, message, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+    .run(uid("tmsg"), ticket.id, sender, req.user.name, message, now);
+  const newStatus = sender === "admin" ? "answered" : "open";
+  db.prepare("UPDATE tickets SET status = ?, updated_at = ? WHERE id = ?").run(newStatus, now, ticket.id);
+  res.json({ ok: true });
+});
+
+app.patch("/api/tickets/:id", authenticate, requireAdmin, (req, res) => {
+  const { status } = req.body || {};
+  if (!["open", "answered", "closed"].includes(status)) return res.status(400).json({ error: "وضعیت نامعتبر" });
+  const result = db.prepare("UPDATE tickets SET status = ?, updated_at = ? WHERE id = ?").run(status, new Date().toISOString(), req.params.id);
+  if (result.changes === 0) return res.status(404).json({ error: "تیکت یافت نشد" });
+  res.json({ ok: true });
 });
 
 /* ============================== سرو کردن فرانت‌اند ساخته‌شده (تک‌سرویسی) ============================== */

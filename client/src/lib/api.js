@@ -29,6 +29,12 @@ async function request(path, options = {}) {
   return data;
 }
 
+export const resolveImageUrl = (path) => {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${API_URL}${path}`;
+};
+
 export const api = {
   getToken,
   setToken,
@@ -64,8 +70,41 @@ export const api = {
   createOrder: (payload) => request("/api/orders", { method: "POST", body: JSON.stringify(payload) }),
   myOrders: () => request("/api/orders/mine"),
   allOrders: () => request("/api/orders"),
+  setOrderStatus: (id, status, notify) => request(`/api/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, notify }) }),
 
   // پیام‌های تماس با ما
   sendMessage: (payload) => request("/api/messages", { method: "POST", body: JSON.stringify(payload) }),
   allMessages: () => request("/api/messages"),
+
+  // آپلود تصویر
+  uploadImage: async (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    const headers = {};
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(`${API_URL}/api/admin/upload`, { method: "POST", body: formData, headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "آپلود ناموفق بود");
+    return data;
+  },
+
+  // اعلان‌ها (ایمیل و پیامک)
+  getNotificationSettings: () => request("/api/admin/notification-settings"),
+  updateNotificationSettings: (payload) => request("/api/admin/notification-settings", { method: "PUT", body: JSON.stringify(payload) }),
+
+  // نظرات مشتریان
+  getReviews: (productId) => request(`/api/reviews${productId ? `?productId=${encodeURIComponent(productId)}` : ""}`),
+  submitReview: (payload) => request("/api/reviews", { method: "POST", body: JSON.stringify(payload) }),
+  adminGetReviews: () => request("/api/admin/reviews"),
+  adminSetReviewApproved: (id, approved) => request(`/api/admin/reviews/${id}`, { method: "PATCH", body: JSON.stringify({ approved }) }),
+  adminDeleteReview: (id) => request(`/api/admin/reviews/${id}`, { method: "DELETE" }),
+
+  // تیکت‌های پشتیبانی
+  createTicket: (payload) => request("/api/tickets", { method: "POST", body: JSON.stringify(payload) }),
+  myTickets: () => request("/api/tickets/mine"),
+  allTickets: () => request("/api/tickets"),
+  getTicket: (id) => request(`/api/tickets/${id}`),
+  replyTicket: (id, message) => request(`/api/tickets/${id}/messages`, { method: "POST", body: JSON.stringify({ message }) }),
+  setTicketStatus: (id, status) => request(`/api/tickets/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
 };
