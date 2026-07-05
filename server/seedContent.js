@@ -188,4 +188,12 @@ export const DEFAULT_CONTENT = {
       { value: { fa: "۹۸٪", en: "98%" }, label: { fa: "رضایت مشتری", en: "Customer Satisfaction" } },
     ],
   },
+  pageHeaders: {
+    services: { image: "" },
+    shop: { image: "" },
+    about: { image: "" },
+    contact: { image: "" },
+    faq: { image: "" },
+    articles: { image: "" },
+  },
 };

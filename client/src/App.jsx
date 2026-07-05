@@ -159,6 +159,8 @@ const ADMIN_UI = {
   products: { fa: "محصولات", en: "Products" },
   menu: { fa: "منو", en: "Menu" },
   footer: { fa: "فوتر", en: "Footer" },
+  about: { fa: "درباره ما", en: "About Us" },
+  pageImages: { fa: "تصاویر بخش‌ها", en: "Section Images" },
   faq: { fa: "سوالات رایج", en: "FAQ" },
   orders: { fa: "سفارشات", en: "Orders" },
   messages: { fa: "پیام‌ها", en: "Messages" },
@@ -202,6 +204,7 @@ const DEFAULT_CONTENT = {
   footer: { about: { fa: "", en: "" }, columns: [], copyright: { fa: "", en: "" } },
   about: { content: { fa: "", en: "" }, stats: [] },
   faq: [],
+  pageHeaders: { services: {}, shop: {}, about: {}, contact: {}, faq: {}, articles: {} },
 };
 
 /* ============================== ابزارهای کمکی ============================== */
@@ -518,7 +521,7 @@ export default function NovinPolytechnic() {
         {activePage === "home" && <HomePage content={content} navigate={navigate} lang={lang} />}
         {activePage === "services" && <ServicesPage content={content} lang={lang} onRequestService={placeServiceRequest} />}
         {activePage === "shop" && <ShopPage content={content} addToCart={addToCart} lang={lang} />}
-        {activePage === "articles" && <ArticlesPage pages={pages} lang={lang} />}
+        {activePage === "articles" && <ArticlesPage pages={pages} content={content} lang={lang} />}
         {activePage === "faq" && <FAQPage content={content} lang={lang} />}
         {activePage === "about" && <AboutPage content={content} lang={lang} />}
         {activePage === "contact" && <ContactPage content={content} onSend={sendMessage} lang={lang} />}
@@ -848,11 +851,69 @@ function ServiceCard({ s, lang }) {
 
 /* ============================== صفحه خدمات ============================== */
 
-function PageHeader({ eyebrow, title, subtitle }) {
+function SectionIllustration({ variant }) {
+  const common = { width: 120, height: 90, viewBox: "0 0 160 120", className: "mx-auto" };
+  switch (variant) {
+    case "services": return (
+      <svg {...common}>
+        <rect x="30" y="20" width="80" height="55" rx="6" fill="#0a0a0a" />
+        <rect x="38" y="28" width="64" height="39" rx="2" fill="#dc2626" opacity="0.15" />
+        <rect x="55" y="75" width="30" height="8" rx="2" fill="#0a0a0a" />
+        <circle cx="120" cy="30" r="18" fill="#dc2626" opacity="0.12" />
+        <path d="M112 22 l16 16 M128 22 l-16 16" stroke="#dc2626" strokeWidth="4" strokeLinecap="round" />
+      </svg>
+    );
+    case "shop": return (
+      <svg {...common}>
+        <polygon points="20,70 85,35 85,55 20,88" fill="#dc2626" opacity="0.15" />
+        <rect x="84" y="18" width="46" height="34" rx="5" fill="#0a0a0a" />
+        <rect x="90" y="24" width="34" height="22" rx="2" fill="#dc2626" opacity="0.2" />
+        <circle cx="30" cy="80" r="7" fill="#0a0a0a" />
+      </svg>
+    );
+    case "about": return (
+      <svg {...common}>
+        <rect x="35" y="35" width="90" height="50" rx="4" fill="#0a0a0a" />
+        <polygon points="35,35 80,12 125,35" fill="#dc2626" opacity="0.7" />
+        <rect x="55" y="55" width="14" height="30" fill="#dc2626" opacity="0.2" />
+        <rect x="90" y="55" width="14" height="30" fill="#dc2626" opacity="0.2" />
+      </svg>
+    );
+    case "contact": return (
+      <svg {...common}>
+        <rect x="30" y="30" width="100" height="60" rx="6" fill="#0a0a0a" />
+        <polygon points="30,32 80,68 130,32" fill="none" stroke="#dc2626" strokeWidth="3" opacity="0.6" />
+      </svg>
+    );
+    case "faq": return (
+      <svg {...common}>
+        <circle cx="80" cy="55" r="38" fill="#0a0a0a" />
+        <text x="80" y="72" textAnchor="middle" fontSize="42" fontWeight="900" fill="#dc2626" fontFamily="Arial">؟</text>
+      </svg>
+    );
+    case "articles": return (
+      <svg {...common}>
+        <rect x="35" y="20" width="70" height="85" rx="4" fill="#0a0a0a" />
+        <rect x="45" y="34" width="50" height="4" fill="#dc2626" opacity="0.6" />
+        <rect x="45" y="46" width="50" height="4" fill="#ffffff" opacity="0.15" />
+        <rect x="45" y="58" width="34" height="4" fill="#ffffff" opacity="0.15" />
+        <rect x="95" y="45" width="30" height="40" rx="3" fill="#dc2626" opacity="0.15" />
+      </svg>
+    );
+    default: return null;
+  }
+}
+
+function PageHeader({ eyebrow, title, subtitle, image, variant }) {
   return (
-    <section className="relative pt-36 pb-14 px-4 sm:px-6 border-b border-black/10 overflow-hidden bg-neutral-50">
+    <section className="relative pt-32 pb-14 px-4 sm:px-6 border-b border-black/10 overflow-hidden bg-neutral-50">
       <div className="absolute -top-10 -right-10 w-72 h-72 bg-red-100 rounded-full blur-3xl blob" />
       <div className="relative max-w-4xl mx-auto text-center">
+        {image ? (
+          <div className="w-28 h-20 mx-auto mb-4 rounded-xl overflow-hidden"><img src={resolveImageUrl(image)} alt="" className="w-full h-full object-cover" /></div>
+        ) : variant ? (
+          <div className="mb-4"><SectionIllustration variant={variant} /></div>
+        ) : null}
         <span className="text-red-600 text-xs tracking-[0.3em] font-bold">{eyebrow}</span>
         <h1 className="text-3xl sm:text-5xl font-black mt-3">{title}</h1>
         {subtitle && <p className="text-black/60 mt-4 max-w-xl mx-auto">{subtitle}</p>}
@@ -865,7 +926,7 @@ function ServicesPage({ content, lang, onRequestService }) {
   const [showRequest, setShowRequest] = useState(false);
   return (
     <div>
-      <PageHeader eyebrow={ui("ourServices", lang)} title={ui("servicesTitle", lang)} subtitle={ui("servicesSubtitle", lang)} />
+      <PageHeader eyebrow={ui("ourServices", lang)} title={ui("servicesTitle", lang)} subtitle={ui("servicesSubtitle", lang)} image={content.pageHeaders?.services?.image} variant="services" />
       <section className="py-10 px-4 sm:px-6 text-center">
         <button onClick={() => setShowRequest(true)} className="glow-pulse bg-red-600 hover:bg-red-700 text-white transition-all px-8 py-3.5 rounded-xl font-bold inline-flex items-center gap-2">
           <Wrench size={16} /> {lang === "fa" ? "درخواست تعمیر" : "Request a Repair"}
@@ -977,6 +1038,11 @@ function ShopPage({ content, addToCart, lang }) {
     <div className="bg-white min-h-screen">
       <section className="relative pt-36 pb-10 px-4 sm:px-6 overflow-hidden border-b border-black/10 bg-black">
         <div className="relative max-w-7xl mx-auto text-center">
+          {content.pageHeaders?.shop?.image ? (
+            <div className="w-32 h-24 mx-auto mb-4 rounded-xl overflow-hidden"><img src={resolveImageUrl(content.pageHeaders.shop.image)} alt="" className="w-full h-full object-cover" /></div>
+          ) : (
+            <div className="mb-4 opacity-90"><SectionIllustration variant="shop" /></div>
+          )}
           <span className="text-xs tracking-[0.3em] font-bold text-red-500">{ui("originalShop", lang)}</span>
           <h1 className="text-3xl sm:text-5xl font-black mt-3 text-white">{ui("shopTitle", lang)}</h1>
           <p className="text-white/60 mt-3 max-w-xl mx-auto">{ui("shopSubtitle", lang)}</p>
@@ -1130,7 +1196,7 @@ function AboutPage({ content, lang }) {
   const a = content.about;
   return (
     <div>
-      <PageHeader eyebrow={ui("aboutUs", lang)} title={ui("whyNovin", lang)} />
+      <PageHeader eyebrow={ui("aboutUs", lang)} title={ui("whyNovin", lang)} image={content.pageHeaders?.about?.image} variant="about" />
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
           <Reveal><p className="text-black/65 leading-loose text-lg">{tr(a.content, lang)}</p></Reveal>
@@ -1156,7 +1222,7 @@ function ContactPage({ content, onSend, lang }) {
   const submit = async (e) => { e.preventDefault(); await onSend(form); setSent(true); setForm({ name: "", phone: "", message: "" }); };
   return (
     <div>
-      <PageHeader eyebrow={ui("contactUs", lang)} title={ui("contactUsNow", lang)} />
+      <PageHeader eyebrow={ui("contactUs", lang)} title={ui("contactUsNow", lang)} image={content.pageHeaders?.contact?.image} variant="contact" />
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10">
           <div className="space-y-4">
@@ -1298,11 +1364,11 @@ function getExcerpt(blocks, lang) {
   return text.length > 130 ? text.slice(0, 130) + "..." : text;
 }
 
-function ArticlesPage({ pages, lang }) {
+function ArticlesPage({ pages, content, lang }) {
   const articles = pages.filter((p) => p.isArticle).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   return (
     <div>
-      <PageHeader eyebrow={ui("blogTitle", lang)} title={ui("articlesTitle", lang)} subtitle={ui("articlesSubtitle", lang)} />
+      <PageHeader eyebrow={ui("blogTitle", lang)} title={ui("articlesTitle", lang)} subtitle={ui("articlesSubtitle", lang)} image={content?.pageHeaders?.articles?.image} variant="articles" />
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
           {articles.length === 0 ? (
@@ -1352,7 +1418,7 @@ function FAQItem({ item, lang }) {
 function FAQPage({ content, lang }) {
   return (
     <div>
-      <PageHeader eyebrow={ui("support", lang)} title={ui("faqTitle", lang)} subtitle={ui("faqSubtitle", lang)} />
+      <PageHeader eyebrow={ui("support", lang)} title={ui("faqTitle", lang)} subtitle={ui("faqSubtitle", lang)} image={content.pageHeaders?.faq?.image} variant="faq" />
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-2xl mx-auto space-y-3">
           {content.faq.length === 0 ? (
@@ -1615,6 +1681,8 @@ const ALL_ADMIN_TABS = [
   { id: "products", icon: Package, roles: ["admin", "editor"] },
   { id: "menu", icon: ListOrdered, roles: ["admin", "editor"] },
   { id: "footer", icon: Layers, roles: ["admin", "editor"] },
+  { id: "about", icon: UsersIcon, roles: ["admin", "editor"] },
+  { id: "pageImages", icon: ImageIcon, roles: ["admin", "editor"] },
   { id: "faq", icon: MessageCircle, roles: ["admin", "editor"] },
   { id: "orders", icon: ShoppingCart, roles: ["admin"] },
   { id: "messages", icon: Mail, roles: ["admin"] },
@@ -1661,6 +1729,8 @@ function AdminPanel({ content, update, onClose, onLogout, tab, setTab, saving, r
           {tab === "products" && <AdminProducts content={content} update={update} lang={lang} />}
           {tab === "menu" && <AdminMenu content={content} update={update} lang={lang} />}
           {tab === "footer" && <AdminFooter content={content} update={update} lang={lang} />}
+          {tab === "about" && <AdminAbout content={content} update={update} lang={lang} />}
+          {tab === "pageImages" && <AdminPageImages content={content} update={update} lang={lang} />}
           {tab === "faq" && <AdminFAQ content={content} update={update} lang={lang} />}
           {tab === "orders" && <AdminOrders lang={lang} />}
           {tab === "messages" && <AdminMessages lang={lang} />}
@@ -2060,6 +2130,66 @@ function AdminFooter({ content, update, lang }) {
               ))}
               <button onClick={() => addLink(c.id)} className={btnGhost}><Plus size={12} /> {aui("newLink", lang)}</button>
             </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AdminAbout({ content, update, lang }) {
+  const a = content.about;
+  const setContent = (v) => update(["about", "content"], v);
+  const setStats = (list) => update(["about", "stats"], list);
+  const editStat = (i, key, v) => setStats(a.stats.map((s, idx) => (idx === i ? { ...s, [key]: v } : s)));
+  const addStat = () => setStats([...a.stats, { value: { fa: "", en: "" }, label: { fa: "", en: "" } }]);
+  const removeStat = (i) => setStats(a.stats.filter((_, idx) => idx !== i));
+
+  return (
+    <div className="max-w-2xl">
+      <SectionTitle>{aui("about", lang)}</SectionTitle>
+      <div className="mb-4">
+        <ImageUploadField label={lang === "fa" ? "تصویر بالای صفحه‌ی درباره ما" : "About page header image"} value={content.pageHeaders?.about?.image} onChange={(v) => update(["pageHeaders", "about", "image"], v)} lang={lang} />
+        <p className="text-black/30 text-[11px] mt-1">{lang === "fa" ? "اگر عکسی بارگذاری نکنید، یک گرافیک پیش‌فرض نمایش داده می‌شود." : "If you don't upload an image, a default illustration is shown instead."}</p>
+      </div>
+      <BField label={lang === "fa" ? "متن درباره ما" : "About text"} value={a.content} onChange={setContent} multiline lang={lang} />
+
+      <div className="flex items-center justify-between mt-8 mb-3">
+        <h3 className="font-bold text-sm">{lang === "fa" ? "آمار و ارقام" : "Stats"}</h3>
+        <button onClick={addStat} className={btnGhost}><Plus size={12} /> {lang === "fa" ? "افزودن آمار" : "Add Stat"}</button>
+      </div>
+      <div className="space-y-3">
+        {a.stats.map((s, i) => (
+          <div key={i} className={cardCls}>
+            <div className="grid grid-cols-2 gap-3 mb-2">
+              <BField label={lang === "fa" ? "عدد" : "Value"} value={s.value} onChange={(v) => editStat(i, "value", v)} lang={lang} />
+              <BField label={lang === "fa" ? "برچسب" : "Label"} value={s.label} onChange={(v) => editStat(i, "label", v)} lang={lang} />
+            </div>
+            <button onClick={() => removeStat(i)} className="text-black/30 hover:text-red-600 text-xs flex items-center gap-1"><Trash2 size={12} /> {aui("delete", lang)}</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AdminPageImages({ content, update, lang }) {
+  const sections = [
+    { key: "services", label: lang === "fa" ? "خدمات" : "Services" },
+    { key: "shop", label: lang === "fa" ? "فروشگاه" : "Shop" },
+    { key: "contact", label: lang === "fa" ? "تماس با ما" : "Contact" },
+    { key: "faq", label: lang === "fa" ? "سوالات رایج" : "FAQ" },
+    { key: "articles", label: lang === "fa" ? "مقالات" : "Articles" },
+  ];
+  return (
+    <div className="max-w-2xl">
+      <SectionTitle>{aui("pageImages", lang)}</SectionTitle>
+      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "برای هر بخش می‌توانید یک تصویر بالای صفحه بارگذاری کنید. اگر عکسی نگذارید، یک گرافیک اختصاصی پیش‌فرض نمایش داده می‌شود. (تصویر بخش «درباره ما» در تب «درباره ما» قرار دارد.)" : "Upload a header image for each section. If left empty, a custom default illustration is shown. (The About Us image lives in the About tab.)"}</p>
+      <div className="grid sm:grid-cols-2 gap-4">
+        {sections.map((s) => (
+          <div key={s.key} className={cardCls}>
+            <p className="text-sm font-bold mb-2">{s.label}</p>
+            <ImageUploadField value={content.pageHeaders?.[s.key]?.image} onChange={(v) => update(["pageHeaders", s.key, "image"], v)} lang={lang} />
           </div>
         ))}
       </div>
