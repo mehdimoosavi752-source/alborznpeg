@@ -348,6 +348,25 @@ function useHashRoute() {
 
 /* ============================== اپلیکیشن اصلی ============================== */
 
+function FloatingContact({ content, lang }) {
+  const [open, setOpen] = useState(false);
+  const s = content.settings;
+  return (
+    <div className="fixed bottom-5 left-5 z-30 flex flex-col items-start gap-3">
+      {open && (
+        <div className="flex flex-col gap-2 bg-white border border-black/10 rounded-2xl shadow-xl p-2 mb-1">
+          <a href={`tel:${s.phone}`} className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Phone size={16} className="text-red-600" /> {lang === "fa" ? "تماس تلفنی" : "Call Us"}</a>
+          <a href={`https://t.me/${s.telegram}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Send size={16} className="text-red-600" /> Telegram</a>
+          <a href={`https://instagram.com/${s.instagram}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Instagram size={16} className="text-red-600" /> Instagram</a>
+        </div>
+      )}
+      <button onClick={() => setOpen((v) => !v)} className="glow-pulse w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-xl flex items-center justify-center transition-transform hover:scale-105">
+        {open ? <X size={22} /> : <MessageCircle size={22} />}
+      </button>
+    </div>
+  );
+}
+
 export default function NovinPolytechnic() {
   const [content, setContent] = useState(null);
   const [pages, setPages] = useState([]);
@@ -532,6 +551,7 @@ export default function NovinPolytechnic() {
 
       <ReviewsStrip lang={lang} />
       <Footer content={content} goToUrl={goToUrl} lang={lang} />
+      <FloatingContact content={content} lang={lang} />
 
       {showCart && <CartDrawer cart={cart} total={cartTotal} onClose={() => setShowCart(false)} onChangeQty={changeQty} onRemove={removeFromCart} onCheckout={() => { setShowCart(false); setShowCheckout(true); }} lang={lang} />}
       {showCheckout && <CheckoutModal total={cartTotal} orderDone={orderDone} onClose={() => { setShowCheckout(false); setOrderDone(false); }} onSubmit={placeOrder} currentUser={currentUser} paymentStatus={paymentStatus} lang={lang} />}
