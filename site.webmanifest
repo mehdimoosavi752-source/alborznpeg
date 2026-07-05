@@ -1,0 +1,26 @@
+{
+  "name": "موسسه علامه سخن",
+  "short_name": "علامه سخن",
+  "description": "مرکز آموزش زبان انگلیسی، آمادگی و برگزاری آزمون‌های TOEFL iBT و GRE.",
+  "lang": "fa-IR",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#17133f",
+  "theme_color": "#17133f",
+  "icons": [
+    {
+      "src": "/assets/allameh-sokhan-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/allameh-sokhan-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

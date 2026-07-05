@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /login
+
+User-agent: Googlebot
+Allow: /
+
+Sitemap: https://asmdi.ir/sitemap.xml

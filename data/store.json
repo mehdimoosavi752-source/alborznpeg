@@ -1,0 +1,29 @@
+{
+  "users": {
+    "admin_local": {
+      "uid": "admin_local",
+      "name": "مدیر آموزشگاه",
+      "email": "admin@allameh-sokhan.ir",
+      "role": "admin",
+      "createdAt": "2026-06-05T14:28:39.873Z",
+      "grades": {},
+      "salt": "d92fdb2a5362428b538577189c23570c",
+      "passwordHash": "181c5b9b3bb73962b784553512ce3610dace2037dd6bd1663e42a7066cb4be70"
+    }
+  },
+  "messages": {},
+  "toefl_dates": {},
+  "mock_dates": {},
+  "gre_dates": {},
+  "internal_exams": {},
+  "settings": {
+    "signup": {
+      "smsRequired": false
+    }
+  },
+  "exam_submissions": {},
+  "exam_registrations": {},
+  "course_registrations": {},
+  "placement_registrations": {},
+  "registration_assignments": {}
+}
