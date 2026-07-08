@@ -149,10 +149,11 @@ nav{position:fixed;top:0;width:100%;z-index:1000;background:rgba(30,27,75,0.92);
 .nav-brand:hover .nav-brand-name{transform:translateY(-1px);}
 .nav-brand:hover .brand-kicker{font-size:.195rem;color:rgba(255,255,255,.62);}
 .nav-brand:hover .brand-main{font-size:1.16rem;}
-.nav-contact-chip{position:fixed;top:76px;left:1.5rem;z-index:999;display:flex;align-items:center;gap:.55rem;padding:.48rem .7rem;border:1px solid rgba(255,255,255,.24);border-radius:14px;background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(94,234,212,.1));box-shadow:0 14px 34px rgba(15,12,41,.18),inset 0 1px 0 rgba(255,255,255,.22);backdrop-filter:blur(16px) saturate(145%);-webkit-backdrop-filter:blur(16px) saturate(145%);color:#fff;}
+.nav-contact-chip{position:fixed;top:76px;left:1.5rem;z-index:999;display:flex;align-items:center;gap:.55rem;padding:.48rem .7rem;border:1px solid rgba(255,255,255,.34);border-radius:14px;background:linear-gradient(135deg,rgba(255,255,255,.78),rgba(236,253,245,.64));box-shadow:0 14px 34px rgba(15,12,41,.18),inset 0 1px 0 rgba(255,255,255,.55);backdrop-filter:blur(16px) saturate(145%);-webkit-backdrop-filter:blur(16px) saturate(145%);color:var(--indigo);}
 .nav-contact-chip::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--teal-light);box-shadow:0 0 0 5px rgba(94,234,212,.12);}
-.nav-contact-chip a{display:inline-flex;align-items:center;gap:.25rem;color:#fff;text-decoration:none;font-size:.76rem;font-weight:900;direction:ltr;unicode-bidi:embed;}
-.nav-contact-chip .chip-divider{width:1px;height:18px;background:rgba(255,255,255,.24);}
+.nav-contact-chip a{display:inline-flex;align-items:center;gap:.25rem;color:#064e3b;text-decoration:none;font-size:.76rem;font-weight:950;direction:ltr;unicode-bidi:embed;text-shadow:0 1px 0 rgba(255,255,255,.75);}
+.nav-contact-chip a:hover{color:var(--indigo-mid);}
+.nav-contact-chip .chip-divider{width:1px;height:18px;background:rgba(15,23,42,.18);}
 .desktop-menu{display:flex;align-items:center;justify-content:center;gap:0.15rem;height:100%;direction:rtl;}
 .menu-item{height:100%;display:flex;align-items:center;position:relative;}
 .menu-link{height:100%;display:flex;align-items:center;gap:0.35rem;padding:0 0.78rem;border:0;background:transparent;color:rgba(255,255,255,0.76);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;font-weight:700;cursor:pointer;transition:color 0.25s,background 0.25s;}
@@ -248,6 +249,13 @@ html[dir="ltr"] .exam-contact-numbers{direction:ltr;text-align:left;justify-item
 html[dir="ltr"] .exam-contact-number{justify-content:flex-start;text-align:left;}
 html[dir="ltr"] .exam-contact-links{justify-content:flex-start;}
 html[dir="ltr"] #page-admin,html[dir="ltr"] #page-dashboard{direction:rtl;text-align:right;font-family:'Vazirmatn','Tahoma',sans-serif!important;}
+@media(max-width:700px){
+  #page-toefl-dates td[dir="ltr"],#page-gre-dates td[dir="ltr"],#page-mock-dates td[dir="ltr"],
+  #page-toefl-dates td[dir="rtl"],#page-gre-dates td[dir="rtl"],#page-mock-dates td[dir="rtl"]{text-align:right!important;}
+  #page-toefl-dates td[dir="ltr"],#page-gre-dates td[dir="ltr"],#page-mock-dates td[dir="ltr"]{direction:ltr!important;unicode-bidi:isolate;}
+  #page-toefl-dates td[dir="rtl"],#page-gre-dates td[dir="rtl"],#page-mock-dates td[dir="rtl"]{direction:rtl!important;}
+  .mock-registration-date strong,.switch-line strong{text-align:right;display:block;}
+}
 
 /* PAGES */
 .page{display:none;min-height:100vh;padding-top:68px;}
@@ -724,19 +732,50 @@ textarea.form-input{height:100px;resize:none;}
 .payment-notice-body h3{font-size:1.08rem;color:var(--indigo);margin-bottom:.7rem}
 .payment-notice-body p{white-space:pre-line;line-height:2;color:var(--gray-700);font-size:.86rem;margin-bottom:1rem}
 .payment-notice-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:.55rem}
-.payment-notice-actions a{display:flex;align-items:center;justify-content:center;gap:.35rem;min-height:42px;border-radius:10px;text-decoration:none;font-weight:900;font-size:.78rem;border:1px solid rgba(15,23,42,.08);background:#fff;color:var(--indigo);box-shadow:0 10px 24px rgba(15,23,42,.08);transition:.2s}
-.payment-notice-actions a:hover{transform:translateY(-2px);box-shadow:0 16px 32px rgba(15,23,42,.13)}
-.payment-notice-actions img{width:20px;height:20px;object-fit:contain}
-.payment-notice-actions .whatsapp{background:#e8fff2;color:#166534}
-.payment-notice-actions .bale{background:#eff6ff;color:#075985}
-.payment-notice-actions .call{background:#fff7ed;color:#9a3412}
+.payment-notice-actions a{position:relative;display:flex;align-items:center;justify-content:center;gap:.42rem;min-height:46px;border-radius:12px;text-decoration:none;font-weight:950;font-size:.78rem;border:1px solid rgba(255,255,255,.55);background:#fff;color:var(--indigo);box-shadow:0 12px 28px rgba(15,23,42,.1);transition:transform .22s ease,box-shadow .22s ease,filter .22s ease;overflow:hidden}
+.payment-notice-actions a::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 15%,rgba(255,255,255,.55),transparent 75%);transform:translateX(120%);transition:.65s;pointer-events:none}
+.payment-notice-actions a:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 18px 38px rgba(15,23,42,.16);filter:saturate(1.08)}
+.payment-notice-actions a:hover::after{transform:translateX(-120%)}
+.payment-notice-actions img{width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 5px 9px rgba(15,23,42,.13))}
+.payment-notice-actions .whatsapp{background:linear-gradient(135deg,#e8fff2,#bbf7d0);color:#14532d}
+.payment-notice-actions .bale{background:linear-gradient(135deg,#eff6ff,#bfdbfe);color:#075985}
+.payment-notice-actions .call{background:linear-gradient(135deg,#fff7ed,#fed7aa);color:#9a3412}
+.payment-notice-call-icon{display:grid;place-items:center;width:23px;height:23px;border-radius:50%;background:rgba(255,255,255,.72);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 8px 16px rgba(154,52,18,.14);animation:softPulse 1.9s ease-in-out infinite}
+@keyframes softPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.hero-primary-action .hero-action-icon{display:none!important}
+.hero-primary-action{justify-content:center!important;text-align:center!important}
+.hero-primary-action .hero-action-copy{width:100%;text-align:center}
+.toefl-register .btn-toefl,.exam-page-actions,.mock-card .mock-btn,#page-toefl-dates .btn-primary,#page-toefl-dates .btn-glass,#page-gre-dates .btn-primary,#page-gre-dates .btn-glass{align-self:center;text-align:center;justify-content:center}
+.toefl-register .exam-page-actions,.toefl-register>div[style*="display:flex"],#page-toefl-dates div[style*="display:flex"],#page-gre-dates div[style*="display:flex"]{justify-content:center!important;text-align:center}
 .payment-admin-grid,.manual-mock-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.85rem}
 .payment-admin-grid .full,.manual-mock-grid .full{grid-column:1/-1}
+.manual-mock-wizard{position:relative;padding:1.2rem;background:linear-gradient(135deg,rgba(240,253,250,.86),rgba(238,242,255,.72));border:1px solid rgba(13,148,136,.16);border-radius:14px;overflow:hidden}
+.manual-mock-wizard::before{content:"";position:absolute;inset:-45% auto auto -18%;width:280px;height:280px;background:radial-gradient(circle,rgba(20,184,166,.22),transparent 68%);pointer-events:none}
+.manual-mock-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1rem;position:relative}
+.manual-mock-step{display:flex;align-items:center;gap:.6rem;padding:.75rem;border:1px solid rgba(255,255,255,.75);border-radius:12px;background:rgba(255,255,255,.72);box-shadow:0 12px 28px rgba(30,27,75,.06);transition:.24s}
+.manual-mock-step span{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:950;box-shadow:0 10px 20px rgba(13,148,136,.18)}
+.manual-mock-step strong{display:block;color:var(--indigo);font-size:.82rem}
+.manual-mock-step small{display:block;color:var(--gray-400);font-size:.68rem;margin-top:.12rem}
+.manual-mock-step.active{transform:translateY(-3px);border-color:rgba(13,148,136,.35);box-shadow:0 18px 40px rgba(13,148,136,.12)}
+.manual-mock-panel{position:relative;display:none;animation:fadeUp .32s ease both}
+.manual-mock-panel.active{display:block}
+.manual-mock-actions{display:flex;justify-content:space-between;gap:.75rem;margin-top:1rem;flex-wrap:wrap}
+.manual-mock-actions .card-btn,.manual-mock-actions .btn-submit{width:auto;min-width:145px}
+.manual-mock-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;margin-top:.8rem}
+.manual-mock-summary div{padding:.85rem;border:1px solid rgba(30,27,75,.08);border-radius:10px;background:rgba(255,255,255,.76)}
+.manual-mock-summary span{display:block;font-size:.68rem;color:var(--gray-400);margin-bottom:.22rem}
+.manual-entry-list{display:grid;gap:.75rem;padding:1rem}
+.manual-entry-card{display:grid;grid-template-columns:1fr auto;gap:.75rem;align-items:center;border:1px solid rgba(30,27,75,.08);border-radius:12px;background:linear-gradient(145deg,#fff,rgba(248,250,252,.9));padding:1rem;box-shadow:0 12px 28px rgba(30,27,75,.06)}
+.manual-entry-card h4{color:var(--indigo);font-size:.95rem;margin-bottom:.35rem}
+.manual-entry-card p{font-size:.76rem;color:var(--gray-500);line-height:1.8}
+.manual-entry-card .manual-entry-meta{text-align:left;font-size:.7rem;color:var(--gray-400)}
+.payment-pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:.32rem .6rem;font-size:.68rem;font-weight:900;background:rgba(245,158,11,.12);color:#92400e}
+.payment-pill.ok{background:rgba(22,163,74,.12);color:#166534}
 .new-registration-card{display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center;padding:1rem;border:1px solid rgba(13,148,136,.16);border-radius:12px;background:linear-gradient(145deg,#fff,rgba(240,253,250,.78));box-shadow:0 14px 30px rgba(30,27,75,.07);margin-bottom:.75rem}
 .new-registration-card strong{color:var(--indigo)}
 .new-registration-card p{font-size:.78rem;color:var(--gray-500);line-height:1.8;margin-top:.25rem}
 .new-registration-tag{display:inline-flex;align-items:center;border-radius:999px;padding:.35rem .65rem;background:rgba(13,148,136,.1);color:var(--teal);font-size:.68rem;font-weight:900}
-@media(max-width:700px){.payment-notice-actions{grid-template-columns:1fr}.payment-admin-grid,.manual-mock-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.payment-notice-actions{grid-template-columns:1fr}.payment-admin-grid,.manual-mock-grid,.manual-mock-steps,.manual-mock-summary{grid-template-columns:1fr}.manual-entry-card{grid-template-columns:1fr}.manual-entry-card .manual-entry-meta{text-align:right}}
 .testimonial-form-grid{display:grid;grid-template-columns:1fr 160px;gap:.8rem;align-items:end}.rating-picker{display:flex;gap:.25rem;direction:ltr;justify-content:flex-end}.rating-picker button{width:34px;height:34px;border:1px solid var(--border);border-radius:7px;background:#fff;color:#f59e0b;font-size:1rem;cursor:pointer;transition:.2s}.rating-picker button.active,.rating-picker button:hover{background:#f59e0b;color:#fff;border-color:#f59e0b;box-shadow:0 8px 18px rgba(245,158,11,.18)}.testimonial-admin-list{display:grid;gap:.8rem;padding:1rem}.testimonial-review-card{border:1px solid var(--border);border-radius:9px;background:linear-gradient(145deg,#fff,#f8fafc);padding:1rem;box-shadow:0 10px 24px rgba(30,27,75,.06)}.testimonial-review-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start;margin-bottom:.65rem}.testimonial-stars{direction:ltr;color:#f59e0b;font-weight:900;letter-spacing:1px}.testimonial-review-card p{font-size:.82rem;line-height:1.9;color:var(--gray-600);margin:.45rem 0}.testimonial-actions{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.75rem}.testimonial-target-select{max-width:230px;padding:.45rem .55rem;border:1px solid var(--border);border-radius:7px}.public-testimonials-section{padding:3rem 6%;background:linear-gradient(180deg,rgba(240,253,250,.55),rgba(255,255,255,.96));}.public-testimonials-inner{max-width:1120px;margin:auto}.public-testimonials-head{display:flex;justify-content:space-between;gap:1rem;align-items:end;margin-bottom:1rem}.public-testimonials-head h2{color:var(--indigo);font-size:1.55rem}.public-testimonials-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem}.public-testimonial-card{border:1px solid rgba(13,148,136,.16);border-radius:10px;background:rgba(255,255,255,.84);backdrop-filter:blur(10px);padding:1.1rem;box-shadow:0 16px 34px rgba(30,27,75,.08);position:relative;overflow:hidden}.public-testimonial-card::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,var(--teal),var(--indigo-mid));}.public-testimonial-card p{font-size:.84rem;line-height:1.95;color:var(--gray-700);margin:.7rem 0}.public-testimonial-card strong{display:block;color:var(--indigo);font-size:.9rem}.public-testimonial-card small{color:var(--gray-400);font-size:.72rem}
 .admin-activity-list{display:grid;gap:.7rem;padding:1rem}
 .admin-activity-item{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:.8rem;align-items:center;padding:.85rem;border:1px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;transition:.22s}
@@ -1869,7 +1908,8 @@ html[dir="ltr"] .hero-primary-action{
 /* Requested hero title/card cleanup */
 .hero .hero-institute-prefix{font-size:.41em!important;}
 .hero .hero-event-card.toefl .hero-event-icon,
-.hero .hero-event-card.mock .hero-event-icon{display:none!important;}
+.hero .hero-event-card.mock .hero-event-icon,
+.hero .hero-event-card.gre .hero-event-icon{display:none!important;}
 .hero .hero-event-card h3,
 html[dir="rtl"] .hero .hero-event-card h3,
 html[dir="ltr"] .hero .hero-event-card h3{
@@ -2461,7 +2501,7 @@ html[dir="ltr"] .hero .hero-event-card h3{
     <div class="mock-grid">
       <div class="mock-card"><div class="mock-top"><div class="mock-name">تعیین سطح انگلیسی</div><span class="badge-free">رایگان</span></div><div class="mock-desc">سطح واقعی زبان انگلیسی خود را بسنجید</div><div class="mock-meta"><span>⏱ ۴۵ دقیقه</span><span>📝 ۶۰ سوال</span></div><button class="mock-btn" onclick="showPage('placement')">شروع آزمون</button></div>
       <div class="mock-card"><div class="mock-top"><div class="mock-name">آزمون آزمایشی IELTS</div><span class="badge-paid" data-price-key="mockIelts">۱۵۰,۰۰۰ تومان</span></div><div class="mock-desc">شبیه‌سازی کامل آزمون آیلتس با نمره‌دهی دقیق</div><div class="mock-meta"><span>⏱ ۱۶۵ دقیقه</span><span>📝 ۴ بخش</span></div><button class="mock-btn" onclick="showPage('mock-dates')">مشاهده تاریخ‌ها</button></div>
-      <div class="mock-card"><div class="mock-top"><div class="mock-name">آزمون آزمایشی TOEFL</div><span class="badge-paid" data-price-key="mockToefl">۱۸۰,۰۰۰ تومان</span></div><div class="mock-desc">شبیه‌سازی ساختار جدید چهارمهارتی TOEFL iBT و ارائه گزارش عملکرد</div><div class="mock-meta"><span>⏱ حدود ۲ ساعت</span><span>📝 ۴ مهارت</span></div><button class="mock-btn" onclick="showPage('mock-dates')">مشاهده تاریخ‌ها</button></div>
+      <div class="mock-card"><div class="mock-top"><div class="mock-name">آزمون آزمایشی TOEFL</div><span class="badge-paid" data-price-key="mockToefl">۱۸۰,۰۰۰ تومان</span></div><div class="mock-desc">شبیه‌سازی ساختار جدید چهارمهارتی TOEFL iBT و ارائه گزارش عملکرد</div><div class="mock-meta"><span>⏱ حدود ۱:۳۰</span><span>📝 ۴ مهارت</span></div><button class="mock-btn" onclick="showPage('mock-dates')">مشاهده تاریخ‌ها</button></div>
       <div class="mock-card"><div class="mock-top"><div class="mock-name">آزمون آزمایشی GRE</div><span class="badge-paid" data-price-key="mockGre">۱۵۰,۰۰۰ تومان</span></div><div class="mock-desc">شبیه‌سازی GRE General شامل Writing، Verbal و Quantitative</div><div class="mock-meta"><span>⏱ حدود ۱ ساعت و ۵۸ دقیقه</span><span>📝 ۵ بخش</span></div><button class="mock-btn" onclick="showPage('mock-dates')">مشاهده تاریخ‌ها</button></div>
     </div>
   </div>
@@ -2476,7 +2516,7 @@ html[dir="ltr"] .hero .hero-event-card h3{
       <div class="toefl-info"><h3>اطلاعات آزمون TOEFL iBT</h3>
         <div class="tinfo-row"><span>نوع آزمون</span><span>Internet Based Test</span></div>
         <div class="tinfo-row"><span>ساختار فعلی</span><span>نسخه جدید ETS از ۲۱ ژانویه ۲۰۲۶</span></div>
-        <div class="tinfo-row"><span>مدت آزمون</span><span>حدود ۲ ساعت</span></div>
+        <div class="tinfo-row"><span>مدت آزمون</span><span>حدود ۱:۳۰</span></div>
         <div class="tinfo-row"><span>اعتبار نتیجه</span><span>۲ سال</span></div>
         <div class="tinfo-row"><span>بازه نمره</span><span>۱ تا ۶ با گام‌های نیم‌نمره‌ای</span></div>
         <div class="tinfo-row"><span>گزارش انتقالی</span><span>معادل کلی ۰ تا ۱۲۰ تا ژانویه ۲۰۲۸</span></div>
@@ -2507,7 +2547,7 @@ html[dir="ltr"] .hero .hero-event-card h3{
     <div class="toefl-grid">
       <div class="toefl-info"><h3>ویژگی‌های آزمون آزمایشی TOEFL</h3>
         <div class="tinfo-row"><span>مهارت‌ها</span><span>Reading، Listening، Speaking و Writing</span></div>
-        <div class="tinfo-row"><span>مدت شبیه‌سازی</span><span>حدود ۲ ساعت، متناسب با ساختار جدید</span></div>
+        <div class="tinfo-row"><span>مدت شبیه‌سازی</span><span>حدود ۱:۳۰، متناسب با ساختار جدید</span></div>
         <div class="tinfo-row"><span>نوع برگزاری</span><span>حضوری و کامپیوتری</span></div>
         <div class="tinfo-row"><span>کارنامه</span><span>تحلیل عملکرد و برآورد نمره در مقیاس ۱ تا ۶</span></div>
         <div class="tinfo-row"><span>هدف</span><span>آشنایی با محیط و مدیریت زمان آزمون</span></div>
@@ -2958,6 +2998,7 @@ html[dir="ltr"] .hero .hero-event-card h3{
         <li><a onclick="showAdmin('addgrade')" id="an-addgrade"><span class="sb-icon">📊</span>ثبت نمره</a></li>
         <li><a onclick="showAdmin('toefl-dates')" id="an-toefl-dates"><span class="sb-icon">📅</span>تاریخ‌های TOEFL iBT</a></li>
         <li><a onclick="showAdmin('mock-dates')" id="an-mock-dates"><span class="sb-icon">🗓️</span>تاریخ‌های آزمون آزمایشی</a></li>
+        <li><a onclick="showAdmin('manual-mock-registration')" id="an-manual-mock-registration"><span class="sb-icon">✍</span>ثبت دستی ماک</a></li>
         <li><a onclick="showAdmin('gre-dates')" id="an-gre-dates"><span class="sb-icon">🎯</span>تاریخ‌های GRE</a></li>
         <li><a onclick="showAdmin('consultations')" id="an-consultations"><span class="sb-icon">🕘</span>مشاوره‌ها<span class="message-unread-dot" id="badge-consultations" hidden aria-label="درخواست تازه"></span></a></li>
         <li><a onclick="showAdmin('exam-builder')" id="an-exam-builder"><span class="sb-icon">🧩</span>ساخت آزمون داخلی<span class="message-unread-dot" id="badge-exam-builder" hidden aria-label="پاسخ آزمون تازه"></span></a></li>
@@ -3068,7 +3109,7 @@ html[dir="ltr"] .hero .hero-event-card h3{
           <button class="btn-submit" style="width:auto" onclick="loadExamAttendance()">نمایش فهرست</button>
           <button class="card-btn" onclick="printAttendanceList()">چاپ فهرست</button>
         </div>
-        <div class="tbox"><div class="tbox-head"><h3 id="attendance-title">شرکت‌کنندگان</h3><span id="attendance-count"></span></div><div style="overflow-x:auto"><table><thead><tr><th>حضور</th><th>نام</th><th>موبایل</th><th>آزمون</th><th>ساعت</th><th>صندلی</th><th>وضعیت ثبت‌نام</th></tr></thead><tbody id="attendance-body"><tr><td colspan="7" style="text-align:center">یک تاریخ را انتخاب کنید</td></tr></tbody></table></div></div>
+        <div class="tbox"><div class="tbox-head"><h3 id="attendance-title">شرکت‌کنندگان</h3><span id="attendance-count"></span></div><div style="overflow-x:auto"><table><thead><tr><th>حضور</th><th>نام و اطلاعات</th><th>موبایل</th><th>آزمون</th><th>ساعت</th><th>روش ثبت‌نام</th><th>صندلی</th><th>وضعیت ثبت‌نام</th></tr></thead><tbody id="attendance-body"><tr><td colspan="8" style="text-align:center">یک تاریخ را انتخاب کنید</td></tr></tbody></table></div></div>
       </div>
       <div class="dash-sec" id="admin-assignments">
         <div class="dash-title">پیشنهاد ثبت‌نام به دانشجو</div>
@@ -3156,22 +3197,6 @@ html[dir="ltr"] .hero .hero-event-card h3{
           </div>
         </div>
 
-        <div class="tbox" style="max-width:760px;margin-bottom:2rem;">
-          <div class="tbox-head"><h3>ورود دستی شرکت‌کننده آزمون آزمایشی</h3><button class="card-btn" onclick="loadManualMockDateOptions()">بارگذاری تاریخ‌ها</button></div>
-          <div style="padding:1.5rem;">
-            <div class="manual-mock-grid">
-              <div class="form-group full"><label class="form-label">تاریخ آزمون آزمایشی</label><select class="form-input" id="manual-mock-date"><option value="">انتخاب تاریخ فعال</option></select></div>
-              <div class="form-group"><label class="form-label">نام و نام خانوادگی</label><input class="form-input" id="manual-mock-name" placeholder="نام شرکت‌کننده"></div>
-              <div class="form-group"><label class="form-label">شماره موبایل</label><input class="form-input" id="manual-mock-mobile" inputmode="tel" placeholder="09123456789"></div>
-              <div class="form-group"><label class="form-label">ایمیل</label><input class="form-input" id="manual-mock-email" type="email" placeholder="example@email.com"></div>
-              <div class="form-group"><label class="form-label">تعداد نفرات</label><input class="form-input" id="manual-mock-count" type="number" min="1" max="15" value="1"></div>
-              <div class="form-group full"><label class="form-label">یادداشت مدیر</label><textarea class="form-input" id="manual-mock-note" placeholder="مثلاً ثبت حضوری یا هماهنگی تلفنی"></textarea></div>
-            </div>
-            <div class="alert success" id="manual-mock-ok"></div><div class="alert error" id="manual-mock-err"></div>
-            <button class="btn-submit" style="max-width:260px;margin-top:.8rem" onclick="addManualMockRegistration()">ثبت دستی و کاهش ظرفیت</button>
-          </div>
-        </div>
-
         <!-- لیست تاریخ‌های ثبت‌شده -->
         <div class="tbox">
           <div class="tbox-head">
@@ -3181,6 +3206,65 @@ html[dir="ltr"] .hero .hero-event-card h3{
           <div id="admin-toefl-dates-list">
             <div style="text-align:center;padding:2rem;color:var(--gray-400);">برای بارگذاری روی بروزرسانی بزنید</div>
           </div>
+        </div>
+      </div>
+
+      <div class="dash-sec" id="admin-manual-mock-registration">
+        <div class="dash-title">ثبت دستی دانشجو در آزمون ماک</div>
+        <div class="dash-sub">ثبت کامل اطلاعات دانشجو، روش ثبت‌نام، تأیید واریز و ثبت‌کننده در پنل مدیریت</div>
+        <div class="tbox">
+          <div class="tbox-head"><h3>فرم مرحله‌ای ثبت دستی</h3><button class="card-btn" onclick="loadAdvancedManualMockDates()">بارگذاری تاریخ‌های فعال</button></div>
+          <div class="manual-mock-wizard">
+            <div class="manual-mock-steps">
+              <div class="manual-mock-step active" id="manual-mock-step-1"><span>۱</span><div><strong>اطلاعات دانشجو</strong><small>نام، موبایل و ایمیل</small></div></div>
+              <div class="manual-mock-step" id="manual-mock-step-2"><span>۲</span><div><strong>ثبت‌نام و آزمون</strong><small>روش ثبت‌نام و تاریخ آزمون</small></div></div>
+              <div class="manual-mock-step" id="manual-mock-step-3"><span>۳</span><div><strong>تأیید نهایی</strong><small>واریز و ثبت‌کننده</small></div></div>
+            </div>
+            <div class="manual-mock-panel active" id="manual-mock-panel-1">
+              <div class="manual-mock-grid">
+                <div class="form-group"><label class="form-label">نام</label><input class="form-input" id="advanced-manual-first-name" autocomplete="given-name"></div>
+                <div class="form-group"><label class="form-label">نام خانوادگی</label><input class="form-input" id="advanced-manual-last-name" autocomplete="family-name"></div>
+                <div class="form-group"><label class="form-label">شماره تماس</label><input class="form-input" id="advanced-manual-mobile" inputmode="tel" placeholder="09123456789"></div>
+                <div class="form-group"><label class="form-label">ایمیل</label><input class="form-input" id="advanced-manual-email" type="email" placeholder="example@email.com"></div>
+              </div>
+            </div>
+            <div class="manual-mock-panel" id="manual-mock-panel-2">
+              <div class="manual-mock-grid">
+                <div class="form-group"><label class="form-label">طریق ثبت‌نام</label><select class="form-input" id="advanced-manual-method"><option value="حضوری">حضوری</option><option value="سایت">سایت</option><option value="تلفنی">تلفنی</option><option value="واتس‌اپ">واتس‌اپ</option><option value="تلگرام">تلگرام</option><option value="بله">بله</option><option value="ایمیل">ایمیل</option><option value="سایر">سایر</option></select></div>
+                <div class="form-group"><label class="form-label">تاریخ ثبت‌نام</label><input class="form-input" id="advanced-manual-registration-date" type="date"></div>
+                <div class="form-group full"><label class="form-label">تاریخ آزمون</label><select class="form-input" id="advanced-manual-exam-date"><option value="">انتخاب تاریخ فعال آزمون ماک</option></select></div>
+                <div class="form-group full"><label class="form-label">یادداشت مدیریتی</label><textarea class="form-input" id="advanced-manual-note" placeholder="مثلاً ثبت حضوری، شماره رسید، توضیح پرداخت یا هماهنگی"></textarea></div>
+              </div>
+            </div>
+            <div class="manual-mock-panel" id="manual-mock-panel-3">
+              <label class="switch-line" style="margin-bottom:.8rem"><input type="checkbox" id="advanced-manual-payment-confirmed"> واریز دانشجو تأیید شده است</label>
+              <div class="manual-mock-summary" id="advanced-manual-summary">
+                <div><span>دانشجو</span><strong>—</strong></div>
+                <div><span>آزمون</span><strong>—</strong></div>
+                <div><span>روش ثبت‌نام</span><strong>—</strong></div>
+                <div><span>ثبت‌کننده</span><strong>—</strong></div>
+              </div>
+              <div class="integration-note" style="margin-top:1rem">نام مدیر یا ادمینی که وارد پنل شده، همراه این ثبت دستی ذخیره می‌شود.</div>
+            </div>
+            <div class="alert success" id="advanced-manual-ok"></div><div class="alert error" id="advanced-manual-err"></div>
+            <div class="manual-mock-actions">
+              <button class="card-btn" id="advanced-manual-prev" onclick="changeAdvancedManualMockStep(-1)" disabled>مرحله قبل</button>
+              <button class="card-btn" id="advanced-manual-next" onclick="changeAdvancedManualMockStep(1)">مرحله بعد</button>
+              <button class="btn-submit" id="advanced-manual-submit" onclick="submitAdvancedManualMockRegistration()" style="display:none">ثبت دستی دانشجو</button>
+            </div>
+          </div>
+        </div>
+        <div class="tbox" style="margin-top:1rem">
+          <div class="tbox-head"><h3>ثبت‌های دستی ماک</h3><button class="card-btn" onclick="loadAdvancedManualMockRegistrations()">بروزرسانی</button></div>
+          <div class="manual-mock-grid" style="padding:1rem 1rem 0">
+            <div class="form-group"><label class="form-label">فیلتر تاریخ آزمون</label><select class="form-input" id="advanced-manual-filter-exam" onchange="loadAdvancedManualMockRegistrations()"><option value="">همه تاریخ‌های آزمون</option></select></div>
+            <div class="form-group"><label class="form-label">فیلتر تاریخ ثبت‌نام</label><input class="form-input" id="advanced-manual-filter-registration" type="date" onchange="loadAdvancedManualMockRegistrations()"></div>
+            <div class="form-group"><label class="form-label">طریق ثبت‌نام</label><select class="form-input" id="advanced-manual-filter-method" onchange="loadAdvancedManualMockRegistrations()"><option value="">همه روش‌ها</option><option value="حضوری">حضوری</option><option value="سایت">سایت</option><option value="تلفنی">تلفنی</option><option value="واتس‌اپ">واتس‌اپ</option><option value="تلگرام">تلگرام</option><option value="بله">بله</option><option value="ایمیل">ایمیل</option><option value="سایر">سایر</option></select></div>
+            <div class="form-group"><label class="form-label">وضعیت واریز</label><select class="form-input" id="advanced-manual-filter-payment" onchange="loadAdvancedManualMockRegistrations()"><option value="">همه</option><option value="confirmed">واریز تأیید شده</option><option value="pending">در انتظار تأیید</option></select></div>
+            <div class="form-group"><label class="form-label">ترتیب نمایش</label><select class="form-input" id="advanced-manual-sort" onchange="loadAdvancedManualMockRegistrations()"><option value="created-desc">جدیدترین ثبت</option><option value="created-asc">قدیمی‌ترین ثبت</option><option value="exam-asc">نزدیک‌ترین تاریخ آزمون</option><option value="exam-desc">دورترین تاریخ آزمون</option><option value="name-asc">نام دانشجو A تا Z</option></select></div>
+            <div class="form-group"><label class="form-label">عملیات</label><button class="card-btn" onclick="clearAdvancedManualMockFilters()">حذف فیلترها</button></div>
+          </div>
+          <div id="advanced-manual-list" class="manual-entry-list"><div class="chat-empty">برای مشاهده، بروزرسانی را بزنید.</div></div>
         </div>
       </div>
 
@@ -3411,7 +3495,7 @@ html[dir="ltr"] .hero .hero-event-card h3{
               <div class="form-group"><label class="form-label">Merchant ID</label><input class="form-input" id="payment-merchant-id" dir="ltr" placeholder="بعداً از درگاه دریافت می‌شود"></div>
               <div class="form-group"><label class="form-label">API Key یا Token</label><input class="form-input" id="payment-api-key" type="password" dir="ltr" placeholder="در مرورگر استفاده نمی‌شود"></div>
               <div class="form-group full"><label class="form-label">Callback URL</label><input class="form-input" id="payment-callback-url" dir="ltr" placeholder="https://your-domain.com/api/payment/callback"></div>
-              <div class="form-group full"><label class="form-label">متن اطلاعیه بعد از ثبت‌نام/پرداخت</label><textarea class="form-input" id="payment-notice-message">اطلاعیه : جهت اطلاع و دریافت نتیجه فرایند ثبت نام در پیام رسان بله یا واتس اپ با ما در تماس باشید. متشکریم.</textarea></div>
+              <div class="form-group full"><label class="form-label">متن اطلاعیه بعد از ثبت‌نام/پرداخت</label><textarea class="form-input" id="payment-notice-message">جهت تکمیل فرایند و نهایی شدن ثبت نام خود لطفا از طریق راههای ارتباطی زیر با موسسه تماس بگیرید.</textarea></div>
               <div class="form-group"><label class="form-label">شماره واتس‌اپ</label><input class="form-input" id="payment-whatsapp" dir="ltr" value="09379001701"></div>
               <div class="form-group"><label class="form-label">لینک یا شماره بله</label><input class="form-input" id="payment-bale" dir="ltr" value="09379001701"></div>
               <div class="form-group"><label class="form-label">شماره تماس</label><input class="form-input" id="payment-call" dir="ltr" value="09379001701"></div>
@@ -3987,11 +4071,11 @@ html[dir="ltr"] .hero .hero-event-card h3{
     <div class="payment-notice-body">
       <div class="payment-notice-icon">✓</div>
       <h3 id="payment-notice-title">اطلاعیه ثبت‌نام</h3>
-      <p id="payment-notice-text">اطلاعیه : جهت اطلاع و دریافت نتیجه فرایند ثبت نام در پیام رسان بله یا واتس اپ با ما در تماس باشید. متشکریم.</p>
+      <p id="payment-notice-text">جهت تکمیل فرایند و نهایی شدن ثبت نام خود لطفا از طریق راههای ارتباطی زیر با موسسه تماس بگیرید.</p>
       <div class="payment-notice-actions">
-        <a class="whatsapp" id="payment-notice-whatsapp" href="#" target="_blank" rel="noopener"><img src="contact-whatsapp.svg" alt="">واتس‌اپ</a>
-        <a class="bale" id="payment-notice-bale" href="#" target="_blank" rel="noopener"><img src="contact-bale.svg" alt="">بله</a>
-        <a class="call" id="payment-notice-call" href="#"><span>☎</span>تماس</a>
+        <a class="whatsapp" id="payment-notice-whatsapp" href="#" target="_blank" rel="noopener"><img src="assets/contact-whatsapp.svg" alt="">WhatsApp</a>
+        <a class="bale" id="payment-notice-bale" href="#" target="_blank" rel="noopener"><img src="assets/contact-bale.svg" alt="">Bale</a>
+        <a class="call" id="payment-notice-call" href="#"><span class="payment-notice-call-icon">☎</span>Call</a>
       </div>
     </div>
   </section>
@@ -4476,12 +4560,12 @@ html[dir="ltr"] .hero .hero-event-card h3{
     '📝 ۶۰ سوال': '📝 60 questions',
     '⏱ ۱۶۵ دقیقه': '⏱ 165 minutes',
     '📝 ۴ بخش': '📝 4 sections',
-    '⏱ حدود ۲ ساعت': '⏱ About 2 hours',
+    '⏱ حدود ۱:۳۰': '⏱ About 1:30',
     '📝 ۴ مهارت': '📝 4 skills',
     '⏱ حدود ۱ ساعت و ۵۸ دقیقه': '⏱ About 1 hour 58 minutes',
     '📝 ۵ بخش': '📝 5 sections',
     'نسخه جدید ETS از ۲۱ ژانویه ۲۰۲۶': 'Latest ETS format from January 21, 2026',
-    'حدود ۲ ساعت': 'About 2 hours',
+    'حدود ۱:۳۰': 'About 1:30',
     '۲ سال': '2 years',
     '۱ تا ۶ با گام‌های نیم‌نمره‌ای': '1 to 6 in half-band increments',
     'معادل کلی ۰ تا ۱۲۰ تا ژانویه ۲۰۲۸': 'Comparable overall 0–120 score through January 2028',
@@ -4491,7 +4575,7 @@ html[dir="ltr"] .hero .hero-event-card h3{
     '۱۱ آیتم | حدود ۸ دقیقه': '11 items | About 8 minutes',
     '۱۲ آیتم | حدود ۲۳ دقیقه': '12 items | About 23 minutes',
     'Reading، Listening، Speaking و Writing': 'Reading, Listening, Speaking and Writing',
-    'حدود ۲ ساعت، متناسب با ساختار جدید': 'About 2 hours, aligned with the latest format',
+    'حدود ۱:۳۰، متناسب با ساختار جدید': 'About 1:30, aligned with the latest format',
     'حضوری و کامپیوتری': 'In-person, computer-delivered',
     'تحلیل عملکرد و برآورد نمره در مقیاس ۱ تا ۶': 'Performance analysis and estimated score on the 1–6 scale',
     'نسخه کوتاه‌شده ETS از ۲۲ سپتامبر ۲۰۲۳': 'Shortened ETS format since September 22, 2023',
@@ -5142,10 +5226,16 @@ html[dir="ltr"] .hero .hero-event-card h3{
   var db = { collection: collectionApi };
 
   var siteNotificationTemplates = {};
+  var oldPaymentNoticeMessage = 'اطلاعیه : جهت اطلاع و دریافت نتیجه فرایند ثبت نام در پیام رسان بله یا واتس اپ با ما در تماس باشید. متشکریم.';
+  var defaultPaymentNoticeMessage = 'جهت تکمیل فرایند و نهایی شدن ثبت نام خود لطفا از طریق راههای ارتباطی زیر با موسسه تماس بگیرید.';
+  function normalizedPaymentNoticeMessage(value) {
+    var text = String(value || '').trim();
+    return (!text || text === oldPaymentNoticeMessage) ? defaultPaymentNoticeMessage : text;
+  }
   var sitePaymentSettings = {
     gatewayEnabled: false,
     noticeEnabled: true,
-    noticeMessage: 'اطلاعیه : جهت اطلاع و دریافت نتیجه فرایند ثبت نام در پیام رسان بله یا واتس اپ با ما در تماس باشید. متشکریم.',
+    noticeMessage: defaultPaymentNoticeMessage,
     whatsapp: '09379001701',
     bale: '09379001701',
     call: '09379001701'
@@ -5162,6 +5252,8 @@ html[dir="ltr"] .hero .hero-event-card h3{
   function loadSitePaymentSettings() {
     return db.collection('settings').doc('payment').get().then(function (snap) {
       var data = snap.exists ? snap.data() : {};
+      if (data && Object.prototype.hasOwnProperty.call(data, 'noticeMessage')) data.noticeMessage = normalizedPaymentNoticeMessage(data.noticeMessage);
+      if (data && Object.prototype.hasOwnProperty.call(data, 'noticeMessage')) data.noticeMessage = normalizedPaymentNoticeMessage(data.noticeMessage);
       sitePaymentSettings = Object.assign({}, sitePaymentSettings, data);
     }).catch(function () {});
   }
@@ -6360,6 +6452,11 @@ html[dir="ltr"] .hero .hero-event-card h3{
       loadAdminDates('mock');
       loadManualMockDateOptions();
     }
+    if (s === 'manual-mock-registration') {
+      setupAdvancedManualMockForm();
+      loadAdvancedManualMockDates();
+      loadAdvancedManualMockRegistrations();
+    }
     if (s === 'gre-dates') {
       prepareExamDatePicker('gre');
       loadAdminDates('gre');
@@ -6494,7 +6591,7 @@ html[dir="ltr"] .hero .hero-event-card h3{
     var wa = normalizedPhone(sitePaymentSettings.whatsapp || phone);
     var baleValue = String(sitePaymentSettings.bale || phone).trim();
     if (title) title.textContent = serviceName ? ('درخواست ' + serviceName + ' ثبت شد') : 'اطلاعیه ثبت‌نام';
-    if (text) text.textContent = sitePaymentSettings.noticeMessage || 'اطلاعیه : جهت اطلاع و دریافت نتیجه فرایند ثبت نام در پیام رسان بله یا واتس اپ با ما در تماس باشید. متشکریم.';
+    if (text) text.textContent = normalizedPaymentNoticeMessage(sitePaymentSettings.noticeMessage);
     if (whatsapp) whatsapp.href = 'https://wa.me/' + (wa.indexOf('0') === 0 ? '98' + wa.slice(1) : wa);
     if (bale) bale.href = /^https?:\/\//i.test(baleValue) ? baleValue : ('https://ble.ir/' + encodeURIComponent(baleValue));
     if (call) call.href = 'tel:' + phone;
@@ -7611,7 +7708,7 @@ html[dir="ltr"] .hero .hero-event-card h3{
     if (!body) return;
     var date = document.getElementById('attendance-date').value || currentExamDateKey();
     var kind = document.getElementById('attendance-kind').value;
-    body.innerHTML = '<tr><td colspan="7" style="text-align:center">در حال بارگذاری...</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" style="text-align:center">در حال بارگذاری...</td></tr>';
     db.collection('exam_registrations').get().then(function (snap) {
       attendanceRows = [];
       snap.forEach(function (doc) {
@@ -7626,9 +7723,13 @@ html[dir="ltr"] .hero .hero-event-card h3{
         var registrationState = item.status === 'confirmed'
           ? '<span class="badge green">تأییدشده</span>'
           : '<button class="card-btn" style="white-space:nowrap" onclick="confirmAttendanceRegistration(\'' + item.id + '\')">تأیید و فعال‌سازی کارت</button>';
-        return '<tr><td><input class="attendance-check" type="checkbox" ' + (item.attended ? 'checked' : '') + ' onchange="setExamAttendance(\'' + item.id + '\',this.checked)"></td><td><strong>' + escapeHtml(item.name || '—') + '</strong><div style="font-size:.68rem;color:var(--gray-400)">' + escapeHtml(item.email || '') + '</div></td><td>' + escapeHtml(item.mobile || '—') + '</td><td>' + escapeHtml(item.examName || '—') + '</td><td>' + escapeHtml(item.examTime || '—') + '</td><td><input class="form-input" style="min-width:85px;padding:.4rem" value="' + escapeHtml(item.seatNumber || '') + '" placeholder="مثلاً ۱۲" onchange="setExamSeat(\'' + item.id + '\',this.value)"></td><td>' + registrationState + '</td></tr>';
-      }).join('') : '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gray-400)">برای این تاریخ شرکت‌کننده‌ای ثبت نشده است</td></tr>';
-    }).catch(function (e) { body.innerHTML = '<tr><td colspan="7">' + escapeHtml(e.message) + '</td></tr>'; });
+        var method = item.manualRegistrationAdvanced
+          ? '<span class="payment-pill ok">ثبت دستی</span><br><small>' + escapeHtml(item.registrationMethod || '—') + '</small><br><small>ثبت‌کننده: ' + escapeHtml(item.createdByName || item.createdByEmail || 'مدیر') + '</small>'
+          : '<span class="payment-pill">ثبت سایت</span>';
+        var studentInfo = '<strong>' + escapeHtml(item.name || '—') + '</strong><div style="font-size:.68rem;color:var(--gray-400);line-height:1.7">' + escapeHtml(item.email || '') + (item.manualRegistrationDate ? '<br>ثبت‌نام: ' + escapeHtml(displayExamDate(item.manualRegistrationDate)) : '') + '</div>';
+        return '<tr><td><input class="attendance-check" type="checkbox" ' + (item.attended ? 'checked' : '') + ' onchange="setExamAttendance(\'' + item.id + '\',this.checked)"></td><td>' + studentInfo + '</td><td><bdi dir="ltr">' + escapeHtml(item.mobile || '—') + '</bdi></td><td>' + escapeHtml(item.examName || '—') + '</td><td>' + escapeHtml(item.examTime || '—') + '</td><td>' + method + '</td><td><input class="form-input" style="min-width:85px;padding:.4rem" value="' + escapeHtml(item.seatNumber || '') + '" placeholder="مثلاً ۱۲" onchange="setExamSeat(\'' + item.id + '\',this.value)"></td><td>' + registrationState + '</td></tr>';
+      }).join('') : '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gray-400)">برای این تاریخ شرکت‌کننده‌ای ثبت نشده است</td></tr>';
+    }).catch(function (e) { body.innerHTML = '<tr><td colspan="8">' + escapeHtml(e.message) + '</td></tr>'; });
   }
 
   function setExamAttendance(id, attended) {
@@ -7658,9 +7759,9 @@ html[dir="ltr"] .hero .hero-event-card h3{
     var win = window.open('', '_blank', 'width=900,height=700');
     if (!win) return alert('اجازه باز شدن پنجره چاپ را فعال کنید.');
     var rows = attendanceRows.map(function (item, index) {
-      return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(item.name || '') + '</td><td>' + escapeHtml(item.mobile || '') + '</td><td>' + escapeHtml(item.examName || '') + '</td><td>' + escapeHtml(item.examTime || '') + '</td><td>□</td></tr>';
+      return '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(item.name || '') + '</td><td>' + escapeHtml(item.mobile || '') + '</td><td>' + escapeHtml(item.email || '') + '</td><td>' + escapeHtml(item.examName || '') + '</td><td>' + escapeHtml(item.examTime || '') + '</td><td>' + escapeHtml(item.manualRegistrationAdvanced ? (item.registrationMethod || 'ثبت دستی') : 'ثبت سایت') + '</td><td>□</td></tr>';
     }).join('');
-    win.document.write('<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>فهرست آزمون</title><style>body{font-family:Tahoma;padding:30px}h1{font-size:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:9px;text-align:right}</style></head><body><h1>فهرست شرکت‌کنندگان آزمون آزمایشی - ' + escapeHtml(date) + '</h1><table><thead><tr><th>#</th><th>نام</th><th>موبایل</th><th>آزمون</th><th>ساعت</th><th>حضور</th></tr></thead><tbody>' + rows + '</tbody></table></body></html>');
+    win.document.write('<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>فهرست آزمون</title><style>body{font-family:Tahoma;padding:30px}h1{font-size:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:9px;text-align:right}</style></head><body><h1>فهرست شرکت‌کنندگان آزمون آزمایشی - ' + escapeHtml(date) + '</h1><table><thead><tr><th>#</th><th>نام</th><th>موبایل</th><th>ایمیل</th><th>آزمون</th><th>ساعت</th><th>روش ثبت‌نام</th><th>حضور</th></tr></thead><tbody>' + rows + '</tbody></table></body></html>');
     win.document.close();
     win.focus();
     setTimeout(function () { win.print(); }, 300);
@@ -9306,6 +9407,264 @@ html[dir="ltr"] .hero .hero-event-card h3{
     });
   }
 
+  var advancedManualMockStep = 1;
+
+  function setupAdvancedManualMockForm() {
+    advancedManualMockStep = 1;
+    setAdvancedManualMockStep(1);
+    var regDate = document.getElementById('advanced-manual-registration-date');
+    if (regDate && !regDate.value) regDate.value = currentExamDateKey();
+    updateAdvancedManualMockSummary();
+  }
+
+  function setAdvancedManualMockStep(step) {
+    advancedManualMockStep = Math.min(3, Math.max(1, step));
+    for (var i = 1; i <= 3; i += 1) {
+      var stepEl = document.getElementById('manual-mock-step-' + i);
+      var panelEl = document.getElementById('manual-mock-panel-' + i);
+      if (stepEl) stepEl.classList.toggle('active', i === advancedManualMockStep);
+      if (panelEl) panelEl.classList.toggle('active', i === advancedManualMockStep);
+    }
+    var prev = document.getElementById('advanced-manual-prev');
+    var next = document.getElementById('advanced-manual-next');
+    var submit = document.getElementById('advanced-manual-submit');
+    if (prev) prev.disabled = advancedManualMockStep === 1;
+    if (next) next.style.display = advancedManualMockStep === 3 ? 'none' : '';
+    if (submit) submit.style.display = advancedManualMockStep === 3 ? '' : 'none';
+    updateAdvancedManualMockSummary();
+  }
+
+  window.changeAdvancedManualMockStep = function (direction) {
+    if (direction > 0 && !validateAdvancedManualMockStep(advancedManualMockStep)) return;
+    setAdvancedManualMockStep(advancedManualMockStep + direction);
+  };
+
+  function advancedManualMockValues() {
+    var dateSelect = document.getElementById('advanced-manual-exam-date');
+    var selected = dateSelect && dateSelect.options[dateSelect.selectedIndex];
+    return {
+      firstName: ((document.getElementById('advanced-manual-first-name') || {}).value || '').trim(),
+      lastName: ((document.getElementById('advanced-manual-last-name') || {}).value || '').trim(),
+      mobile: toEnglishDigits(((document.getElementById('advanced-manual-mobile') || {}).value || '').trim()),
+      email: ((document.getElementById('advanced-manual-email') || {}).value || '').trim(),
+      method: ((document.getElementById('advanced-manual-method') || {}).value || '').trim(),
+      registrationDate: ((document.getElementById('advanced-manual-registration-date') || {}).value || '').trim() || currentExamDateKey(),
+      dateId: ((document.getElementById('advanced-manual-exam-date') || {}).value || '').trim(),
+      selectedText: selected ? selected.textContent : '',
+      note: ((document.getElementById('advanced-manual-note') || {}).value || '').trim(),
+      paymentConfirmed: !!((document.getElementById('advanced-manual-payment-confirmed') || {}).checked)
+    };
+  }
+
+  function validateAdvancedManualMockStep(step) {
+    var v = advancedManualMockValues();
+    if (step === 1) {
+      if (!v.firstName || !v.lastName) return showAlert('advanced-manual-err', 'نام و نام خانوادگی را کامل وارد کنید.');
+      if (!/^09\d{9}$/.test(v.mobile)) return showAlert('advanced-manual-err', 'شماره تماس باید با فرمت 09xxxxxxxxx وارد شود.');
+      if (v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) return showAlert('advanced-manual-err', 'ایمیل واردشده معتبر نیست.');
+    }
+    if (step === 2) {
+      if (!v.method) return showAlert('advanced-manual-err', 'طریق ثبت‌نام را انتخاب کنید.');
+      if (!v.dateId) return showAlert('advanced-manual-err', 'تاریخ آزمون فعال را انتخاب کنید.');
+    }
+    var err = document.getElementById('advanced-manual-err');
+    if (err) err.style.display = 'none';
+    return true;
+  }
+
+  function updateAdvancedManualMockSummary() {
+    var box = document.getElementById('advanced-manual-summary');
+    if (!box) return;
+    var v = advancedManualMockValues();
+    var actor = currentUser ? (currentUser.name || currentUser.email || 'مدیر') : 'مدیر';
+    box.innerHTML = '<div><span>دانشجو</span><strong>' + escapeHtml([v.firstName, v.lastName].filter(Boolean).join(' ') || '—') + '</strong></div>'
+      + '<div><span>آزمون</span><strong>' + escapeHtml(v.selectedText || '—') + '</strong></div>'
+      + '<div><span>روش ثبت‌نام</span><strong>' + escapeHtml(v.method || '—') + '</strong></div>'
+      + '<div><span>ثبت‌کننده</span><strong>' + escapeHtml(actor) + '</strong></div>';
+  }
+
+  function loadAdvancedManualMockDates() {
+    var select = document.getElementById('advanced-manual-exam-date');
+    var filterSelect = document.getElementById('advanced-manual-filter-exam');
+    if (!select && !filterSelect) return;
+    if (select) select.innerHTML = '<option value="">در حال بارگذاری تاریخ‌های فعال...</option>';
+    var today = currentExamDateKey();
+    db.collection('mock_dates').orderBy('date').get().then(function (snap) {
+      var html = '<option value="">انتخاب تاریخ فعال آزمون ماک</option>';
+      var filterHtml = '<option value="">همه تاریخ‌های آزمون</option>';
+      var count = 0;
+      snap.forEach(function (doc) {
+        var d = doc.data() || {};
+        if (d.date) filterHtml += '<option value="' + escapeHtml(d.date) + '">' + escapeHtml(d.type || 'Mock') + ' | ' + escapeHtml(displayExamDate(d.date)) + ' | ساعت ' + escapeHtml(d.time || '09:00') + '</option>';
+        if (!d.date || d.date < today) return;
+        var registered = Number(d.registered || 0);
+        var manual = Number(d.manualRegistered || 0);
+        var capacity = Number(d.capacity || 15);
+        var remaining = Math.max(0, capacity - registered - manual);
+        if (remaining <= 0) return;
+        count += 1;
+        var pair = examDatePair(d.date);
+        html += '<option value="' + doc.id + '" data-remaining="' + remaining + '">' + escapeHtml(d.type || 'Mock') + ' | ' + escapeHtml(pair.gregorian) + ' | ' + escapeHtml(pair.jalali || '') + ' | ساعت ' + escapeHtml(d.time || '09:00') + ' | ظرفیت خالی: ' + remaining + '</option>';
+      });
+      if (select) select.innerHTML = count ? html : '<option value="">هیچ تاریخ باز و دارای ظرفیت خالی وجود ندارد</option>';
+      if (filterSelect) {
+        var oldValue = filterSelect.value;
+        filterSelect.innerHTML = filterHtml;
+        if (oldValue) filterSelect.value = oldValue;
+      }
+      updateAdvancedManualMockSummary();
+    }).catch(function (e) {
+      if (select) select.innerHTML = '<option value="">خطا در بارگذاری تاریخ‌ها</option>';
+      showAlert('advanced-manual-err', e.message || 'بارگذاری تاریخ‌های باز انجام نشد.');
+    });
+  }
+
+  function advancedManualMockFilters() {
+    return {
+      examDate: ((document.getElementById('advanced-manual-filter-exam') || {}).value || '').trim(),
+      registrationDate: ((document.getElementById('advanced-manual-filter-registration') || {}).value || '').trim(),
+      method: ((document.getElementById('advanced-manual-filter-method') || {}).value || '').trim(),
+      payment: ((document.getElementById('advanced-manual-filter-payment') || {}).value || '').trim(),
+      sort: ((document.getElementById('advanced-manual-sort') || {}).value || 'created-desc').trim()
+    };
+  }
+
+  window.clearAdvancedManualMockFilters = function () {
+    ['advanced-manual-filter-exam','advanced-manual-filter-registration','advanced-manual-filter-method','advanced-manual-filter-payment'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    var sort = document.getElementById('advanced-manual-sort');
+    if (sort) sort.value = 'created-desc';
+    loadAdvancedManualMockRegistrations();
+  };
+
+  function clearAdvancedManualMockForm() {
+    ['advanced-manual-first-name','advanced-manual-last-name','advanced-manual-mobile','advanced-manual-email','advanced-manual-note'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    var method = document.getElementById('advanced-manual-method'); if (method) method.value = 'حضوری';
+    var regDate = document.getElementById('advanced-manual-registration-date'); if (regDate) regDate.value = currentExamDateKey();
+    var pay = document.getElementById('advanced-manual-payment-confirmed'); if (pay) pay.checked = false;
+    setAdvancedManualMockStep(1);
+  }
+
+  function submitAdvancedManualMockRegistration() {
+    if (!validateAdvancedManualMockStep(1) || !validateAdvancedManualMockStep(2)) return;
+    var v = advancedManualMockValues();
+    var fullName = [v.firstName, v.lastName].filter(Boolean).join(' ');
+    db.collection('mock_dates').doc(v.dateId).get().then(function (snap) {
+      if (!snap.exists) throw new Error('تاریخ انتخاب‌شده پیدا نشد.');
+      var date = snap.data() || {};
+      var registered = Number(date.registered || 0);
+      var manual = Number(date.manualRegistered || 0);
+      var capacity = Number(date.capacity || 15);
+      var remaining = Math.max(0, capacity - registered - manual);
+      if (remaining <= 0) throw new Error('ظرفیت این تاریخ تکمیل شده است.');
+      var newManual = manual + 1;
+      var actorName = currentUser ? (currentUser.name || currentUser.email || 'مدیر') : 'مدیر';
+      var combinedNote = [
+        date.manualNote || '',
+        'ثبت دستی: ' + fullName + ' | ' + v.method + ' | ثبت‌کننده: ' + actorName + (v.note ? ' | ' + v.note : '')
+      ].filter(Boolean).join('\n');
+      var mockType = /GRE/i.test(date.type || '') ? 'gre' : 'toefl';
+      return Promise.all([
+        db.collection('mock_dates').doc(v.dateId).update({
+          manualRegistered: newManual,
+          manualNote: combinedNote,
+          manualUpdatedAt: new Date().toISOString()
+        }),
+        db.collection('exam_registrations').add({
+          userId: 'manual',
+          manualEntry: true,
+          manualRegistrationAdvanced: true,
+          manualCount: 1,
+          type: 'mock',
+          mockType: mockType,
+          category: mockType === 'gre' ? 'mock-gre' : 'mock-toefl',
+          dateId: v.dateId,
+          examName: date.type || mockTypeLabel(mockType),
+          examDate: date.date || '',
+          examTime: date.time || '09:00',
+          firstName: v.firstName,
+          lastName: v.lastName,
+          name: fullName,
+          email: v.email,
+          mobile: v.mobile,
+          registrationMethod: v.method,
+          manualRegistrationDate: v.registrationDate,
+          paymentConfirmed: v.paymentConfirmed,
+          paymentStatus: v.paymentConfirmed ? 'confirmed' : 'pending',
+          paymentConfirmedAt: v.paymentConfirmed ? new Date().toISOString() : '',
+          note: v.note,
+          createdBy: currentUser ? currentUser.uid : '',
+          createdByName: actorName,
+          createdByEmail: currentUser ? (currentUser.email || '') : '',
+          createdByRole: currentUser ? (currentUser.role || '') : '',
+          createdAt: new Date().toISOString(),
+          status: v.paymentConfirmed ? 'confirmed' : 'manual'
+        })
+      ]);
+    }).then(function () {
+      showAlert('advanced-manual-ok', 'ثبت دستی دانشجو انجام شد و یک نفر از ظرفیت باز سایت کم شد.');
+      clearAdvancedManualMockForm();
+      loadAdvancedManualMockDates();
+      loadAdvancedManualMockRegistrations();
+      loadAdminDates('mock');
+      loadPublicDates('mock', publicDatePages.mock || 1);
+      loadHeroUpcomingDates();
+      refreshNewRegistrationBadge();
+      if (document.getElementById('admin-attendance') && document.getElementById('admin-attendance').classList.contains('active')) loadExamAttendance();
+    }).catch(function (e) {
+      showAlert('advanced-manual-err', e.message || 'ثبت دستی انجام نشد.');
+    });
+  }
+
+  function loadAdvancedManualMockRegistrations() {
+    var box = document.getElementById('advanced-manual-list');
+    if (!box) return;
+    var filters = advancedManualMockFilters();
+    box.innerHTML = '<div class="chat-empty">در حال بارگذاری ثبت‌های دستی...</div>';
+    db.collection('exam_registrations').get().then(function (snap) {
+      var rows = [];
+      snap.forEach(function (doc) {
+        var d = doc.data() || {};
+        if (d.manualRegistrationAdvanced) rows.push(Object.assign({ id: doc.id }, d));
+      });
+      rows = rows.filter(function (r) {
+        if (filters.examDate && r.examDate !== filters.examDate) return false;
+        if (filters.registrationDate && (r.manualRegistrationDate || '').slice(0, 10) !== filters.registrationDate) return false;
+        if (filters.method && r.registrationMethod !== filters.method) return false;
+        if (filters.payment === 'confirmed' && !r.paymentConfirmed) return false;
+        if (filters.payment === 'pending' && r.paymentConfirmed) return false;
+        return true;
+      });
+      rows.sort(function (a, b) {
+        if (filters.sort === 'created-asc') return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+        if (filters.sort === 'exam-asc') return String(a.examDate || '').localeCompare(String(b.examDate || '')) || String(a.examTime || '').localeCompare(String(b.examTime || ''));
+        if (filters.sort === 'exam-desc') return String(b.examDate || '').localeCompare(String(a.examDate || '')) || String(b.examTime || '').localeCompare(String(a.examTime || ''));
+        if (filters.sort === 'name-asc') return String(a.name || '').localeCompare(String(b.name || ''), 'fa');
+        return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+      });
+      if (!rows.length) {
+        box.innerHTML = '<div class="chat-empty">ثبت دستی مطابق این فیلترها پیدا نشد.</div>';
+        return;
+      }
+      box.innerHTML = rows.slice(0, 60).map(function (r) {
+        var payment = r.paymentConfirmed ? '<span class="payment-pill ok">واریز تأیید شده</span>' : '<span class="payment-pill">در انتظار تأیید واریز</span>';
+        var eventDate = displayExamDate(r.examDate || '') + (r.examTime ? ' - ' + r.examTime : '');
+        return '<article class="manual-entry-card"><div><h4>' + escapeHtml(r.name || 'بدون نام') + '</h4><p>'
+          + escapeHtml(r.examName || 'آزمون ماک') + '<br>شماره تماس: <bdi dir="ltr">' + escapeHtml(r.mobile || '') + '</bdi>' + (r.email ? ' | ایمیل: ' + escapeHtml(r.email) : '')
+          + '<br>طریق ثبت‌نام: ' + escapeHtml(r.registrationMethod || '—') + ' | تاریخ ثبت‌نام: ' + escapeHtml(displayExamDate(r.manualRegistrationDate || r.createdAt || ''))
+          + '<br>تاریخ آزمون: ' + escapeHtml(eventDate) + (r.note ? '<br>یادداشت: ' + escapeHtml(r.note) : '') + '</p></div>'
+          + '<div class="manual-entry-meta">' + payment + '<br><br>ثبت‌کننده:<br><strong>' + escapeHtml(r.createdByName || r.createdByEmail || 'مدیر') + '</strong><br>' + escapeHtml(formatPanelDate(r.createdAt || '')) + '</div></article>';
+      }).join('');
+    }).catch(function (e) {
+      box.innerHTML = '<div class="chat-empty">' + escapeHtml(e.message || 'بارگذاری ثبت‌های دستی انجام نشد') + '</div>';
+    });
+  }
+
   function formatHeroDateLabel(value) {
     if (!value) return '';
     return formatGregorianDisplay(value);
@@ -9848,7 +10207,7 @@ html[dir="ltr"] .hero .hero-event-card h3{
         'payment-mode': data.mode || 'test',
         'payment-merchant-id': data.merchantId || '',
         'payment-callback-url': data.callbackUrl || '',
-        'payment-notice-message': data.noticeMessage || sitePaymentSettings.noticeMessage,
+        'payment-notice-message': normalizedPaymentNoticeMessage(data.noticeMessage || sitePaymentSettings.noticeMessage),
         'payment-whatsapp': data.whatsapp || sitePaymentSettings.whatsapp,
         'payment-bale': data.bale || sitePaymentSettings.bale,
         'payment-call': data.call || sitePaymentSettings.call
