@@ -26,6 +26,9 @@ const fmtDate = (d, lang) => new Date(d).toLocaleDateString(lang === "fa" ? "fa-
 const fmtDateTime = (d, lang) => new Date(d).toLocaleString(lang === "fa" ? "fa-IR" : "en-US");
 
 const PATTERNS = ["circuit", "hex", "scan", "dots", "grid", "wave"];
+const SERVICE_IMAGES = ["/assets/data-recovery.png", "/assets/repair-lab.png", "/assets/repair-lab.png", "/assets/repair-lab.png", "/assets/projector-product.png"];
+const SECTION_IMAGES = { services: "/assets/repair-lab.png", shop: "/assets/projector-product.png", about: "/assets/repair-lab.png", contact: "/assets/data-recovery.png", faq: "/assets/repair-lab.png", articles: "/assets/data-recovery.png" };
+const productImage = (p) => p?.image || "/assets/projector-product.png";
 const patternStyle = (pattern) => {
   switch (pattern) {
     case "circuit": return { backgroundImage: "linear-gradient(115deg, rgba(220,38,38,0.35) 0%, transparent 40%), repeating-linear-gradient(0deg, rgba(255,255,255,0.07) 0px, rgba(255,255,255,0.07) 1px, transparent 1px, transparent 22px), repeating-linear-gradient(90deg, rgba(255,255,255,0.07) 0px, rgba(255,255,255,0.07) 1px, transparent 1px, transparent 22px)", backgroundColor: "#0a0a0a" };
@@ -917,7 +920,7 @@ function HomePage({ content, navigate, lang }) {
   );
 }
 
-function ServiceCard({ s, lang }) {
+function ServiceCard({ s, lang, fallbackImage }) {
   return (
     <TiltCard className={`group relative rounded-2xl overflow-hidden transition-all duration-300 h-full bg-white ${s.featured ? "border-2 border-red-600 shadow-xl sm:col-span-2 lg:col-span-1" : "border border-black/10 hover:border-red-600 hover:shadow-lg"}`}>
       {s.featured && (
@@ -925,7 +928,7 @@ function ServiceCard({ s, lang }) {
           {lang === "fa" ? "مهم‌ترین خدمت ما" : "Our Top Service"}
         </span>
       )}
-      <PatternBox pattern={s.pattern} image={s.image} className={`flex items-center justify-center ${s.featured ? "h-36" : "h-28"}`}>
+      <PatternBox pattern={s.pattern} image={s.image || fallbackImage} className={`flex items-center justify-center ${s.featured ? "h-36" : "h-28"}`}>
         <IconBadge name={s.icon} className="text-white relative z-10 group-hover:scale-110 transition-transform duration-300" size={s.featured ? 46 : 38} />
       </PatternBox>
       <div className="p-6">
@@ -995,12 +998,13 @@ function SectionIllustration({ variant }) {
 }
 
 function PageHeader({ eyebrow, title, subtitle, image, variant }) {
+  const displayImage = image || SECTION_IMAGES[variant];
   return (
     <section className="relative pt-32 pb-14 px-4 sm:px-6 border-b border-black/10 overflow-hidden bg-neutral-50">
       <div className="absolute -top-10 -right-10 w-72 h-72 bg-red-100 rounded-full blur-3xl blob" />
       <div className="relative max-w-4xl mx-auto text-center">
-        {image ? (
-          <div className="w-28 h-20 mx-auto mb-4 rounded-xl overflow-hidden"><img src={resolveImageUrl(image)} alt="" className="w-full h-full object-cover" /></div>
+        {displayImage ? (
+          <div className="w-28 h-20 mx-auto mb-4 rounded-xl overflow-hidden"><img src={resolveImageUrl(displayImage)} alt="" className="w-full h-full object-cover" /></div>
         ) : variant ? (
           <div className="mb-4"><SectionIllustration variant={variant} /></div>
         ) : null}
@@ -1024,7 +1028,7 @@ function ServicesPage({ content, lang, onRequestService }) {
       </section>
       <section className="pb-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {content.services.map((s, idx) => <Reveal key={s.id} delay={idx * 70}><ServiceCard s={s} lang={lang} /></Reveal>)}
+          {content.services.map((s, idx) => <Reveal key={s.id} delay={idx * 70}><ServiceCard s={s} fallbackImage={SERVICE_IMAGES[idx % SERVICE_IMAGES.length]} lang={lang} /></Reveal>)}
         </div>
       </section>
       <TrustBar lang={lang} variant="services" />
@@ -1082,7 +1086,7 @@ function ProductCard({ p, onAdd, dark, lang }) {
   return (
     <TiltCard className={`group rounded-2xl overflow-hidden border transition-colors duration-300 h-full flex flex-col ${dark ? "border-white/10 hover:border-red-600 bg-neutral-900" : "border-black/10 hover:border-red-600 bg-white"}`}>
       <button onClick={() => navigate(`product/${p.id}`)} className="text-right">
-        <PatternBox pattern={p.pattern} image={p.image} className="h-40 flex items-center justify-center">
+        <PatternBox pattern={p.pattern} image={productImage(p)} className="h-40 flex items-center justify-center">
           <IconBadge name={p.icon} className="text-white group-hover:scale-110 transition-transform duration-300" size={52} />
           <span className="absolute top-3 right-3 text-[10px] bg-black/70 border border-red-500/50 rounded-full px-2 py-1 text-red-400">{tr(p.category, lang)}</span>
         </PatternBox>
@@ -1127,8 +1131,8 @@ function ShopPage({ content, addToCart, lang }) {
     <div className="bg-white min-h-screen">
       <section className="relative pt-36 pb-10 px-4 sm:px-6 overflow-hidden border-b border-black/10 bg-black">
         <div className="relative max-w-7xl mx-auto text-center">
-          {content.pageHeaders?.shop?.image ? (
-            <div className="w-32 h-24 mx-auto mb-4 rounded-xl overflow-hidden"><img src={resolveImageUrl(content.pageHeaders.shop.image)} alt="" className="w-full h-full object-cover" /></div>
+          {content.pageHeaders?.shop?.image || SECTION_IMAGES.shop ? (
+            <div className="w-32 h-24 mx-auto mb-4 rounded-xl overflow-hidden"><img src={resolveImageUrl(content.pageHeaders?.shop?.image || SECTION_IMAGES.shop)} alt="" className="w-full h-full object-cover" /></div>
           ) : (
             <div className="mb-4 opacity-90"><SectionIllustration variant="shop" /></div>
           )}
@@ -1197,7 +1201,7 @@ function ProductDetailPage({ content, id, addToCart, lang, currentUser, onNeedAu
       <div className="max-w-6xl mx-auto">
         <button onClick={() => navigate("shop")} className="flex items-center gap-1.5 text-black/50 hover:text-red-600 text-sm mb-8"><ChevronRight size={16} /> {ui("backToShop", lang)}</button>
         <div className="grid md:grid-cols-2 gap-10">
-          <PatternBox pattern={p.pattern} image={p.image} className="h-80 md:h-full min-h-[320px] rounded-2xl flex items-center justify-center">
+          <PatternBox pattern={p.pattern} image={productImage(p)} className="h-80 md:h-full min-h-[320px] rounded-2xl flex items-center justify-center">
             <IconBadge name={p.icon} size={110} className="text-white" />
           </PatternBox>
           <div>
