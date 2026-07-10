@@ -346,7 +346,7 @@ async function sendSmsNotification(order, status) {
     const res2 = await fetch(cfg.sms_webhook_url, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(cfg.sms_api_key ? { Authorization: `Bearer ${cfg.sms_api_key}` } : {}) },
-      body: JSON.stringify({ to: order.customer_phone, sender: cfg.sms_sender, message: `${STATUS_LABELS_FA[status] || status} — نوین پلی‌تکنیک` }),
+      body: JSON.stringify({ to: order.customer_phone, sender: cfg.sms_sender, message: `${STATUS_LABELS_FA[status] || status} — نوین پلی‌تکنیک البرز` }),
     });
     if (!res2.ok) return { ok: false, error: `سرویس پیامک خطا داد (${res2.status})` };
     return { ok: true };
@@ -594,5 +594,5 @@ app.get(/^(?!\/api).*/, (req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ سرور نوین پلی‌تکنیک روی پورت ${PORT} در حال اجراست`);
+  console.log(`✅ سرور نوین پلی‌تکنیک البرز روی پورت ${PORT} در حال اجراست`);
 });

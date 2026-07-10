@@ -14,48 +14,48 @@ export const DEFAULT_CONTENT = {
       fa: "کرج، عظیمیه، میدان طالقانی، پاساژ آسیا، طبقه همکف، واحد ۲۱",
       en: "Ground Floor, Unit 21, Asia Passage, Taleghani Square, Azimieh, Karaj, Iran",
     },
-    instagram: "https://www.instagram.com/eng.amin.rezvani?igsh=MWM1bGtzMDhoM25rYg==",
-    telegram: "novinpolytechnic",
-    whatsapp: "",
-    bale: "",
+    instagram: "https://instagram.com/eng.amin.rezvani",
+    telegram: "09301100256",
+    whatsapp: "09124647963",
+    bale: "09124647963",
   },
   hero: {
     eyebrow: { fa: "بیش از ۱۰ سال تجربه در تعمیر و بازیابی اطلاعات", en: "10+ years of repair & data recovery experience" },
     title: { fa: "نوین پلی‌تکنیک البرز", en: "Novin Polytechnic Alborz" },
     subtitle: {
-      fa: "هاردتون به مشکل خورده؟ اطلاعاتتون بالا نمی‌آد؟ ما با بهره‌مندی از به‌روزترین و تخصصی‌ترین دستگاه‌ها این توانایی رو داریم که اطلاعات شما رو از هاردهای اینترنال، اکسترنال و SSD استخراج کنیم.",
-      en: "Is your hard drive failing? Data won't show up? Using the most advanced, specialized recovery equipment, we can extract your data from internal drives, external drives, and SSDs.",
+      fa: "هارد اکسترنالتون شناسایی نمی‌شه؟ اطلاعاتتون پاک شده؟ مشکلی نیست؛ ما با بهره‌مندی از نوین‌ترین و به‌روزترین دستگاه‌های تخصصی بازیابی و با توانایی و دانش بالای تیم فنی خود، امکان رفع مشکل و بازیابی اطلاعاتتون را از انواع هاردهای HDD و SSD داریم.",
+      en: "Is your external hard drive not recognized? Has your data been deleted? No problem. With up-to-date specialist recovery equipment and a highly skilled technical team, we can recover data from HDD and SSD drives.",
     },
     ctaText: { fa: "خدمات و بازیابی اطلاعات", en: "Services & Data Recovery" },
     ctaText2: { fa: "رفتن به فروشگاه", en: "Browse the Shop" },
   },
   services: [
     {
-      id: uid("srv"), icon: "HardDrive", pattern: "dots", featured: true,
+      id: uid("srv"), icon: "HardDrive", pattern: "dots", image: "/assets/data-recovery.svg", featured: true,
       title: { fa: "تعمیر هارد و بازیابی اطلاعات", en: "Hard Drive Repair & Data Recovery" },
-      desc: { fa: "بازیابی اطلاعات از هارد اکسترنال، اینترنال و SSD. هاردتون به مشکل خورده و اطلاعاتتون بالا نمی‌آد؟ ما با بهره‌مندی از به‌روزترین و تخصصی‌ترین دستگاه‌ها این توانایی رو داریم که اطلاعات شما رو از هاردهای اینترنال، اکسترنال و SSD استخراج کنیم.", en: "Data recovery from external, internal hard drives, and SSDs. Is your drive failing and your data won't show up? Using the most advanced, specialized recovery equipment, we can extract your data from internal drives, external drives, and SSDs." },
+      desc: { fa: "هارد اکسترنالتون شناسایی نمی‌شه؟ اطلاعاتتون پاک شده؟ مشکلی نیست؛ ما با بهره‌مندی از نوین‌ترین و به‌روزترین دستگاه‌های تخصصی بازیابی و با توانایی و دانش بالای تیم فنی خود، امکان رفع مشکل و بازیابی اطلاعاتتون را از انواع هاردهای HDD و SSD داریم.", en: "Is your external hard drive not recognized? Has your data been deleted? No problem. With up-to-date specialist recovery equipment and a highly skilled technical team, we can recover data from HDD and SSD drives." },
       priceRange: { fa: "از ۶۰۰,۰۰۰ تومان، بسته به شدت آسیب", en: "From 600,000 Toman, depending on severity" },
     },
     {
-      id: uid("srv"), icon: "Monitor", pattern: "circuit",
+      id: uid("srv"), icon: "Monitor", pattern: "circuit", image: "/assets/repair-lab.svg",
       title: { fa: "تعمیر کامپیوتر و لپ‌تاپ", en: "Computer & Laptop Repair" },
       desc: { fa: "روشن نشدن، بلو اسکرین، کندی بیش‌ازحد یا صدای عجیب فن — قبل از تعویض قطعه، بذارید دقیق عیب‌یابی کنیم. خیلی وقت‌ها مشکل چیزی نیست که فکرش رو می‌کنید.", en: "Won't turn on, blue screens, painfully slow, or a fan that won't stop whining — before you replace anything, let us actually diagnose it. Often it's not what you think." },
       priceRange: { fa: "از ۲۵۰,۰۰۰ تا ۱,۵۰۰,۰۰۰ تومان", en: "250,000 – 1,500,000 Toman" },
     },
     {
-      id: uid("srv"), icon: "Gamepad2", pattern: "scan",
+      id: uid("srv"), icon: "Gamepad2", pattern: "scan", image: "/assets/repair-lab.svg",
       title: { fa: "تعمیر پلی‌استیشن ۴ و ۵", en: "PS4 & PS5 Repair" },
       desc: { fa: "دیسک‌خور دیسک رو نمی‌خونه، کنسول خیلی داغ می‌کنه یا روی صفحه‌ی HDMI هیچی نمیاد؟ این‌ها رایج‌ترین خرابی‌هایی هستن که هر هفته می‌بینیم و می‌دونیم دقیقاً از کجا شروع کنیم.", en: "Disc drive won't read, console runs hot, or nothing shows up on HDMI? These are the faults we see every single week — we know exactly where to start looking." },
       priceRange: { fa: "از ۳۰۰,۰۰۰ تا ۲,۰۰۰,۰۰۰ تومان", en: "300,000 – 2,000,000 Toman" },
     },
     {
-      id: uid("srv"), icon: "Cpu", pattern: "hex",
+      id: uid("srv"), icon: "Cpu", pattern: "hex", image: "/assets/repair-lab.svg",
       title: { fa: "اورهال کامل سیستم", en: "Full System Overhaul" },
       desc: { fa: "تعویض خمیر حرارتی، تمیزکاری کامل داخل دستگاه، تست پایداری زیر بار و بهینه‌سازی نرم‌افزاری — برای سیستمی که چند ساله ازش استفاده می‌کنید و می‌خواید مثل روز اول کار کنه.", en: "New thermal paste, a proper internal clean-out, stress testing, and software tuning — for a machine you've had a few years that you want running like new again." },
       priceRange: { fa: "از ۴۰۰,۰۰۰ تا ۹۰۰,۰۰۰ تومان", en: "400,000 – 900,000 Toman" },
     },
     {
-      id: uid("srv"), icon: "Zap", pattern: "wave",
+      id: uid("srv"), icon: "Zap", pattern: "wave", image: "/assets/projector-showcase.svg",
       title: { fa: "سرویس و کالیبراسیون پروژکتور", en: "Projector Service & Calibration" },
       desc: { fa: "تعویض لامپ، تمیزکاری فیلتر گردوگیر و تنظیم دقیق فوکوس و رنگ — چه پروژکتور رو از ما خریده باشید چه جای دیگه.", en: "Lamp replacement, dust filter cleaning, and precise focus/color calibration — whether you bought the projector from us or somewhere else." },
       priceRange: { fa: "از ۵۰۰,۰۰۰ تومان (بدون قیمت لامپ)", en: "From 500,000 Toman (lamp cost separate)" },
@@ -63,45 +63,39 @@ export const DEFAULT_CONTENT = {
   ],
   products: [
     {
-      id: uid("prj"), brand: "Epson", technology: "3LCD", resolution: "Full HD 1080p", lumens: 2700, price: 28500000, stock: 4, icon: "Monitor", pattern: "circuit",
+      id: uid("prj"), brand: "Epson", technology: "3LCD", resolution: "Full HD 1080p", lumens: 2700, price: 28500000, stock: 4, icon: "Monitor", pattern: "circuit", image: "/assets/projector-showcase.svg",
       name: { fa: "اپسون EH-TW5825", en: "Epson EH-TW5825" },
       category: { fa: "خانگی", en: "Home Cinema" },
-      warranty: { fa: "۲۴ ماه", en: "24 months" },
       desc: { fa: "اگه دنبال یه پروژکتور برای سینمای خانگی هستید که رنگ‌ها توش واقعی دربیان نه بیش‌ازحد اشباع، این مدل انتخاب خوبیه. کنتراستش برای دیدن فیلم توی اتاق نیمه‌تاریک عالیه.", en: "If you want a home cinema projector where colors look real instead of oversaturated, this is a solid pick. Contrast is great for movie nights in a dim room." },
     },
     {
-      id: uid("prj"), brand: "BenQ", technology: "DLP", resolution: "Full HD 1080p", lumens: 3500, price: 24900000, stock: 6, icon: "Monitor", pattern: "hex",
+      id: uid("prj"), brand: "BenQ", technology: "DLP", resolution: "Full HD 1080p", lumens: 3500, price: 24900000, stock: 6, icon: "Monitor", pattern: "hex", image: "/assets/projector-showcase.svg",
       name: { fa: "بنکیو TH585", en: "BenQ TH585" },
       category: { fa: "خانگی", en: "Home Cinema" },
-      warranty: { fa: "۱۸ ماه", en: "18 months" },
       desc: { fa: "نرخ رفرش بالاش رو حس می‌کنید وقتی فیلم اکشن یا بازی روی پرده‌ی بزرگ می‌بینید — تصویر شل نمی‌شه. قیمتش هم نسبت به کیفیتی که می‌ده منصفانه‌ست.", en: "You feel that high refresh rate during action movies or games on the big screen — nothing looks smeared. Fair price for what you get." },
     },
     {
-      id: uid("prj"), brand: "Panasonic", technology: "3LCD Laser", resolution: "WUXGA", lumens: 5000, price: 68000000, stock: 2, icon: "Cpu", pattern: "grid",
+      id: uid("prj"), brand: "Panasonic", technology: "3LCD Laser", resolution: "WUXGA", lumens: 5000, price: 68000000, stock: 2, icon: "Cpu", pattern: "grid", image: "/assets/projector-showcase.svg",
       name: { fa: "پاناسونیک PT-VMZ50", en: "Panasonic PT-VMZ50" },
       category: { fa: "اداری و تجاری", en: "Business & Conference" },
-      warranty: { fa: "۲۴ ماه", en: "24 months" },
       desc: { fa: "برای اتاق کنفرانس یا سالن همایش که نور محیط زیاده، منبع نوری لیزریش یعنی سال‌ها بدون نگرانی تعویض لامپ کار می‌کنه.", en: "For a conference room or event hall with a lot of ambient light, the laser light source means years of use without worrying about lamp replacement." },
     },
     {
-      id: uid("prj"), brand: "Xiaomi", technology: "Smart LED", resolution: "Full HD 1080p", lumens: 500, price: 15200000, stock: 10, icon: "Zap", pattern: "dots",
+      id: uid("prj"), brand: "Xiaomi", technology: "Smart LED", resolution: "Full HD 1080p", lumens: 500, price: 15200000, stock: 10, icon: "Zap", pattern: "dots", image: "/assets/projector-showcase.svg",
       name: { fa: "شیائومی Mi Smart 2", en: "Xiaomi Mi Smart Projector 2" },
       category: { fa: "قابل‌حمل", en: "Portable" },
-      warranty: { fa: "۱۲ ماه", en: "12 months" },
       desc: { fa: "کوچیک و سبکه، اندروید داخلیش یعنی مستقیم از نتفلیکس و یوتیوب پخش می‌کنید بدون هیچ دستگاه اضافه. برای اتاق خواب یا سفر عالیه.", en: "Small and light, with built-in Android so you stream Netflix and YouTube straight from it — no extra box needed. Great for a bedroom or travel." },
     },
     {
-      id: uid("prj"), brand: "Optoma", technology: "DLP", resolution: "Full HD 1080p", lumens: 3600, price: 21800000, stock: 7, icon: "Monitor", pattern: "scan",
+      id: uid("prj"), brand: "Optoma", technology: "DLP", resolution: "Full HD 1080p", lumens: 3600, price: 21800000, stock: 7, icon: "Monitor", pattern: "scan", image: "/assets/projector-showcase.svg",
       name: { fa: "اپتما HD146X", en: "Optoma HD146X" },
       category: { fa: "خانگی", en: "Home Cinema" },
-      warranty: { fa: "۱۸ ماه", en: "18 months" },
       desc: { fa: "اگه بودجه محدوده و می‌خواید اولین تجربه‌تون از سینمای خانگی رو شروع کنید، این مدل بیشترین کیفیت رو به ازای قیمتش می‌ده.", en: "If your budget is tight and this is your first home-cinema setup, this model gives you the most quality per toman." },
     },
     {
-      id: uid("prj"), brand: "XGIMI", technology: "LED + Battery", resolution: "Full HD 1080p", lumens: 900, price: 32500000, stock: 5, icon: "Layers", pattern: "wave",
+      id: uid("prj"), brand: "XGIMI", technology: "LED + Battery", resolution: "Full HD 1080p", lumens: 900, price: 32500000, stock: 5, icon: "Layers", pattern: "wave", image: "/assets/projector-showcase.svg",
       name: { fa: "ایکس‌جیمی Halo+", en: "XGIMI Halo+" },
       category: { fa: "قابل‌حمل", en: "Portable" },
-      warranty: { fa: "۱۲ ماه", en: "12 months" },
       desc: { fa: "باتری داخلیش رو حداقل ۲ ساعت پخش می‌کنه بدون برق — عالی برای سینمای حیاط یا کمپینگ که پریز برق دم دست نیست.", en: "The built-in battery streams for at least 2 hours without a wall outlet — perfect for a backyard movie night or camping trip." },
     },
   ],
@@ -117,8 +111,8 @@ export const DEFAULT_CONTENT = {
   faq: [
     {
       id: uid("faq"),
-      question: { fa: "آیا محصولات فروشگاه گارانتی دارند؟", en: "Do the products come with a warranty?" },
-      answer: { fa: "بله، همه‌ی پروژکتورها گارانتی شرکتی معتبر دارن؛ مدت دقیقش توی صفحه‌ی هر محصول نوشته شده، معمولاً بین ۱۲ تا ۲۴ ماه.", en: "Yes, every projector comes with a genuine manufacturer warranty. The exact duration is listed on each product page, usually between 12 and 24 months." },
+      question: { fa: "آیا امکان مشاوره پیش از خرید وجود دارد؟", en: "Can I get advice before buying?" },
+      answer: { fa: "بله، برای انتخاب مدل مناسب با فضای شما و بودجه‌تان می‌توانید با ما در تماس باشید.", en: "Yes. Contact us for help selecting a model that suits your space and budget." },
     },
     {
       id: uid("faq"),
@@ -148,8 +142,8 @@ export const DEFAULT_CONTENT = {
   ],
   footer: {
     about: {
-      fa: "نوین پلی‌تکنیک البرز از سال ۱۳۹۲ در حال تعمیر تخصصی کامپیوتر و پلی‌استیشن و بازیابی اطلاعاته، و چند سالیه فروش مستقیم ویدئو پروژکتور با گارانتی معتبر رو هم شروع کرده.",
-      en: "Since 2013, Novin Polytechnic Alborz has specialized in computer and PlayStation repair and data recovery, and more recently started selling video projectors directly, all backed by genuine warranty.",
+      fa: "نوین پلی‌تکنیک البرز از سال ۱۳۹۲ در حال تعمیر تخصصی کامپیوتر و پلی‌استیشن، بازیابی اطلاعات و فروش مستقیم ویدئو پروژکتور است.",
+      en: "Since 2013, Novin Polytechnic Alborz has specialized in computer and PlayStation repair, data recovery, and direct sales of video projectors.",
     },
     columns: [
       {
@@ -176,8 +170,8 @@ export const DEFAULT_CONTENT = {
   },
   about: {
     content: {
-      fa: "نوین پلی‌تکنیک البرز رو یه تیم کوچیک از تعمیرکارهای باتجربه راه انداختن که خسته شده بودن از اینکه مشتری‌ها نمی‌دونستن دقیقاً چه مشکلی داره حل می‌شه و چقدر هزینه می‌بره. برای همین از همون اول، عیب‌یابی رایگان و پیش‌فاکتور شفاف رو اصل کارمون گذاشتیم. چند سال بعد، چون خیلی از مشتری‌ها برای پروژکتورهاشون هم سراغمون می‌اومدن، فروش مستقیم چند برند معتبر رو هم شروع کردیم — با گارانتی معتبر شرکتی روی محصولات و همون شفافیت همیشگی.",
-      en: "Novin Polytechnic Alborz started as a small team of experienced repair technicians who were tired of customers never knowing exactly what was being fixed or what it would cost. So from day one, free diagnostics and a transparent quote became our baseline. A few years later, since so many customers were also coming to us about their projectors, we started selling a handful of trusted brands directly — with genuine manufacturer warranty on every product and the same transparency as always.",
+      fa: "نوین پلی‌تکنیک البرز را تیمی از تعمیرکارهای باتجربه راه‌اندازی کردند تا مشتری‌ها دقیقاً بدانند چه مشکلی رفع می‌شود و هزینه‌ها چگونه محاسبه می‌شوند. از همان ابتدا، عیب‌یابی شفاف و پیش‌فاکتور دقیق را اصل کارمان گذاشتیم. با افزایش درخواست مشتری‌ها برای پروژکتور، فروش مستقیم چند برند معتبر را نیز آغاز کردیم.",
+      en: "Novin Polytechnic Alborz was founded by experienced technicians so customers can understand exactly what is being fixed and what it costs. From day one, transparent diagnostics and precise quotations have been central to our work. As customer demand for projectors grew, we also began direct sales of selected trusted brands.",
     },
     stats: [
       { value: { fa: "+۱۰", en: "10+" }, label: { fa: "سال تجربه", en: "Years of Experience" } },
@@ -186,11 +180,11 @@ export const DEFAULT_CONTENT = {
     ],
   },
   pageHeaders: {
-    services: { image: "" },
-    shop: { image: "" },
-    about: { image: "" },
-    contact: { image: "" },
-    faq: { image: "" },
-    articles: { image: "" },
+    services: { image: "/assets/repair-lab.svg" },
+    shop: { image: "/assets/projector-showcase.svg" },
+    about: { image: "/assets/repair-lab.svg" },
+    contact: { image: "/assets/data-recovery.svg" },
+    faq: { image: "/assets/repair-lab.svg" },
+    articles: { image: "/assets/data-recovery.svg" },
   },
 };

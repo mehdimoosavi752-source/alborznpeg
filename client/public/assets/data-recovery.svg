@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700">
+  <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#090909"/><stop offset="1" stop-color="#381010"/></linearGradient><filter id="s"><feGaussianBlur stdDeviation="18"/></filter></defs>
+  <rect width="1200" height="700" fill="url(#g)"/><circle cx="890" cy="220" r="180" fill="#dc2626" opacity=".25" filter="url(#s)"/>
+  <g stroke="#ef4444" stroke-width="5" fill="none" opacity=".8"><path d="M90 115h300l55 55h130"/><path d="M75 540h280l70-70h150"/><path d="M920 570v-110h155"/></g>
+  <g transform="translate(620 160)"><rect width="410" height="270" rx="32" fill="#171717" stroke="#ef4444" stroke-width="7"/><rect x="42" y="40" width="326" height="126" rx="12" fill="#050505"/><path d="M74 112h74l34-37 47 72 38-47 46 12 54-55" stroke="#ef4444" stroke-width="9" fill="none"/><circle cx="205" cy="215" r="28" fill="#dc2626"/></g>
+  <text x="84" y="345" fill="#fff" font-family="Arial,sans-serif" font-size="48" font-weight="700">DATA RECOVERY</text><text x="87" y="395" fill="#d1d5db" font-family="Arial,sans-serif" font-size="25">Precision diagnostics · HDD · SSD</text>
+</svg>

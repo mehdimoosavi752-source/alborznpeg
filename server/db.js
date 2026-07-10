@@ -197,8 +197,8 @@ insertPage.run(
   JSON.stringify([
     B("heading", "قوانین و مقررات فروشگاه", "Store Terms & Policy"),
     B("paragraph",
-      "کلیه محصولات فروشگاه نوین پلی‌تکنیک اورجینال و دارای گارانتی معتبر شرکتی هستند. مهلت بازگشت کالا ۷ روز از تاریخ تحویل است، به شرط سالم بودن کالا و بسته‌بندی.",
-      "All products sold by Novin Polytechnic are genuine and come with a valid manufacturer warranty. Returns are accepted within 7 days of delivery, provided the product and its packaging are undamaged."),
+      "کلیه محصولات فروشگاه نوین پلی‌تکنیک البرز اورجینال هستند. مهلت بازگشت کالا ۷ روز از تاریخ تحویل است، به شرط سالم بودن کالا و بسته‌بندی.",
+      "All products sold by Novin Polytechnic Alborz are genuine. Returns are accepted within 7 days of delivery, provided the product and its packaging are undamaged."),
     B("paragraph",
       "هزینه‌ی ارسال بر عهده‌ی خریدار است مگر در مواردی که به‌صورت جداگانه اعلام شود. هزینه و مدت‌زمان هر تعمیر پس از عیب‌یابی و پیش از شروع کار به‌صورت شفاف اعلام می‌شود.",
       "Shipping costs are the buyer's responsibility unless stated otherwise. The cost and duration of any repair is clearly communicated after diagnosis and before work begins."),

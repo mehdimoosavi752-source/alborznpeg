@@ -37,7 +37,7 @@ const patternStyle = (pattern) => {
   }
 };
 
-const ICONS = { Monitor, Cpu, Gamepad2, Wrench, ShieldCheck, Zap, Clock, Package, Layers, Truck, BadgeCheck, HardDrive };
+const ICONS = { Monitor, Cpu, Gamepad2, Wrench, Zap, Clock, Package, Layers, Truck, BadgeCheck, HardDrive };
 const ICON_NAMES = Object.keys(ICONS);
 
 const ROLE_LABELS = {
@@ -64,16 +64,15 @@ const UI = {
   everythingAtGlance: { fa: "همه‌چیز در یک نگاه", en: "Everything at a Glance" },
   whichSectionHome: { fa: "به کدوم بخش نیاز داری؟", en: "Where do you want to go?" },
   trustAuthenticity: { fa: "اصالت کالا تضمینی", en: "Guaranteed Authenticity" },
-  trustWarranty: { fa: "گارانتی معتبر", en: "Valid Warranty" },
   trustDiagnosis: { fa: "عیب‌یابی رایگان و شفاف", en: "Free, Transparent Diagnosis" },
   trustShipping: { fa: "ارسال سریع سراسری", en: "Fast Nationwide Shipping" },
   trustReturn: { fa: "۷ روز مهلت بازگشت", en: "7-Day Return Policy" },
   ourServices: { fa: "خدمات ما", en: "Our Services" },
   servicesTitle: { fa: "تعمیر، اورهال و سرویس تخصصی", en: "Repair, Overhaul & Specialized Service" },
-  servicesSubtitle: { fa: "تیم فنی نوین پلی‌تکنیک با ابزار تشخیص پیشرفته، مشکل شما را دقیق پیدا و مطمئن رفع می‌کند.", en: "Our technical team uses advanced diagnostic tools to pinpoint your issue and fix it right the first time." },
+  servicesSubtitle: { fa: "تیم فنی نوین پلی‌تکنیک البرز با ابزار تشخیص پیشرفته، مشکل شما را دقیق پیدا و مطمئن رفع می‌کند.", en: "Our technical team uses advanced diagnostic tools to pinpoint your issue and fix it right the first time." },
   originalShop: { fa: "فروشگاه اورجینال", en: "Genuine Products Shop" },
   shopTitle: { fa: "ویدئو پروژکتور", en: "Video Projectors" },
-  shopSubtitle: { fa: "واردات مستقیم و مرجع فروش معتبرترین برندهای ویدئو پروژکتور با گارانتی معتبر", en: "Direct import and trusted retailer of the top projector brands, all backed by valid warranty" },
+  shopSubtitle: { fa: "واردات مستقیم و مرجع فروش معتبرترین برندهای ویدئو پروژکتور", en: "Direct import and trusted retailer of the top projector brands" },
   searchPlaceholder: { fa: "جستجوی مدل یا برند...", en: "Search model or brand..." },
   filters: { fa: "فیلترها", en: "Filters" },
   category: { fa: "دسته‌بندی", en: "Category" },
@@ -82,7 +81,6 @@ const UI = {
   productsFound: { fa: "محصول یافت شد", en: "products found" },
   noProductsFound: { fa: "محصولی با این فیلتر پیدا نشد.", en: "No products match this filter." },
   backToShop: { fa: "بازگشت به فروشگاه", en: "Back to Shop" },
-  warranty: { fa: "گارانتی", en: "Warranty" },
   technology: { fa: "تکنولوژی", en: "Technology" },
   resolution: { fa: "رزولوشن", en: "Resolution" },
   brightness: { fa: "روشنایی", en: "Brightness" },
@@ -91,7 +89,7 @@ const UI = {
   outOfStock: { fa: "ناموجود", en: "Out of stock" },
   relatedProducts: { fa: "محصولات مرتبط", en: "Related Products" },
   aboutUs: { fa: "درباره ما", en: "About Us" },
-  whyNovin: { fa: "چرا نوین پلی‌تکنیک؟", en: "Why Novin Polytechnic?" },
+  whyNovin: { fa: "چرا نوین پلی‌تکنیک البرز؟", en: "Why Novin Polytechnic Alborz?" },
   contactUs: { fa: "تماس با ما", en: "Contact Us" },
   contactUsNow: { fa: "همین حالا با ما در ارتباط باشید", en: "Get in Touch Right Now" },
   phoneCall: { fa: "تماس تلفنی", en: "Phone" },
@@ -107,7 +105,7 @@ const UI = {
   noOrdersYet: { fa: "هنوز سفارشی ثبت نکرده‌اید.", en: "You haven't placed any orders yet." },
   goToShop: { fa: "رفتن به فروشگاه", en: "Go to Shop" },
   itemsCount: { fa: "قلم کالا", en: "items" },
-  blogTitle: { fa: "وبلاگ نوین پلی‌تکنیک", en: "Novin Polytechnic Blog" },
+  blogTitle: { fa: "وبلاگ نوین پلی‌تکنیک البرز", en: "Novin Polytechnic Alborz Blog" },
   articlesTitle: { fa: "مقالات آموزشی", en: "Learning Articles" },
   articlesSubtitle: { fa: "نکات نگهداری، راهنمای خرید و آموزش‌های تخصصی کامپیوتر، پلی‌استیشن و پروژکتور", en: "Maintenance tips, buying guides, and expert know-how on computers, PlayStation, and projectors" },
   noArticlesYet: { fa: "هنوز مقاله‌ای منتشر نشده است.", en: "No articles published yet." },
@@ -143,11 +141,11 @@ const UI = {
   backToHome: { fa: "بازگشت به خانه", en: "Back to Home" },
   viewSite: { fa: "مشاهده سایت", en: "View Site" },
   savingDots: { fa: "در حال ذخیره...", en: "Saving..." },
-  loadingSite: { fa: "در حال بارگذاری نوین پلی‌تکنیک...", en: "Loading Novin Polytechnic..." },
+  loadingSite: { fa: "در حال بارگذاری نوین پلی‌تکنیک البرز...", en: "Loading Novin Polytechnic Alborz..." },
   heroFragment1: { fa: "دقیق دیده می‌شود", en: "Seen with precision" },
   heroFragment2: { fa: "دقیق تعمیر می‌شود", en: "Repaired with precision" },
   galleryKicker: { fa: "دسته‌بندی خدمات", en: "SERVICE CATEGORIES" },
-  feedKicker: { fa: "همین حالا در نوین پلی‌تکنیک", en: "RIGHT NOW AT NOVIN POLYTECHNIC" },
+  feedKicker: { fa: "همین حالا در نوین پلی‌تکنیک البرز", en: "RIGHT NOW AT NOVIN POLYTECHNIC ALBORZ" },
   feedTitle: { fa: "چه خبر است؟", en: "What's Happening" },
 };
 const ui = (key, lang) => UI[key]?.[lang] || UI[key]?.fa || key;
@@ -198,8 +196,8 @@ const ADMIN_UI = {
 const aui = (key, lang) => ADMIN_UI[key]?.[lang] || ADMIN_UI[key]?.fa || key;
 
 const DEFAULT_CONTENT = {
-  settings: { siteName: { fa: "نوین پلی‌تکنیک", en: "Novin Polytechnic" }, tagline: { fa: "", en: "" }, phone: "", address: { fa: "", en: "" }, instagram: "", telegram: "" },
-  hero: { eyebrow: { fa: "", en: "" }, title: { fa: "نوین پلی‌تکنیک", en: "Novin Polytechnic" }, subtitle: { fa: "", en: "" }, ctaText: { fa: "", en: "" }, ctaText2: { fa: "", en: "" } },
+  settings: { siteName: { fa: "نوین پلی‌تکنیک البرز", en: "Novin Polytechnic Alborz" }, tagline: { fa: "", en: "" }, phone: "", address: { fa: "", en: "" }, instagram: "", telegram: "" },
+  hero: { eyebrow: { fa: "", en: "" }, title: { fa: "نوین پلی‌تکنیک البرز", en: "Novin Polytechnic Alborz" }, subtitle: { fa: "", en: "" }, ctaText: { fa: "", en: "" }, ctaText2: { fa: "", en: "" } },
   services: [],
   products: [],
   menu: [],
@@ -264,7 +262,7 @@ function TiltCard({ children, className = "" }) {
   const onLeave = () => { if (ref.current) ref.current.style.transform = "perspective(800px) rotateY(0deg) rotateX(0deg)"; };
   return <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave} className={className} style={{ transition: "transform 0.2s ease-out", transformStyle: "preserve-3d" }}>{children}</div>;
 }
-function Logo({ size = 44, dark = false, name = "Novin Polytechnic" }) {
+function Logo({ size = 44, dark = false, name = "Novin Polytechnic Alborz" }) {
   return (
     <div className="flex items-center gap-2 select-none">
       <svg width={size} height={size} viewBox="0 0 100 100" className="shrink-0">
@@ -358,10 +356,10 @@ function FloatingContact({ content, lang }) {
       {open && (
         <div className="flex flex-col gap-2 bg-white border border-black/10 rounded-2xl shadow-xl p-2 mb-1">
           <a href={`tel:${s.phone}`} className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Phone size={16} className="text-red-600" /> {lang === "fa" ? "تماس تلفنی" : "Call Us"}</a>
-          {s.whatsapp && <a href={`https://wa.me/${s.whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><MessageCircle size={16} className="text-red-600" /> WhatsApp</a>}
-          <a href={`https://t.me/${s.telegram}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Send size={16} className="text-red-600" /> Telegram</a>
-          {s.bale && <a href={`https://ble.im/${s.bale}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Send size={16} className="text-red-600" /> {lang === "fa" ? "بله" : "Bale"}</a>}
-          <a href={s.instagram} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Instagram size={16} className="text-red-600" /> Instagram</a>
+          {s.whatsapp && <a href={`https://wa.me/${s.whatsapp.replace(/^0/, "98").replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><MessageCircle size={16} className="text-red-600" /> WhatsApp</a>}
+          {s.telegram && <a href={s.telegram.startsWith("http") ? s.telegram : (s.telegram.startsWith("@") ? `https://t.me/${s.telegram.slice(1)}` : `https://t.me/+${s.telegram.replace(/^0/, "98").replace(/[^0-9]/g, "")}`)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Send size={16} className="text-red-600" /> Telegram</a>}
+          {s.bale && <a href={`https://ble.ir/${s.bale.replace(/^0/, "98").replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Send size={16} className="text-red-600" /> {lang === "fa" ? "بله" : "Bale"}</a>}
+          {s.instagram && <a href={s.instagram.startsWith("http") ? s.instagram : `https://instagram.com/${s.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Instagram size={16} className="text-red-600" /> Instagram</a>}
         </div>
       )}
       <button onClick={() => setOpen((v) => !v)} className="glow-pulse w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-xl flex items-center justify-center transition-transform hover:scale-105">
@@ -658,7 +656,7 @@ function GlobalStyles() {
 /* ============================== هدر ============================== */
 
 function Header({ content, visibleMenu, goTo, activePage, mobileMenuOpen, setMobileMenuOpen, cartCount, setShowCart, currentUser, canPanel, userMenuOpen, setUserMenuOpen, onAuthClick, onLogout, onAdminClick, onAccountClick, lang, setLang }) {
-  const siteName = tr(content.settings.siteName, lang) || "Novin Polytechnic";
+  const siteName = tr(content.settings.siteName, lang) || "Novin Polytechnic Alborz";
   return (
     <header className="fixed top-0 inset-x-0 z-40 backdrop-blur-md bg-white/90 border-b border-black/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
@@ -731,7 +729,6 @@ function TrustBar({ lang, variant = "general" }) {
     { icon: RotateCcw, key: "trustReturn" },
   ] : [
     { icon: BadgeCheck, key: "trustAuthenticity" },
-    { icon: ShieldCheck, key: "trustWarranty" },
     { icon: Truck, key: "trustShipping" },
     { icon: RotateCcw, key: "trustReturn" },
   ];
@@ -751,10 +748,10 @@ function TrustBar({ lang, variant = "general" }) {
 
 const HOME_LINKS = [
   { icon: Wrench, key: "services", pattern: "circuit", title: { fa: "خدمات تعمیر و اورهال", en: "Repair & Overhaul Services" }, desc: { fa: "لیست کامل خدمات تعمیرگاه", en: "The full list of our repair services" }, route: "services" },
-  { icon: Package, key: "shop", pattern: "hex", title: { fa: "فروشگاه پروژکتور", en: "Projector Shop" }, desc: { fa: "خرید اورجینال با گارانتی", en: "Genuine products with warranty" }, route: "shop" },
+  { icon: Package, key: "shop", pattern: "hex", title: { fa: "فروشگاه پروژکتور", en: "Projector Shop" }, desc: { fa: "خرید محصولات اورجینال", en: "Genuine products" }, route: "shop" },
   { icon: FileText, key: "articles", pattern: "scan", title: { fa: "مقالات آموزشی", en: "Learning Articles" }, desc: { fa: "نکات نگهداری و راهنمای خرید", en: "Maintenance tips & buying guides" }, route: "articles" },
   { icon: MessageCircle, key: "faq", pattern: "dots", title: { fa: "سوالات رایج", en: "FAQ" }, desc: { fa: "پاسخ سوالات پرتکرار مشتریان", en: "Answers to common questions" }, route: "faq" },
-  { icon: UsersIcon, key: "about", pattern: "grid", title: { fa: "درباره ما", en: "About Us" }, desc: { fa: "آشنایی با نوین پلی‌تکنیک", en: "Get to know Novin Polytechnic" }, route: "about" },
+  { icon: UsersIcon, key: "about", pattern: "grid", title: { fa: "درباره ما", en: "About Us" }, desc: { fa: "آشنایی با نوین پلی‌تکنیک البرز", en: "Get to know Novin Polytechnic Alborz" }, route: "about" },
   { icon: Mail, key: "contact", pattern: "wave", title: { fa: "تماس با ما", en: "Contact Us" }, desc: { fa: "راه‌های ارتباطی و آدرس", en: "How to reach us" }, route: "contact" },
 ];
 
@@ -1080,7 +1077,6 @@ function ProductCard({ p, onAdd, dark, lang }) {
       <button onClick={() => navigate(`product/${p.id}`)} className="text-right">
         <PatternBox pattern={p.pattern} image={p.image} className="h-40 flex items-center justify-center">
           <IconBadge name={p.icon} className="text-white group-hover:scale-110 transition-transform duration-300" size={52} />
-          <span className="absolute top-3 left-3 text-[10px] bg-white/90 text-red-600 rounded-full px-2 py-1 font-bold">{tr(p.warranty, lang)}</span>
           <span className="absolute top-3 right-3 text-[10px] bg-black/70 border border-red-500/50 rounded-full px-2 py-1 text-red-400">{tr(p.category, lang)}</span>
         </PatternBox>
       </button>
@@ -1185,7 +1181,7 @@ function ProductDetailPage({ content, id, addToCart, lang, currentUser, onNeedAu
   const specs = [
     [ui("brand", lang), p.brand], [ui("category", lang), tr(p.category, lang)], [ui("technology", lang), p.technology],
     [ui("resolution", lang), p.resolution], [ui("brightness", lang), `${fmtNum(p.lumens, lang)} ${lang === "fa" ? "لومن" : "Lumens"}`],
-    [ui("warranty", lang), tr(p.warranty, lang)], [ui("stock", lang), p.stock > 0 ? `${fmtNum(p.stock, lang)} ${ui("units", lang)}` : ui("outOfStock", lang)],
+    [ui("stock", lang), p.stock > 0 ? `${fmtNum(p.stock, lang)} ${ui("units", lang)}` : ui("outOfStock", lang)],
   ];
   return (
     <div className="pt-32 pb-20 px-4 sm:px-6">
@@ -1196,10 +1192,7 @@ function ProductDetailPage({ content, id, addToCart, lang, currentUser, onNeedAu
             <IconBadge name={p.icon} size={110} className="text-white" />
           </PatternBox>
           <div>
-            <div className="flex gap-2 mb-3">
-              <span className="text-[11px] border border-red-200 bg-red-50 rounded-full px-2.5 py-1 text-red-600">{tr(p.warranty, lang)} {ui("warranty", lang)}</span>
-              <span className="text-[11px] border border-black/15 rounded-full px-2.5 py-1 text-black/60">{tr(p.category, lang)}</span>
-            </div>
+            <div className="flex gap-2 mb-3"><span className="text-[11px] border border-black/15 rounded-full px-2.5 py-1 text-black/60">{tr(p.category, lang)}</span></div>
             <h1 className="text-2xl sm:text-3xl font-black mb-3">{tr(p.name, lang)}</h1>
             <p className="text-black/60 leading-relaxed mb-6">{tr(p.desc, lang)}</p>
             <div className="border border-black/10 rounded-xl overflow-hidden mb-6">
@@ -1520,6 +1513,13 @@ function FAQPage({ content, lang }) {
 
 /* ============================== صفحه سفارشی (بلوک‌محور، دوزبانه) ============================== */
 
+function AparatPlayer({ url, title = "Aparat video" }) {
+  const match = String(url || "").match(/(?:aparat\.com\/v\/|aparat\.com\/video\/)([\w-]+)/i);
+  const embedUrl = match ? `https://www.aparat.com/video/video/embed/videohash/${match[1]}/vt/frame` : url;
+  if (!embedUrl) return null;
+  return <div className="overflow-hidden rounded-2xl border border-black/10 bg-black aspect-video"><iframe src={embedUrl} title={title} className="w-full h-full" allow="autoplay; encrypted-media" allowFullScreen /></div>;
+}
+
 function BlockRenderer({ block, lang }) {
   switch (block.type) {
     case "heading": return <h2 className="text-2xl sm:text-3xl font-black mb-4 mt-8 first:mt-0">{tr(block.content, lang)}</h2>;
@@ -1539,6 +1539,7 @@ function BlockRenderer({ block, lang }) {
       )
     );
     case "button": return <a href={block.url || "#"} className="inline-block bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold mb-6 transition-colors">{tr(block.content, lang)}</a>;
+    case "video": return block.url ? <div className="mb-6"><AparatPlayer url={block.url} title={tr(block.content, lang) || "Aparat video"} /></div> : <PatternBox pattern="scan" className="h-56 rounded-2xl flex items-center justify-center mb-6"><div className="text-center text-white/70"><Play className="mx-auto mb-2" size={32} /><p className="text-xs">{lang === "fa" ? "لینک ویدیوی آپارات را وارد کنید" : "Enter an Aparat video link"}</p></div></PatternBox>;
     default: return <p className="text-black/70 leading-loose mb-4 whitespace-pre-line">{tr(block.content, lang)}</p>;
   }
 }
@@ -1984,7 +1985,7 @@ function AdminProducts({ content, update, lang }) {
   const set = (list) => update(["products"], list);
   const addItem = () => set([...content.products, {
     id: uid("prj"), name: { fa: "پروژکتور جدید", en: "New Projector" }, brand: "Brand", category: { fa: "خانگی", en: "Home" },
-    technology: "3LCD", resolution: "Full HD", lumens: 2000, price: 10000000, warranty: { fa: "۱۲ ماه", en: "12 months" },
+    technology: "3LCD", resolution: "Full HD", lumens: 2000, price: 10000000,
     desc: { fa: "", en: "" }, stock: 5, icon: "Monitor", pattern: "dots", image: "",
   }]);
   const removeItem = (id) => set(content.products.filter((p) => p.id !== id));
@@ -2001,7 +2002,6 @@ function AdminProducts({ content, update, lang }) {
             </div>
             <div className="mb-3"><BField label={aui("description", lang)} value={p.desc} onChange={(v) => editItem(p.id, "desc", v)} multiline lang={lang} /></div>
             <div className="mb-3"><BField label={ui("category", lang)} value={p.category} onChange={(v) => editItem(p.id, "category", v)} lang={lang} /></div>
-            <div className="mb-3"><BField label={ui("warranty", lang)} value={p.warranty} onChange={(v) => editItem(p.id, "warranty", v)} lang={lang} /></div>
             <div className="grid grid-cols-2 gap-2 mb-2">
               <Field label={ui("brand", lang)}><input className={inputCls} value={p.brand} onChange={(e) => editItem(p.id, "brand", e.target.value)} /></Field>
               <Field label={ui("technology", lang)}><input className={inputCls} value={p.technology} onChange={(e) => editItem(p.id, "technology", e.target.value)} /></Field>
@@ -2028,6 +2028,7 @@ const BLOCK_TYPES = [
   { type: "heading", label: { fa: "عنوان", en: "Heading" }, icon: Type },
   { type: "paragraph", label: { fa: "پاراگراف", en: "Paragraph" }, icon: AlignLeft },
   { type: "image", label: { fa: "تصویر", en: "Image" }, icon: ImageIcon },
+  { type: "video", label: { fa: "ویدیوی آپارات", en: "Aparat Video" }, icon: Play },
   { type: "button", label: { fa: "دکمه", en: "Button" }, icon: MousePointerClick },
 ];
 
@@ -2147,7 +2148,7 @@ function PageEditor({ page, setPage, onSave, onCancel, lang }) {
             {b.type === "image" && (
               <div className="mt-2"><ImageUploadField value={b.imageUrl} onChange={(v) => setBlock(b.id, { imageUrl: v })} lang={lang} /></div>
             )}
-            {b.type === "button" && (
+            {(b.type === "button" || b.type === "video") && (
               <div className="mt-2"><Field label={lang === "fa" ? "لینک (مثلاً #/shop)" : "Link (e.g. #/shop)"}><input dir="ltr" className={inputCls} value={b.url} onChange={(e) => setBlock(b.id, { url: e.target.value })} /></Field></div>
             )}
           </div>
