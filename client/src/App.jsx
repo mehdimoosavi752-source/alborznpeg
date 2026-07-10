@@ -284,24 +284,23 @@ function Logo({ size = 44, dark = false, name = "Novin Polytechnic Alborz" }) {
 function HeroPoster({ stats, lang }) {
   const s1 = stats?.[2]; // "۹۸٪ رضایت مشتری"
   const s2 = stats?.[1]; // "+۵۰۰۰ تعمیر موفق"
+  const [scrollY, setScrollY] = useState(0);
+  useEffect(() => {
+    const onScroll = () => setScrollY(window.scrollY);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  const parallax = Math.min(scrollY * 0.07, 28);
   return (
-    <div className="relative mx-auto w-full max-w-lg aspect-[4/3] select-none">
-      <div className="absolute inset-0 bg-red-50 rounded-[3rem] blur-2xl scale-90 opacity-70" />
-      <svg viewBox="0 0 400 300" className="absolute inset-0 w-full h-full drop-shadow-2xl">
-        <defs>
-          <linearGradient id="beamGrad" x1="0%" y1="50%" x2="100%" y2="50%">
-            <stop offset="0%" stopColor="#dc2626" stopOpacity="0.02" />
-            <stop offset="100%" stopColor="#dc2626" stopOpacity="0.35" />
-          </linearGradient>
-        </defs>
-        <polygon points="60,178 255,92 255,148 60,222" fill="url(#beamGrad)" className="poster-beam" />
-        <rect x="252" y="66" width="120" height="88" rx="12" fill="#0a0a0a" />
-        <rect x="261" y="75" width="102" height="70" rx="5" fill="#dc2626" opacity="0.18" className="poster-screen-glow" />
-        <rect x="10" y="160" width="88" height="56" rx="14" fill="#0a0a0a" />
-        <circle cx="30" cy="188" r="13" fill="#dc2626" className="poster-lens" />
-        <rect x="48" y="180" width="36" height="16" rx="4" fill="#ffffff" opacity="0.12" />
-        <rect x="10" y="160" width="88" height="6" rx="3" fill="#dc2626" opacity="0.6" />
-      </svg>
+    <div className="relative mx-auto w-full max-w-lg aspect-[4/3] select-none hero-poster-shell">
+      <div className="absolute inset-0 bg-red-600 rounded-[3rem] blur-3xl scale-90 opacity-30 hero-poster-aura" />
+      <div className="absolute inset-0 overflow-hidden rounded-[2rem] border border-white/15 bg-neutral-950 shadow-2xl">
+        <img src="/assets/hero-data-recovery-v2.png" alt={lang === "fa" ? "بازیابی اطلاعات هارد و SSD" : "HDD and SSD data recovery"} className="w-full h-full object-cover hero-poster-image" style={{ transform: `scale(1.12) translateY(${parallax}px)` }} />
+        <div className="absolute inset-0 bg-gradient-to-tr from-black/60 via-transparent to-red-950/20" />
+        <div className="hero-scanline absolute inset-x-0 h-px bg-red-400/80 shadow-[0_0_18px_3px_rgba(239,68,68,.55)]" />
+        <div className="hero-orbit absolute w-28 h-28 rounded-full border border-red-400/50 top-10 right-10" />
+      </div>
 
       <div className="absolute -top-4 right-2 sm:right-8 bg-white border border-black/10 shadow-xl rounded-2xl px-4 py-3 poster-float-1 flex items-center gap-2.5 max-w-[170px]">
         <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0"><ShieldCheck className="text-red-600" size={16} /></div>
@@ -319,8 +318,8 @@ function HeroPoster({ stats, lang }) {
         </div>
       </div>
 
-      <div className="absolute top-[40%] left-[24%] bg-white border border-black/10 shadow-lg rounded-2xl p-2.5 poster-float-3">
-        <Gamepad2 className="text-red-600" size={18} />
+      <div className="absolute top-[40%] left-[24%] bg-black/80 backdrop-blur border border-red-400/30 shadow-lg rounded-2xl p-2.5 poster-float-3">
+        <HardDrive className="text-red-500" size={18} />
       </div>
     </div>
   );
@@ -642,6 +641,14 @@ function GlobalStyles() {
       .poster-float-1 { animation: floatUD1 3.4s ease-in-out infinite; }
       .poster-float-2 { animation: floatUD2 4s ease-in-out infinite; }
       .poster-float-3 { animation: floatUD3 3.1s ease-in-out infinite; }
+      .hero-poster-shell { perspective: 1000px; }
+      .hero-poster-image { transition: transform .18s linear; will-change: transform; }
+      @keyframes heroAura { 0%,100% { opacity:.22; transform:scale(.9); } 50% { opacity:.48; transform:scale(1.03); } }
+      .hero-poster-aura { animation: heroAura 5s ease-in-out infinite; }
+      @keyframes scanTravel { 0% { top:8%; opacity:0; } 12%,78% { opacity:.9; } 100% { top:92%; opacity:0; } }
+      .hero-scanline { animation: scanTravel 5.5s ease-in-out infinite; }
+      @keyframes orbitSpin { to { transform: rotate(360deg); } }
+      .hero-orbit { animation: orbitSpin 14s linear infinite; }
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: #f4f4f4; }
       ::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 8px; }
@@ -1137,6 +1144,8 @@ function ShopPage({ content, addToCart, lang }) {
 
       <TrustBar lang={lang} />
 
+      {content.settings.shopVideoUrl && <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-10"><AparatPlayer url={content.settings.shopVideoUrl} title={lang === "fa" ? "ویدیوی فروشگاه" : "Shop video"} /></section>}
+
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid lg:grid-cols-[240px_1fr] gap-8">
         <aside className="lg:sticky lg:top-24 h-fit bg-neutral-50 border border-black/10 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-4 text-sm font-bold"><SlidersHorizontal size={15} className="text-red-600" /> {ui("filters", lang)}</div>
@@ -1195,6 +1204,7 @@ function ProductDetailPage({ content, id, addToCart, lang, currentUser, onNeedAu
             <div className="flex gap-2 mb-3"><span className="text-[11px] border border-black/15 rounded-full px-2.5 py-1 text-black/60">{tr(p.category, lang)}</span></div>
             <h1 className="text-2xl sm:text-3xl font-black mb-3">{tr(p.name, lang)}</h1>
             <p className="text-black/60 leading-relaxed mb-6">{tr(p.desc, lang)}</p>
+            {p.videoUrl && <div className="mb-6"><AparatPlayer url={p.videoUrl} title={tr(p.name, lang)} /></div>}
             <div className="border border-black/10 rounded-xl overflow-hidden mb-6">
               {specs.map(([k, v], i) => (
                 <div key={k} className={`flex justify-between text-sm px-4 py-2.5 ${i % 2 ? "bg-neutral-50" : ""}`}><span className="text-black/40">{k}</span><span className="font-bold">{v}</span></div>
@@ -1986,7 +1996,7 @@ function AdminProducts({ content, update, lang }) {
   const addItem = () => set([...content.products, {
     id: uid("prj"), name: { fa: "پروژکتور جدید", en: "New Projector" }, brand: "Brand", category: { fa: "خانگی", en: "Home" },
     technology: "3LCD", resolution: "Full HD", lumens: 2000, price: 10000000,
-    desc: { fa: "", en: "" }, stock: 5, icon: "Monitor", pattern: "dots", image: "",
+    desc: { fa: "", en: "" }, stock: 5, icon: "Monitor", pattern: "dots", image: "", videoUrl: "",
   }]);
   const removeItem = (id) => set(content.products.filter((p) => p.id !== id));
   const editItem = (id, key, val) => set(content.products.map((p) => (p.id === id ? { ...p, [key]: val } : p)));
@@ -2001,6 +2011,7 @@ function AdminProducts({ content, update, lang }) {
               <button onClick={() => removeItem(p.id)} className="mt-5 text-black/30 hover:text-red-600 shrink-0"><Trash2 size={16} /></button>
             </div>
             <div className="mb-3"><BField label={aui("description", lang)} value={p.desc} onChange={(v) => editItem(p.id, "desc", v)} multiline lang={lang} /></div>
+            <Field label={lang === "fa" ? "لینک ویدیوی آپارات محصول" : "Product Aparat video URL"}><input dir="ltr" className={inputCls} value={p.videoUrl || ""} onChange={(e) => editItem(p.id, "videoUrl", e.target.value)} placeholder="https://www.aparat.com/v/..." /></Field>
             <div className="mb-3"><BField label={ui("category", lang)} value={p.category} onChange={(v) => editItem(p.id, "category", v)} lang={lang} /></div>
             <div className="grid grid-cols-2 gap-2 mb-2">
               <Field label={ui("brand", lang)}><input className={inputCls} value={p.brand} onChange={(e) => editItem(p.id, "brand", e.target.value)} /></Field>
@@ -2773,6 +2784,7 @@ function AdminSettings({ content, update, lang }) {
         <Field label={lang === "fa" ? "آیدی تلگرام" : "Telegram Username"}><input dir="ltr" className={inputCls} value={s.telegram} onChange={(e) => set("telegram", e.target.value)} /></Field>
         <Field label={lang === "fa" ? "شماره واتساپ (با کد کشور، بدون +)" : "WhatsApp number (country code, no +)"}><input dir="ltr" className={inputCls} value={s.whatsapp || ""} onChange={(e) => set("whatsapp", e.target.value)} placeholder="989123456789" /></Field>
         <Field label={lang === "fa" ? "آیدی بله" : "Bale Username"}><input dir="ltr" className={inputCls} value={s.bale || ""} onChange={(e) => set("bale", e.target.value)} /></Field>
+        <Field label={lang === "fa" ? "لینک ویدیوی آپارات فروشگاه" : "Shop Aparat video URL"}><input dir="ltr" className={inputCls} value={s.shopVideoUrl || ""} onChange={(e) => set("shopVideoUrl", e.target.value)} placeholder="https://www.aparat.com/v/..." /></Field>
       </div>
     </div>
   );
