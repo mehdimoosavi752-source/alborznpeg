@@ -4,64 +4,61 @@ const uid = (p = "id") => `${p}_${Date.now()}_${Math.random().toString(36).slice
 
 export const DEFAULT_CONTENT = {
   settings: {
-    siteName: { fa: "نوین پلی‌تکنیک", en: "Novin Polytechnic" },
+    siteName: { fa: "نوین پلی‌تکنیک البرز", en: "Novin Polytechnic Alborz" },
     tagline: {
-      fa: "از تعمیر تخصصی کامپیوتر و پلی‌استیشن تا فروش اورجینال ویدئو پروژکتور",
-      en: "Expert computer & PlayStation repair, plus genuine video projectors",
+      fa: "تعمیر تخصصی کامپیوتر و پلی‌استیشن، بازیابی اطلاعات، و فروش اورجینال ویدئو پروژکتور",
+      en: "Expert computer & PlayStation repair, data recovery, and genuine video projectors",
     },
     phone: "021-91234567",
     address: {
-      fa: "تهران، خیابان ولیعصر، پاساژ فناوری، طبقه دوم، واحد ۱۴",
-      en: "2nd Floor, Unit 14, Fanavari Passage, Valiasr St., Tehran, Iran",
+      fa: "کرج، عظیمیه، میدان طالقانی، پاساژ آسیا، طبقه همکف، واحد ۲۱",
+      en: "Ground Floor, Unit 21, Asia Passage, Taleghani Square, Azimieh, Karaj, Iran",
     },
-    instagram: "novin.polytechnic",
+    instagram: "https://www.instagram.com/eng.amin.rezvani?igsh=MWM1bGtzMDhoM25rYg==",
     telegram: "novinpolytechnic",
+    whatsapp: "",
+    bale: "",
   },
   hero: {
-    eyebrow: { fa: "بیش از ۱۰ سال تجربه در تعمیر و فروش", en: "10+ years of repair & retail experience" },
-    title: { fa: "نوین پلی‌تکنیک", en: "Novin Polytechnic" },
+    eyebrow: { fa: "بیش از ۱۰ سال تجربه در تعمیر و بازیابی اطلاعات", en: "10+ years of repair & data recovery experience" },
+    title: { fa: "نوین پلی‌تکنیک البرز", en: "Novin Polytechnic Alborz" },
     subtitle: {
-      fa: "دستگاهتون روشن نمی‌شه، کند شده یا صدا می‌ده؟ قبل از هر تصمیمی بیارینش پیش ما تا رایگان عیب‌یابی کنیم. اگه هم دنبال یه پروژکتور خوب برای خونه یا دفتر می‌گردین، از بین چند برند معتبر با گارانتی واقعی انتخاب کنید.",
-      en: "Something wrong with your PC or PlayStation? Bring it in for a free diagnosis before you decide anything. Looking for a projector instead? Pick from a handful of trusted brands, all backed by real warranty.",
+      fa: "هاردتون به مشکل خورده؟ اطلاعاتتون بالا نمی‌آد؟ ما با بهره‌مندی از به‌روزترین و تخصصی‌ترین دستگاه‌ها این توانایی رو داریم که اطلاعات شما رو از هاردهای اینترنال، اکسترنال و SSD استخراج کنیم.",
+      en: "Is your hard drive failing? Data won't show up? Using the most advanced, specialized recovery equipment, we can extract your data from internal drives, external drives, and SSDs.",
     },
-    ctaText: { fa: "مشاهده خدمات تعمیر", en: "See Repair Services" },
+    ctaText: { fa: "خدمات و بازیابی اطلاعات", en: "Services & Data Recovery" },
     ctaText2: { fa: "رفتن به فروشگاه", en: "Browse the Shop" },
   },
   services: [
     {
+      id: uid("srv"), icon: "HardDrive", pattern: "dots", featured: true,
+      title: { fa: "تعمیر هارد و بازیابی اطلاعات", en: "Hard Drive Repair & Data Recovery" },
+      desc: { fa: "بازیابی اطلاعات از هارد اکسترنال، اینترنال و SSD. هاردتون به مشکل خورده و اطلاعاتتون بالا نمی‌آد؟ ما با بهره‌مندی از به‌روزترین و تخصصی‌ترین دستگاه‌ها این توانایی رو داریم که اطلاعات شما رو از هاردهای اینترنال، اکسترنال و SSD استخراج کنیم.", en: "Data recovery from external, internal hard drives, and SSDs. Is your drive failing and your data won't show up? Using the most advanced, specialized recovery equipment, we can extract your data from internal drives, external drives, and SSDs." },
+      priceRange: { fa: "از ۶۰۰,۰۰۰ تومان، بسته به شدت آسیب", en: "From 600,000 Toman, depending on severity" },
+    },
+    {
       id: uid("srv"), icon: "Monitor", pattern: "circuit",
       title: { fa: "تعمیر کامپیوتر و لپ‌تاپ", en: "Computer & Laptop Repair" },
       desc: { fa: "روشن نشدن، بلو اسکرین، کندی بیش‌ازحد یا صدای عجیب فن — قبل از تعویض قطعه، بذارید دقیق عیب‌یابی کنیم. خیلی وقت‌ها مشکل چیزی نیست که فکرش رو می‌کنید.", en: "Won't turn on, blue screens, painfully slow, or a fan that won't stop whining — before you replace anything, let us actually diagnose it. Often it's not what you think." },
+      priceRange: { fa: "از ۲۵۰,۰۰۰ تا ۱,۵۰۰,۰۰۰ تومان", en: "250,000 – 1,500,000 Toman" },
     },
     {
       id: uid("srv"), icon: "Gamepad2", pattern: "scan",
       title: { fa: "تعمیر پلی‌استیشن ۴ و ۵", en: "PS4 & PS5 Repair" },
       desc: { fa: "دیسک‌خور دیسک رو نمی‌خونه، کنسول خیلی داغ می‌کنه یا روی صفحه‌ی HDMI هیچی نمیاد؟ این‌ها رایج‌ترین خرابی‌هایی هستن که هر هفته می‌بینیم و می‌دونیم دقیقاً از کجا شروع کنیم.", en: "Disc drive won't read, console runs hot, or nothing shows up on HDMI? These are the faults we see every single week — we know exactly where to start looking." },
+      priceRange: { fa: "از ۳۰۰,۰۰۰ تا ۲,۰۰۰,۰۰۰ تومان", en: "300,000 – 2,000,000 Toman" },
     },
     {
       id: uid("srv"), icon: "Cpu", pattern: "hex",
       title: { fa: "اورهال کامل سیستم", en: "Full System Overhaul" },
       desc: { fa: "تعویض خمیر حرارتی، تمیزکاری کامل داخل دستگاه، تست پایداری زیر بار و بهینه‌سازی نرم‌افزاری — برای سیستمی که چند ساله ازش استفاده می‌کنید و می‌خواید مثل روز اول کار کنه.", en: "New thermal paste, a proper internal clean-out, stress testing, and software tuning — for a machine you've had a few years that you want running like new again." },
+      priceRange: { fa: "از ۴۰۰,۰۰۰ تا ۹۰۰,۰۰۰ تومان", en: "400,000 – 900,000 Toman" },
     },
     {
       id: uid("srv"), icon: "Zap", pattern: "wave",
       title: { fa: "سرویس و کالیبراسیون پروژکتور", en: "Projector Service & Calibration" },
       desc: { fa: "تعویض لامپ، تمیزکاری فیلتر گردوگیر و تنظیم دقیق فوکوس و رنگ — چه پروژکتور رو از ما خریده باشید چه جای دیگه.", en: "Lamp replacement, dust filter cleaning, and precise focus/color calibration — whether you bought the projector from us or somewhere else." },
-    },
-    {
-      id: uid("srv"), icon: "ShieldCheck", pattern: "grid",
-      title: { fa: "گارانتی واقعی روی تعمیرات", en: "Real Repair Warranty" },
-      desc: { fa: "۳ ماه گارانتی روی کار انجام‌شده و قطعات تعویضی. اگه همون مشکل برگشت، هزینه‌ی اضافه نمی‌گیریم.", en: "3 months of warranty on the work itself and any replaced parts. If the same issue comes back, you won't pay for it again." },
-    },
-    {
-      id: uid("srv"), icon: "Package", pattern: "dots",
-      title: { fa: "بازیابی اطلاعات از هارد و SSD", en: "Data Recovery from HDD/SSD" },
-      desc: { fa: "هارد یا SSD صدمه دیده و فایل‌های مهمتون توشه؟ قبل از اینکه خودتون چیزی امتحان کنید که وضع رو بدتر کنه، با ما تماس بگیرید.", en: "Damaged drive with important files still on it? Before trying anything yourself that might make it worse, get in touch first." },
-    },
-    {
-      id: uid("srv"), icon: "Truck", pattern: "circuit",
-      title: { fa: "نصب و راه‌اندازی پروژکتور در محل", en: "On-Site Projector Installation" },
-      desc: { fa: "برای دفاتر و سالن‌های کنفرانس، نصب سقفی، کابل‌کشی و تنظیم اولیه رو خودمون انجام می‌دیم؛ فقط کافیه بگید پروژکتور رو کجا می‌خواید.", en: "For offices and conference rooms, we handle ceiling mounting, cabling, and initial setup — just tell us where you want the projector." },
+      priceRange: { fa: "از ۵۰۰,۰۰۰ تومان (بدون قیمت لامپ)", en: "From 500,000 Toman (lamp cost separate)" },
     },
   ],
   products: [
@@ -151,8 +148,8 @@ export const DEFAULT_CONTENT = {
   ],
   footer: {
     about: {
-      fa: "نوین پلی‌تکنیک از سال ۱۳۹۲ در حال تعمیر تخصصی کامپیوتر و پلی‌استیشنه، و چند سالیه فروش مستقیم ویدئو پروژکتور رو هم شروع کرده. کارمون رو با گارانتی واقعی پشتیبانی می‌کنیم.",
-      en: "Since 2013, Novin Polytechnic has specialized in computer and PlayStation repair, and more recently started selling video projectors directly. Everything we do is backed by real warranty.",
+      fa: "نوین پلی‌تکنیک البرز از سال ۱۳۹۲ در حال تعمیر تخصصی کامپیوتر و پلی‌استیشن و بازیابی اطلاعاته، و چند سالیه فروش مستقیم ویدئو پروژکتور با گارانتی معتبر رو هم شروع کرده.",
+      en: "Since 2013, Novin Polytechnic Alborz has specialized in computer and PlayStation repair and data recovery, and more recently started selling video projectors directly, all backed by genuine warranty.",
     },
     columns: [
       {
@@ -175,12 +172,12 @@ export const DEFAULT_CONTENT = {
         ],
       },
     ],
-    copyright: { fa: `© ${new Date().getFullYear()} نوین پلی‌تکنیک — تمامی حقوق محفوظ است.`, en: `© ${new Date().getFullYear()} Novin Polytechnic — All rights reserved.` },
+    copyright: { fa: `© ${new Date().getFullYear()} نوین پلی‌تکنیک البرز — تمامی حقوق محفوظ است.`, en: `© ${new Date().getFullYear()} Novin Polytechnic Alborz — All rights reserved.` },
   },
   about: {
     content: {
-      fa: "نوین پلی‌تکنیک رو یه تیم کوچیک از تعمیرکارهای باتجربه راه انداختن که خسته شده بودن از اینکه مشتری‌ها نمی‌دونستن دقیقاً چه مشکلی داره حل می‌شه و چقدر هزینه می‌بره. برای همین از همون اول، عیب‌یابی رایگان و پیش‌فاکتور شفاف رو اصل کارمون گذاشتیم. چند سال بعد، چون خیلی از مشتری‌ها برای پروژکتورهاشون هم سراغمون می‌اومدن، فروش مستقیم چند برند معتبر رو هم شروع کردیم — با همون اصل: گارانتی واقعی و بدون حرف اضافه.",
-      en: "Novin Polytechnic started as a small team of experienced repair technicians who were tired of customers never knowing exactly what was being fixed or what it would cost. So from day one, free diagnostics and a transparent quote became our baseline. A few years later, since so many customers were also coming to us about their projectors, we started selling a handful of trusted brands directly — with the same principle: real warranty, no surprises.",
+      fa: "نوین پلی‌تکنیک البرز رو یه تیم کوچیک از تعمیرکارهای باتجربه راه انداختن که خسته شده بودن از اینکه مشتری‌ها نمی‌دونستن دقیقاً چه مشکلی داره حل می‌شه و چقدر هزینه می‌بره. برای همین از همون اول، عیب‌یابی رایگان و پیش‌فاکتور شفاف رو اصل کارمون گذاشتیم. چند سال بعد، چون خیلی از مشتری‌ها برای پروژکتورهاشون هم سراغمون می‌اومدن، فروش مستقیم چند برند معتبر رو هم شروع کردیم — با گارانتی معتبر شرکتی روی محصولات و همون شفافیت همیشگی.",
+      en: "Novin Polytechnic Alborz started as a small team of experienced repair technicians who were tired of customers never knowing exactly what was being fixed or what it would cost. So from day one, free diagnostics and a transparent quote became our baseline. A few years later, since so many customers were also coming to us about their projectors, we started selling a handful of trusted brands directly — with genuine manufacturer warranty on every product and the same transparency as always.",
     },
     stats: [
       { value: { fa: "+۱۰", en: "10+" }, label: { fa: "سال تجربه", en: "Years of Experience" } },

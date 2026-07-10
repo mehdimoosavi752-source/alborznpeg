@@ -29,6 +29,8 @@ db.exec(`
     blocks TEXT NOT NULL,          -- آرایه‌ی بلوک‌های محتوا به‌صورت JSON (مثل ویرایشگر بلوکی وردپرس)
     show_in_menu INTEGER NOT NULL DEFAULT 0,
     is_article INTEGER NOT NULL DEFAULT 0,  -- اگر ۱ باشد، در صفحه‌ی «مقالات» هم لیست می‌شود
+    is_case_study INTEGER NOT NULL DEFAULT 0, -- اگر ۱ باشد، در بخش «نمونه‌کار» صفحه‌ی خدمات لیست می‌شود
+    category TEXT NOT NULL DEFAULT '',      -- دسته‌بندی مقاله: buying-guide | maintenance | repair
     menu_order INTEGER NOT NULL DEFAULT 99,
     status TEXT NOT NULL DEFAULT 'published', -- published | draft
     author_id TEXT NOT NULL,
@@ -118,6 +120,21 @@ db.exec(`
     message TEXT NOT NULL,
     created_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS popups (
+    id TEXT PRIMARY KEY,
+    label TEXT NOT NULL,
+    message_fa TEXT NOT NULL DEFAULT '',
+    message_en TEXT NOT NULL DEFAULT '',
+    button_text_fa TEXT NOT NULL DEFAULT '',
+    button_text_en TEXT NOT NULL DEFAULT '',
+    button_url TEXT NOT NULL DEFAULT '',
+    target_page TEXT NOT NULL DEFAULT 'all',
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+  );
 `);
 
 function uid(prefix = "id") {
@@ -129,6 +146,14 @@ const pageColumns = db.prepare("PRAGMA table_info(pages)").all().map((c) => c.na
 if (!pageColumns.includes("is_article")) {
   db.exec("ALTER TABLE pages ADD COLUMN is_article INTEGER NOT NULL DEFAULT 0");
   console.log("[migrate] ستون is_article به جدول pages اضافه شد");
+}
+if (!pageColumns.includes("is_case_study")) {
+  db.exec("ALTER TABLE pages ADD COLUMN is_case_study INTEGER NOT NULL DEFAULT 0");
+  console.log("[migrate] ستون is_case_study به جدول pages اضافه شد");
+}
+if (!pageColumns.includes("category")) {
+  db.exec("ALTER TABLE pages ADD COLUMN category TEXT NOT NULL DEFAULT ''");
+  console.log("[migrate] ستون category به جدول pages اضافه شد");
 }
 
 // --- بذرپاشی اولیه (فقط یک‌بار، اگر دیتابیس خالی باشد) ---
@@ -175,8 +200,8 @@ insertPage.run(
       "کلیه محصولات فروشگاه نوین پلی‌تکنیک اورجینال و دارای گارانتی معتبر شرکتی هستند. مهلت بازگشت کالا ۷ روز از تاریخ تحویل است، به شرط سالم بودن کالا و بسته‌بندی.",
       "All products sold by Novin Polytechnic are genuine and come with a valid manufacturer warranty. Returns are accepted within 7 days of delivery, provided the product and its packaging are undamaged."),
     B("paragraph",
-      "هزینه‌ی ارسال بر عهده‌ی خریدار است مگر در مواردی که به‌صورت جداگانه اعلام شود. تعمیرات دارای ۳ ماه گارانتی روی کار انجام‌شده و قطعات تعویضی هستند.",
-      "Shipping costs are the buyer's responsibility unless stated otherwise. All repairs come with a 3-month warranty covering both labor and replaced parts."),
+      "هزینه‌ی ارسال بر عهده‌ی خریدار است مگر در مواردی که به‌صورت جداگانه اعلام شود. هزینه و مدت‌زمان هر تعمیر پس از عیب‌یابی و پیش از شروع کار به‌صورت شفاف اعلام می‌شود.",
+      "Shipping costs are the buyer's responsibility unless stated otherwise. The cost and duration of any repair is clearly communicated after diagnosis and before work begins."),
   ]),
   0, 0, 9, authorId, authorName, now0, now0
 );

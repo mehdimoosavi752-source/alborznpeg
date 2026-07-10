@@ -107,4 +107,11 @@ export const api = {
   getTicket: (id) => request(`/api/tickets/${id}`),
   replyTicket: (id, message) => request(`/api/tickets/${id}/messages`, { method: "POST", body: JSON.stringify({ message }) }),
   setTicketStatus: (id, status) => request(`/api/tickets/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+
+  // پاپ‌آپ‌های زمان‌بندی‌شده
+  getActivePopups: (page) => request(`/api/popups/active?page=${encodeURIComponent(page)}`),
+  adminListPopups: () => request("/api/admin/popups"),
+  adminCreatePopup: (payload) => request("/api/admin/popups", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdatePopup: (id, payload) => request(`/api/admin/popups/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminDeletePopup: (id) => request(`/api/admin/popups/${id}`, { method: "DELETE" }),
 };

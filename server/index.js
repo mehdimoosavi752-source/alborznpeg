@@ -516,6 +516,71 @@ app.patch("/api/tickets/:id", authenticate, requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+/* ============================== پاپ‌آپ‌های زمان‌بندی‌شده ============================== */
+
+function rowToPopup(p) {
+  return {
+    id: p.id,
+    label: p.label,
+    message: { fa: p.message_fa, en: p.message_en },
+    buttonText: { fa: p.button_text_fa, en: p.button_text_en },
+    buttonUrl: p.button_url,
+    targetPage: p.target_page,
+    startDate: p.start_date,
+    endDate: p.end_date,
+    enabled: !!p.enabled,
+    createdAt: p.created_at,
+  };
+}
+
+app.get("/api/popups/active", (req, res) => {
+  const page = req.query.page || "home";
+  const now = new Date().toISOString();
+  const rows = db.prepare(
+    `SELECT * FROM popups WHERE enabled = 1 AND start_date <= ? AND end_date >= ? AND (target_page = 'all' OR target_page = ?)`
+  ).all(now, now, page);
+  res.json({ popups: rows.map(rowToPopup) });
+});
+
+app.get("/api/admin/popups", authenticate, requireEditor, (req, res) => {
+  const rows = db.prepare("SELECT * FROM popups ORDER BY created_at DESC").all();
+  res.json({ popups: rows.map(rowToPopup) });
+});
+
+app.post("/api/admin/popups", authenticate, requireEditor, (req, res) => {
+  const { label, message, buttonText, buttonUrl, targetPage, startDate, endDate, enabled } = req.body || {};
+  if (!label || !startDate || !endDate) return res.status(400).json({ error: "عنوان داخلی و بازه‌ی تاریخ الزامی است" });
+  const id = uid("popup");
+  db.prepare(
+    `INSERT INTO popups (id, label, message_fa, message_en, button_text_fa, button_text_en, button_url, target_page, start_date, end_date, enabled, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    id, label, message?.fa || "", message?.en || "", buttonText?.fa || "", buttonText?.en || "",
+    buttonUrl || "", targetPage || "all", startDate, endDate, enabled ? 1 : 0, new Date().toISOString()
+  );
+  res.json({ ok: true, id });
+});
+
+app.put("/api/admin/popups/:id", authenticate, requireEditor, (req, res) => {
+  const p = db.prepare("SELECT * FROM popups WHERE id = ?").get(req.params.id);
+  if (!p) return res.status(404).json({ error: "پاپ‌آپ یافت نشد" });
+  const { label, message, buttonText, buttonUrl, targetPage, startDate, endDate, enabled } = req.body || {};
+  db.prepare(
+    `UPDATE popups SET label=?, message_fa=?, message_en=?, button_text_fa=?, button_text_en=?, button_url=?, target_page=?, start_date=?, end_date=?, enabled=? WHERE id=?`
+  ).run(
+    label ?? p.label, message?.fa ?? p.message_fa, message?.en ?? p.message_en,
+    buttonText?.fa ?? p.button_text_fa, buttonText?.en ?? p.button_text_en, buttonUrl ?? p.button_url,
+    targetPage ?? p.target_page, startDate ?? p.start_date, endDate ?? p.end_date,
+    enabled === undefined ? p.enabled : (enabled ? 1 : 0), p.id
+  );
+  res.json({ ok: true });
+});
+
+app.delete("/api/admin/popups/:id", authenticate, requireEditor, (req, res) => {
+  db.prepare("DELETE FROM popups WHERE id = ?").run(req.params.id);
+  res.json({ ok: true });
+});
+
 /* ============================== سرو کردن فرانت‌اند ساخته‌شده (تک‌سرویسی) ============================== */
 // اگر پوشه‌ی client/dist وجود داشته باشد (یعنی فرانت‌اند build شده)، همین سرور آن را هم سرو می‌کند.
 // این یعنی فقط یک سرویس روی Render لازم است، نه دو سرویس جدا.
