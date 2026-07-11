@@ -377,7 +377,24 @@ function FloatingContact({ content, lang }) {
 }
 
 function ConsultationWidget({ lang }) {
-  return <a href="tel:02632536821" className="fixed z-20 right-4 sm:right-6 bottom-5 sm:bottom-6 glass-consult rounded-2xl px-4 py-3 flex items-center gap-3 shadow-2xl hover:scale-[1.03] transition-transform"><div className="w-9 h-9 rounded-xl bg-red-600 text-white flex items-center justify-center"><Phone size={17} /></div><div><p className="font-black text-sm">{lang === "fa" ? "مشاوره رایگان" : "Free consultation"}</p><p dir="ltr" className="text-xs text-black/65">026 32536821 · 0912 464 7963</p></div></a>;
+  return (
+    <a
+      href="tel:02632536821"
+      className="consult-fab fixed z-30 left-3 sm:left-5 top-[92px] sm:top-24 glass-consult rounded-2xl pl-3 pr-4 py-2.5 sm:py-3 flex items-center gap-3 shadow-2xl hover:scale-[1.04] hover:border-red-300 transition-all"
+    >
+      <span className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-red-500 to-red-700 text-white flex items-center justify-center shrink-0 shadow-lg shadow-red-600/30">
+        <span className="absolute inset-0 rounded-xl border-2 border-red-400/70 consult-ring" />
+        <Phone size={18} className="relative" />
+      </span>
+      <div className="text-right leading-tight">
+        <p className="font-black text-xs sm:text-sm flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 consult-dot shrink-0" />
+          {lang === "fa" ? "مشاوره رایگان" : "Free consultation"}
+        </p>
+        <p dir="ltr" className="text-[10px] sm:text-xs text-black/60 font-medium mt-0.5">026 32536821</p>
+      </div>
+    </a>
+  );
 }
 
 function SitePopup({ activePage, lang }) {
@@ -673,7 +690,21 @@ function GlobalStyles() {
       .hero-wide-chip { animation: heroChip 4.5s ease-in-out infinite; }
       .hero-wide-chip-delay { animation-delay: -1.7s; }
       .hero-wide-chip-slow { animation-duration: 6.4s; animation-delay: -3s; }
-      .glass-consult { background: rgba(255,255,255,.76); border:1px solid rgba(255,255,255,.78); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+      .glass-consult { background: rgba(255,255,255,.82); border:1px solid rgba(255,255,255,.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+      @keyframes consultRingPulse { 0% { transform: scale(1); opacity:.9; } 70%,100% { transform: scale(1.55); opacity:0; } }
+      .consult-ring { animation: consultRingPulse 2.2s ease-out infinite; }
+      @keyframes consultDotPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,.55); } 50% { box-shadow: 0 0 0 4px rgba(16,185,129,0); } }
+      .consult-dot { animation: consultDotPulse 1.8s ease-in-out infinite; }
+      .consult-fab { animation: consultFabIn .6s cubic-bezier(.22,.9,.3,1) both; animation-delay: .3s; }
+      @keyframes consultFabIn { 0% { opacity:0; transform: translateX(-18px) scale(.92); } 100% { opacity:1; transform: translateX(0) scale(1); } }
+      @keyframes posterScanReveal { 0% { filter: grayscale(1) brightness(.5) contrast(1.2) blur(3px); opacity:.45; } 55% { filter: grayscale(.2) brightness(.85) blur(.5px); opacity:.85; } 100% { filter: none; opacity:1; } }
+      .poster-scan-reveal { animation: posterScanReveal 2.6s cubic-bezier(.22,.85,.3,1) both; }
+      @keyframes scanTravelOnce { 0% { top:0%; opacity:0; } 8% { opacity:1; } 88% { opacity:1; } 100% { top:100%; opacity:0; } }
+      .poster-scanline-once { animation: scanTravelOnce 2.6s cubic-bezier(.4,0,.2,1) both; }
+      @keyframes scanStripesFade { 0% { opacity:.5; } 65%,100% { opacity:0; } }
+      .poster-scan-stripes { animation: scanStripesFade 2.6s ease-out both; background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0px, rgba(255,255,255,.08) 1px, transparent 1px, transparent 3px); mix-blend-mode: overlay; }
+      @keyframes chipRevealFade { 0%,52% { opacity:0; transform: translateY(8px) scale(.9); filter: blur(4px); } 100% { opacity:1; transform: translateY(0) scale(1); filter: blur(0); } }
+      .poster-chip-reveal { animation: chipRevealFade 2.6s cubic-bezier(.22,.9,.3,1) both; }
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: #f4f4f4; }
       ::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 8px; }
@@ -878,18 +909,20 @@ function HomePage({ content, navigate, lang }) {
   return (
     <>
       <section className="relative pt-40 pb-24 px-4 sm:px-6 overflow-hidden bg-[#0b0b0c] text-white">
-        <div className="absolute inset-y-0 left-0 w-full lg:w-[68%] overflow-hidden hero-wide-visual">
-          <img src="/assets/hero-data-recovery-v2.png" alt="" className="w-full h-full object-cover object-right hero-wide-image" />
+        <div key={`poster-${lang}`} className="absolute inset-y-0 left-0 w-full lg:w-[68%] overflow-hidden hero-wide-visual">
+          <img src="/assets/hero-data-recovery-v2.png" alt="" className="w-full h-full object-cover object-right hero-wide-image poster-scan-reveal" />
+          <div className="absolute inset-0 poster-scan-stripes pointer-events-none" />
+          <div className="poster-scanline-once absolute inset-x-0 h-[2px] bg-red-400 shadow-[0_0_20px_4px_rgba(239,68,68,.65)] pointer-events-none" />
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#0b0b0c]/25 to-[#0b0b0c]" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0c]/60 via-transparent to-[#0b0b0c]/40" />
-          <div className="hero-wide-chip absolute left-[18%] top-[24%] w-14 h-14 rounded-2xl border border-red-400/50 bg-black/65 backdrop-blur flex items-center justify-center"><HardDrive className="text-red-400" /></div>
-          <div className="hero-wide-chip hero-wide-chip-delay absolute left-[38%] bottom-[22%] w-14 h-14 rounded-2xl border border-white/20 bg-black/65 backdrop-blur flex items-center justify-center"><Monitor className="text-white" /></div>
-          <div className="hero-wide-chip hero-wide-chip-slow absolute left-[8%] bottom-[14%] w-14 h-14 rounded-2xl border border-red-400/40 bg-black/65 backdrop-blur flex items-center justify-center"><Gamepad2 className="text-red-400" /></div>
+          <div className="hero-wide-chip poster-chip-reveal absolute left-[18%] top-[24%] w-14 h-14 rounded-2xl border border-red-400/50 bg-black/65 backdrop-blur flex items-center justify-center"><HardDrive className="text-red-400" /></div>
+          <div className="hero-wide-chip hero-wide-chip-delay poster-chip-reveal absolute left-[38%] bottom-[22%] w-14 h-14 rounded-2xl border border-white/20 bg-black/65 backdrop-blur flex items-center justify-center" style={{ animationDelay: "120ms" }}><Monitor className="text-white" /></div>
+          <div className="hero-wide-chip hero-wide-chip-slow poster-chip-reveal absolute left-[8%] bottom-[14%] w-14 h-14 rounded-2xl border border-red-400/40 bg-black/65 backdrop-blur flex items-center justify-center" style={{ animationDelay: "240ms" }}><Gamepad2 className="text-red-400" /></div>
         </div>
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-red-900/30 rounded-full blur-3xl blob" />
         <div className="absolute bottom-0 -left-20 w-80 h-80 bg-red-950/40 rounded-full blur-3xl blob" style={{ animationDelay: "2s" }} />
         <div className="relative max-w-6xl mx-auto grid lg:grid-cols-[1fr_.78fr] gap-10 items-center">
-          <div className="text-center lg:text-right">
+          <div className={`text-center lg:text-right ${lang === "en" ? "lg:order-2" : ""}`}>
             <Reveal>
               <span className="inline-flex items-center gap-2 text-xs tracking-widest border border-red-800/50 bg-red-950/40 text-red-400 rounded-full px-4 py-1.5 mb-8">
                 <Zap size={14} /> {tr(h.eyebrow, lang)}
@@ -910,7 +943,7 @@ function HomePage({ content, navigate, lang }) {
               </div>
             </Reveal>
           </div>
-          <div className="hidden lg:block min-h-[300px]" aria-hidden="true" />
+          <div className={`hidden lg:block min-h-[300px] ${lang === "en" ? "lg:order-1" : ""}`} aria-hidden="true" />
         </div>
       </section>
 
