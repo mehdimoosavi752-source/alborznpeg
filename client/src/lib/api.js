@@ -134,4 +134,17 @@ export const api = {
   adminCreatePopup: (payload) => request("/api/admin/popups", { method: "POST", body: JSON.stringify(payload) }),
   adminUpdatePopup: (id, payload) => request(`/api/admin/popups/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   adminDeletePopup: (id) => request(`/api/admin/popups/${id}`, { method: "DELETE" }),
+
+  // کدهای تخفیف
+  applyCoupon: (payload) => request("/api/coupons/apply", { method: "POST", body: JSON.stringify(payload) }),
+  adminListCoupons: () => request("/api/admin/coupons"),
+  adminCreateCoupon: (payload) => request("/api/admin/coupons", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateCoupon: (id, payload) => request(`/api/admin/coupons/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminDeleteCoupon: (id) => request(`/api/admin/coupons/${id}`, { method: "DELETE" }),
+
+  // قالب‌های پیام ایمیل/پیامک
+  adminListNotificationTemplates: () => request("/api/admin/notification-templates"),
+  adminCreateNotificationTemplate: (payload) => request("/api/admin/notification-templates", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateNotificationTemplate: (id, payload) => request(`/api/admin/notification-templates/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminDeleteNotificationTemplate: (id) => request(`/api/admin/notification-templates/${id}`, { method: "DELETE" }),
 };

@@ -7,7 +7,7 @@ import {
   ShieldCheck, Zap, Clock, ChevronLeft, Layers, RotateCcw, Search,
   SlidersHorizontal, BadgeCheck, Truck, Mail, ChevronRight, Users as UsersIcon,
   Eye, EyeOff, Image as ImageIcon, Type, AlignLeft, MousePointerClick, Globe, LifeBuoy, Star, HardDrive, Play, Megaphone,
-  Heart, Pencil, Home as HomeIcon, KeyRound, ChevronsRight,
+  Heart, Pencil, Home as HomeIcon, KeyRound, ChevronsRight, Tag, MessageSquareText,
 } from "lucide-react";
 import { api, resolveImageUrl } from "./lib/api.js";
 
@@ -207,6 +207,8 @@ const ADMIN_UI = {
   tickets: { fa: "تیکت‌ها", en: "Tickets" },
   notifications: { fa: "اعلان‌ها", en: "Notifications" },
   popups: { fa: "پاپ‌آپ‌ها", en: "Popups" },
+  coupons: { fa: "کدهای تخفیف", en: "Coupons" },
+  notifTemplates: { fa: "قالب پیام‌ها", en: "Message Templates" },
   users: { fa: "کاربران", en: "Users" },
   payment: { fa: "درگاه پرداخت", en: "Payment Gateway" },
   settings: { fa: "تنظیمات", en: "Settings" },
@@ -415,17 +417,41 @@ function FloatingContact({ content, lang }) {
   const s = content.settings;
   const mobile = s.mobile || s.whatsapp;
   const aparat = s.aparat || DEFAULT_APARAT_URL;
+
+  const islands = [
+    s.phone && { key: "phone", href: `tel:${s.phone}`, icon: Phone, label: "026 32536821", ltr: true, bg: "bg-red-600", ring: "shadow-red-600/30" },
+    mobile && { key: "mobile", href: `tel:${mobile}`, icon: Phone, label: "0912 464 7963", ltr: true, bg: "bg-red-600", ring: "shadow-red-600/30" },
+    s.whatsapp && { key: "whatsapp", href: `https://wa.me/${s.whatsapp.replace(/^0/, "98").replace(/[^0-9]/g, "")}`, icon: MessageCircle, label: "WhatsApp", external: true, bg: "bg-[#25D366]", ring: "shadow-[#25D366]/40" },
+    s.telegram && { key: "telegram", href: s.telegram.startsWith("http") ? s.telegram : (s.telegram.startsWith("@") ? `https://t.me/${s.telegram.slice(1)}` : `https://t.me/+${s.telegram.replace(/^0/, "98").replace(/[^0-9]/g, "")}`), icon: Send, label: "Telegram", external: true, bg: "bg-[#229ED9]", ring: "shadow-[#229ED9]/40" },
+    s.bale && { key: "bale", href: `https://ble.ir/${s.bale.replace(/^0/, "98").replace(/[^0-9]/g, "")}`, icon: MessageCircle, label: lang === "fa" ? "بله" : "Bale", external: true, bg: "bg-[#1eb77a]", ring: "shadow-[#1eb77a]/40" },
+    s.instagram && { key: "instagram", href: s.instagram.startsWith("http") ? s.instagram : `https://instagram.com/${s.instagram.replace(/^@/, "")}`, icon: Instagram, label: "Instagram", external: true, bg: "bg-gradient-to-br from-[#f58529] via-[#dd2a7b] to-[#8134af]", ring: "shadow-[#dd2a7b]/40" },
+    { key: "aparat", href: aparat, icon: Play, label: "Aparat", external: true, bg: "bg-neutral-900", ring: "shadow-black/30" },
+  ].filter(Boolean);
+
   return (
     <div className="fixed bottom-5 left-5 z-30 flex flex-col items-start gap-3">
       {open && (
-        <div className="flex flex-col gap-2 bg-white border border-black/10 rounded-2xl shadow-xl p-2 mb-1">
-          {s.phone && <a href={`tel:${s.phone}`} dir="ltr" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Phone size={16} className="text-red-600" /> 026 32536821</a>}
-          {mobile && <a href={`tel:${mobile}`} dir="ltr" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Phone size={16} className="text-red-600" /> 0912 464 7963</a>}
-          {s.whatsapp && <a href={`https://wa.me/${s.whatsapp.replace(/^0/, "98").replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-[#25D366]/10 text-black/80"><MessageCircle size={16} className="text-[#25D366]" /> WhatsApp</a>}
-          {s.telegram && <a href={s.telegram.startsWith("http") ? s.telegram : (s.telegram.startsWith("@") ? `https://t.me/${s.telegram.slice(1)}` : `https://t.me/+${s.telegram.replace(/^0/, "98").replace(/[^0-9]/g, "")}`)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-[#229ED9]/10 text-black/80"><Send size={16} className="text-[#229ED9]" /> Telegram</a>}
-          {s.bale && <a href={`https://ble.ir/${s.bale.replace(/^0/, "98").replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-[#1eb77a]/10 text-black/80"><MessageCircle size={16} className="text-[#1eb77a]" /> {lang === "fa" ? "بله" : "Bale"}</a>}
-          {s.instagram && <a href={s.instagram.startsWith("http") ? s.instagram : `https://instagram.com/${s.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-[#E1306C]/10 text-black/80"><Instagram size={16} className="text-[#E1306C]" /> Instagram</a>}
-          <a href={aparat} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-red-50 text-black/80"><Play size={16} className="text-red-600 fill-red-600" /> Aparat</a>
+        <div className="flex flex-col gap-2.5 mb-1">
+          {islands.map((it, i) => {
+            const Ico = it.icon;
+            return (
+              <a
+                key={it.key}
+                href={it.href}
+                target={it.external ? "_blank" : undefined}
+                rel={it.external ? "noreferrer" : undefined}
+                className="island-pop flex items-center gap-2.5 group"
+                style={{ animationDelay: `${i * 55}ms` }}
+              >
+                <span className={`w-11 h-11 rounded-full ${it.bg} text-white flex items-center justify-center shrink-0 shadow-lg ${it.ring} transition-transform group-hover:scale-110`}>
+                  <Ico size={18} className={it.key === "aparat" ? "fill-white" : ""} />
+                </span>
+                <span dir={it.ltr ? "ltr" : undefined} className="bg-white border border-black/10 shadow-md rounded-full px-3 py-1.5 text-xs font-bold text-black/80 whitespace-nowrap">
+                  {it.label}
+                </span>
+              </a>
+            );
+          })}
         </div>
       )}
       <button onClick={() => setOpen((v) => !v)} className="glow-pulse w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-xl flex items-center justify-center transition-transform hover:scale-105">
@@ -662,7 +688,7 @@ export default function NovinPolytechnic() {
   const placeOrder = async (form) => {
     if (!currentUser) { setShowCheckout(false); setShowAuth(true); return; }
     try {
-      const result = await api.createOrder({ orderType: "shop", items: cart, total: cartTotal, customer: form });
+      const result = await api.createOrder({ orderType: "shop", items: cart, total: cartTotal, customer: form, couponCode: form.couponCode || "" });
       alert(`${lang === "fa" ? "کد رهگیری سفارش شما" : "Your tracking code"}: ${result.trackingCode}`);
       setOrderDone(true); setCart([]);
     } catch (e) { alert("Order failed: " + e.message); }
@@ -718,7 +744,7 @@ export default function NovinPolytechnic() {
         {activePage === "tracking" && <TrackingPage lang={lang} />}
         {activePage === "account" && <AccountPage currentUser={currentUser} setCurrentUser={setCurrentUser} content={content} onGoShop={() => navigate("shop")} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} onLogout={doLogout} lang={lang} />}
         {activePage === "product" && <ProductDetailPage content={content} id={route[1]} addToCart={addToCart} lang={lang} currentUser={currentUser} onNeedAuth={() => setShowAuth(true)} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
-        {activePage === "page" && <CustomPageView page={pages.find((p) => p.id === route[1])} lang={lang} />}
+        {activePage === "page" && <CustomPageView page={pages.find((p) => p.id === route[1] || p.slug === route[1])} lang={lang} />}
       </main>
 
       <ReviewsStrip lang={lang} />
@@ -780,6 +806,8 @@ function GlobalStyles() {
       .hero-wide-chip-delay { animation-delay: -1.7s; }
       .hero-wide-chip-slow { animation-duration: 6.4s; animation-delay: -3s; }
       .hero-text-shadow { text-shadow: 0 2px 14px rgba(0,0,0,.9), 0 1px 3px rgba(0,0,0,.95); }
+      @keyframes islandPop { 0% { opacity:0; transform: translateY(10px) scale(.7); } 70% { transform: translateY(-2px) scale(1.05); } 100% { opacity:1; transform: translateY(0) scale(1); } }
+      .island-pop { animation: islandPop .38s cubic-bezier(.34,1.56,.64,1) both; }
       .glass-consult { background: rgba(255,255,255,.82); border:1px solid rgba(255,255,255,.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
       @keyframes consultRingPulse { 0% { transform: scale(1); opacity:.9; } 70%,100% { transform: scale(1.7); opacity:0; } }
       .consult-ring { animation: consultRingPulse 2.2s ease-out infinite; }
@@ -1508,8 +1536,8 @@ function ContactPage({ content, onSend, lang }) {
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10">
           <div className="space-y-4">
-            <InfoCard icon={<Phone size={20} />} title={lang === "fa" ? "تلفن ثابت" : "Landline"} value="026 32536821" />
-            <InfoCard icon={<Phone size={20} />} title={lang === "fa" ? "شماره موبایل" : "Mobile"} value={s.mobile || s.whatsapp} />
+            <InfoCard icon={<Phone size={20} />} title={lang === "fa" ? "تلفن ثابت" : "Landline"} value="026 32536821" dir="ltr" />
+            <InfoCard icon={<Phone size={20} />} title={lang === "fa" ? "شماره موبایل" : "Mobile"} value={s.mobile || s.whatsapp} dir="ltr" />
             <InfoCard icon={<MapPin size={20} />} title={ui("address", lang)} value={tr(s.address, lang)} />
             <a href={s.instagram} target="_blank" rel="noreferrer" className="block">
               <InfoCard icon={<Instagram size={20} />} title="Instagram" value={lang === "fa" ? "مشاهده پیج اینستاگرام" : "View Instagram Page"} />
@@ -1536,11 +1564,11 @@ function ContactPage({ content, onSend, lang }) {
     </div>
   );
 }
-function InfoCard({ icon, title, value }) {
+function InfoCard({ icon, title, value, dir }) {
   return (
     <div className="border border-black/10 hover:border-red-600 transition-colors rounded-xl p-5 flex items-center gap-4">
       <div className="text-red-600">{icon}</div>
-      <div><div className="text-xs text-black/50 mb-0.5">{title}</div><div className="text-sm font-bold">{value}</div></div>
+      <div><div className="text-xs text-black/50 mb-0.5">{title}</div><div dir={dir} className="text-sm font-bold" style={dir === "ltr" ? { unicodeBidi: "plaintext", textAlign: "left" } : undefined}>{value}</div></div>
     </div>
   );
 }
@@ -2158,8 +2186,35 @@ function CartDrawer({ cart, total, onClose, onChangeQty, onRemove, onCheckout, l
 function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, paymentStatus, lang }) {
   const [form, setForm] = useState({ name: currentUser?.name || "", phone: "", email: "", province: "", city: "", postalCode: "", address: "" });
   const [processing, setProcessing] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [coupon, setCoupon] = useState(null);
+  const [couponError, setCouponError] = useState("");
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const set = (k, v) => setForm({ ...form, [k]: v });
-  const submit = async (e) => { e.preventDefault(); setProcessing(true); await new Promise((r) => setTimeout(r, 1200)); await onSubmit(form); setProcessing(false); };
+
+  const discount = coupon?.discount || 0;
+  const payable = Math.max(0, total - discount);
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponBusy(true); setCouponError("");
+    try {
+      const res = await api.applyCoupon({ code: couponCode.trim(), subtotal: total, orderType: "shop" });
+      setCoupon({ code: res.code, discount: res.discount, type: res.type, value: res.value });
+    } catch (e) { setCoupon(null); setCouponError(e.message); }
+    setCouponBusy(false);
+  };
+  const removeCoupon = () => { setCoupon(null); setCouponCode(""); setCouponError(""); };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!agreed) return;
+    setProcessing(true);
+    await new Promise((r) => setTimeout(r, 1200));
+    await onSubmit({ ...form, couponCode: coupon?.code || "" });
+    setProcessing(false);
+  };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -2188,8 +2243,51 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
               </div>
               <input required placeholder={lang === "fa" ? "کد پستی" : "Postal Code"} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} />
               <textarea required placeholder={ui("exactAddress", lang)} rows={3} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm resize-none" value={form.address} onChange={(e) => set("address", e.target.value)} />
-              <div className="flex justify-between items-center py-3 border-t border-black/10 text-sm"><span className="text-black/60">{ui("payableAmount", lang)}</span><span className="font-black text-red-600">{fmtPrice(total, lang)}</span></div>
-              <button disabled={processing} className="w-full bg-red-600 hover:bg-red-700 text-white disabled:opacity-60 transition-colors py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+
+              {coupon ? (
+                <div className="flex items-center justify-between gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5 text-sm">
+                  <span className="flex items-center gap-1.5 text-green-700 font-bold"><BadgeCheck size={15} /> <span dir="ltr">{coupon.code}</span> {lang === "fa" ? "اعمال شد" : "applied"}</span>
+                  <button type="button" onClick={removeCoupon} className="text-green-700/60 hover:text-red-600"><X size={15} /></button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input placeholder={lang === "fa" ? "کد تخفیف (اختیاری)" : "Coupon code (optional)"} dir="ltr" className="flex-1 bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm uppercase" value={couponCode} onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }} />
+                  <button type="button" disabled={couponBusy || !couponCode.trim()} onClick={applyCoupon} className="shrink-0 border border-black/15 hover:border-red-600 disabled:opacity-50 transition-colors px-4 rounded-lg text-sm font-bold">
+                    {couponBusy ? "..." : (lang === "fa" ? "اعمال" : "Apply")}
+                  </button>
+                </div>
+              )}
+              {couponError && <p className="text-red-600 text-xs">{couponError}</p>}
+
+              <div className="border-t border-black/10 pt-3 space-y-1.5">
+                {discount > 0 && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-black/50">{lang === "fa" ? "مبلغ سفارش" : "Order total"}</span>
+                    <span className="text-black/50 line-through">{fmtPrice(total, lang)}</span>
+                  </div>
+                )}
+                {discount > 0 && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-green-700">{lang === "fa" ? "تخفیف" : "Discount"}</span>
+                    <span className="text-green-700 font-bold">-{fmtPrice(discount, lang)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-black/60">{ui("payableAmount", lang)}</span>
+                  <span className="font-black text-red-600">{fmtPrice(payable, lang)}</span>
+                </div>
+              </div>
+
+              <label className="flex items-start gap-2 text-xs cursor-pointer pt-1">
+                <input required type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="accent-red-600 mt-0.5 shrink-0" />
+                <span className="text-black/60 leading-relaxed">
+                  {lang === "fa" ? "" : "I have read and agree to the "}
+                  <a href="#/page/rules" target="_blank" rel="noreferrer" className="text-red-600 font-bold hover:underline">{lang === "fa" ? "قوانین و شرایط" : "Terms & Conditions"}</a>
+                  {lang === "fa" ? " فروشگاه را مطالعه کرده‌ام و می‌پذیرم." : "."}
+                </span>
+              </label>
+
+              <button disabled={processing || !agreed} className="w-full bg-red-600 hover:bg-red-700 text-white disabled:opacity-60 transition-colors py-3 rounded-xl font-bold flex items-center justify-center gap-2">
                 {processing ? ui("connectingToGateway", lang) : paymentStatus?.enabled ? `${ui("payWith", lang)} ${paymentStatus.provider}` : ui("payOnline", lang)}
               </button>
               <p className="text-black/30 text-[11px] text-center leading-relaxed pt-1">
@@ -2202,6 +2300,7 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
     </div>
   );
 }
+
 
 /* ============================== ورود / ثبت‌نام عمومی ============================== */
 
@@ -2262,12 +2361,14 @@ const ALL_ADMIN_TABS = [
   { id: "pageImages", icon: ImageIcon, roles: ["admin", "editor"] },
   { id: "faq", icon: MessageCircle, roles: ["admin", "editor"] },
   { id: "orders", icon: ShoppingCart, roles: ["admin"] },
+  { id: "coupons", icon: Tag, roles: ["admin"] },
   { id: "messages", icon: Mail, roles: ["admin"] },
   { id: "reviews", icon: MessageCircle, roles: ["admin"] },
   { id: "tickets", icon: LifeBuoy, roles: ["admin"] },
   { id: "users", icon: UsersIcon, roles: ["admin"] },
   { id: "payment", icon: CreditCard, roles: ["admin"] },
   { id: "notifications", icon: Send, roles: ["admin"] },
+  { id: "notifTemplates", icon: MessageSquareText, roles: ["admin"] },
   { id: "popups", icon: Megaphone, roles: ["admin", "editor"] },
   { id: "settings", icon: Settings, roles: ["admin"] },
 ];
@@ -2311,12 +2412,14 @@ function AdminPanel({ content, update, onClose, onLogout, tab, setTab, saving, r
           {tab === "pageImages" && <AdminPageImages content={content} update={update} lang={lang} />}
           {tab === "faq" && <AdminFAQ content={content} update={update} lang={lang} />}
           {tab === "orders" && <AdminOrders lang={lang} />}
+          {tab === "coupons" && <AdminCoupons lang={lang} />}
           {tab === "messages" && <AdminMessages lang={lang} />}
           {tab === "reviews" && <AdminReviews lang={lang} />}
           {tab === "tickets" && <AdminTickets lang={lang} />}
           {tab === "users" && <AdminUsers lang={lang} />}
           {tab === "payment" && <AdminPayment lang={lang} />}
           {tab === "notifications" && <AdminNotifications lang={lang} />}
+          {tab === "notifTemplates" && <AdminNotificationTemplates lang={lang} />}
           {tab === "popups" && <AdminPopups lang={lang} />}
           {tab === "settings" && <AdminSettings content={content} update={update} lang={lang} />}
         </div>
@@ -2862,6 +2965,9 @@ function AdminOrderRow({ order: o, lang, onChanged }) {
         {!isService && <span className="text-red-600 font-black">{fmtPrice(o.total, lang)}</span>}
       </div>
       <p className="text-black/40 text-xs mb-1">{o.customer?.phone}{o.customer?.email ? ` · ${o.customer.email}` : ""}</p>
+      {o.couponCode && (
+        <p className="text-green-700 text-[11px] mb-1 flex items-center gap-1"><Tag size={11} /> <span dir="ltr">{o.couponCode}</span> · {lang === "fa" ? "تخفیف" : "discount"}: {fmtPrice(o.discountAmount, lang)}</p>
+      )}
       {isService ? (
         <p className="text-black/40 text-xs mb-1">{lang === "fa" ? "دستگاه" : "Device"}: {o.deviceInfo} — {o.issueDescription}</p>
       ) : (
@@ -3483,6 +3589,261 @@ function AdminPopups({ lang }) {
           </div>
         ))}
         {popups && popups.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز پاپ‌آپی نساخته‌اید." : "You haven't created any popups yet."}</p>}
+      </div>
+    </div>
+  );
+}
+
+function AdminCoupons({ lang }) {
+  const [coupons, setCoupons] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [error, setError] = useState("");
+
+  const load = async () => { try { const { coupons: list } = await api.adminListCoupons(); setCoupons(list); } catch (e) { setCoupons([]); } };
+  useEffect(() => { load(); }, []);
+
+  const toLocalInput = (iso) => (iso ? iso.slice(0, 16) : "");
+  const startNew = () => {
+    const now = new Date();
+    const later = new Date(now.getTime() + 30 * 24 * 3600 * 1000);
+    setEditing({
+      id: null, code: "", label: "", type: "percent", value: 10, maxDiscount: 0, minOrderTotal: 0,
+      appliesTo: "all", usageLimitTotal: 0, limitOnePerUser: true,
+      startDate: toLocalInput(now.toISOString()), endDate: toLocalInput(later.toISOString()), enabled: true,
+    });
+    setError("");
+  };
+  const startEdit = (c) => { setEditing({ ...c, startDate: toLocalInput(c.startDate), endDate: toLocalInput(c.endDate) }); setError(""); };
+
+  const save = async () => {
+    setError("");
+    const payload = { ...editing, startDate: new Date(editing.startDate).toISOString(), endDate: new Date(editing.endDate).toISOString() };
+    try {
+      if (editing.id) await api.adminUpdateCoupon(editing.id, payload);
+      else await api.adminCreateCoupon(payload);
+      setEditing(null);
+      await load();
+    } catch (e) { setError(e.message); }
+  };
+  const remove = async (id) => {
+    if (!confirm(lang === "fa" ? "این کد تخفیف حذف شود؟" : "Delete this coupon?")) return;
+    try { await api.adminDeleteCoupon(id); await load(); } catch (e) { alert(e.message); }
+  };
+
+  const usageLabel = (c) => {
+    if (c.usageLimitTotal === 1) return lang === "fa" ? "یکبار مصرف کلی" : "Single use (total)";
+    if (c.usageLimitTotal > 1) return lang === "fa" ? `حداکثر ${c.usageLimitTotal.toLocaleString(lang === "fa" ? "fa-IR" : "en-US")} بار` : `Up to ${c.usageLimitTotal} uses`;
+    return lang === "fa" ? "گروهی (نامحدود)" : "Group (unlimited)";
+  };
+
+  if (editing) {
+    const set = (k, v) => setEditing({ ...editing, [k]: v });
+    return (
+      <div className="max-w-xl">
+        <SectionTitle action={
+          <div className="flex gap-2">
+            <button onClick={() => setEditing(null)} className={btnGhost}>{aui("cancel", lang)}</button>
+            <button onClick={save} className={btnPrimary}>{aui("save", lang)}</button>
+          </div>
+        }>{editing.id ? aui("edit", lang) : (lang === "fa" ? "کد تخفیف جدید" : "New Coupon")}</SectionTitle>
+        {error && <p className="text-red-600 text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">{error}</p>}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={lang === "fa" ? "کد تخفیف" : "Coupon code"}>
+              <input dir="ltr" className={inputCls + " uppercase"} value={editing.code} onChange={(e) => set("code", e.target.value.toUpperCase())} placeholder="SUMMER20" />
+            </Field>
+            <Field label={lang === "fa" ? "برچسب داخلی (فقط پنل)" : "Internal label"}>
+              <input className={inputCls} value={editing.label} onChange={(e) => set("label", e.target.value)} placeholder={lang === "fa" ? "مثلاً کمپین تابستان" : "e.g. Summer campaign"} />
+            </Field>
+          </div>
+
+          <div>
+            <span className="text-xs text-black/50 mb-1.5 block">{lang === "fa" ? "نوع تخفیف" : "Discount type"}</span>
+            <div className="flex bg-black/5 rounded-lg p-1">
+              <button type="button" onClick={() => set("type", "percent")} className={`flex-1 text-xs py-2 rounded-md transition-colors ${editing.type === "percent" ? "bg-red-600 text-white font-bold" : "text-black/50"}`}>{lang === "fa" ? "درصدی" : "Percentage"}</button>
+              <button type="button" onClick={() => set("type", "fixed")} className={`flex-1 text-xs py-2 rounded-md transition-colors ${editing.type === "fixed" ? "bg-red-600 text-white font-bold" : "text-black/50"}`}>{lang === "fa" ? "مبلغ ثابت" : "Fixed amount"}</button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={editing.type === "percent" ? (lang === "fa" ? "درصد تخفیف" : "Discount percent") : (lang === "fa" ? "مبلغ تخفیف (تومان)" : "Discount amount (Toman)")}>
+              <input type="number" min={0} max={editing.type === "percent" ? 100 : undefined} dir="ltr" className={inputCls} value={editing.value} onChange={(e) => set("value", e.target.value)} />
+            </Field>
+            {editing.type === "percent" && (
+              <Field label={lang === "fa" ? "سقف تخفیف (تومان، ۰=بدون سقف)" : "Max discount cap (0 = none)"}>
+                <input type="number" min={0} dir="ltr" className={inputCls} value={editing.maxDiscount} onChange={(e) => set("maxDiscount", e.target.value)} />
+              </Field>
+            )}
+          </div>
+
+          <Field label={lang === "fa" ? "حداقل مبلغ سفارش (تومان، ۰=بدون شرط)" : "Minimum order total (0 = none)"}>
+            <input type="number" min={0} dir="ltr" className={inputCls} value={editing.minOrderTotal} onChange={(e) => set("minOrderTotal", e.target.value)} />
+          </Field>
+
+          <Field label={lang === "fa" ? "قابل استفاده برای" : "Applies to"}>
+            <select className={inputCls} value={editing.appliesTo} onChange={(e) => set("appliesTo", e.target.value)}>
+              <option value="all">{lang === "fa" ? "همه سفارشات" : "All orders"}</option>
+              <option value="shop">{lang === "fa" ? "فقط فروشگاه" : "Shop only"}</option>
+              <option value="service">{lang === "fa" ? "فقط خدمات" : "Service only"}</option>
+            </select>
+          </Field>
+
+          <div>
+            <span className="text-xs text-black/50 mb-1.5 block">{lang === "fa" ? "نحوه‌ی مصرف" : "Usage type"}</span>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <button type="button" onClick={() => set("usageLimitTotal", 1)} className={`text-xs py-2.5 rounded-lg border transition-colors ${editing.usageLimitTotal == 1 ? "border-red-600 bg-red-50 text-red-700 font-bold" : "border-black/15 text-black/60"}`}>{lang === "fa" ? "یکبار مصرف کلی" : "Single use (total)"}</button>
+              <button type="button" onClick={() => set("usageLimitTotal", 0)} className={`text-xs py-2.5 rounded-lg border transition-colors ${editing.usageLimitTotal == 0 ? "border-red-600 bg-red-50 text-red-700 font-bold" : "border-black/15 text-black/60"}`}>{lang === "fa" ? "گروهی (چند نفر)" : "Group (multi-user)"}</button>
+            </div>
+            {editing.usageLimitTotal != 1 && (
+              <Field label={lang === "fa" ? "سقف کل استفاده (۰=نامحدود)" : "Total usage cap (0 = unlimited)"}>
+                <input type="number" min={0} dir="ltr" className={inputCls} value={editing.usageLimitTotal} onChange={(e) => set("usageLimitTotal", e.target.value)} />
+              </Field>
+            )}
+          </div>
+
+          <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={editing.limitOnePerUser} onChange={(e) => set("limitOnePerUser", e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "هر کاربر فقط یک‌بار بتواند از این کد استفاده کند" : "Each user can use this coupon only once"}</label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={lang === "fa" ? "تاریخ انتشار" : "Start date"}><input type="datetime-local" className={inputCls} value={editing.startDate} onChange={(e) => set("startDate", e.target.value)} /></Field>
+            <Field label={lang === "fa" ? "تاریخ انقضا" : "Expiry date"}><input type="datetime-local" className={inputCls} value={editing.endDate} onChange={(e) => set("endDate", e.target.value)} /></Field>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={editing.enabled} onChange={(e) => set("enabled", e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "فعال باشد" : "Enabled"}</label>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl">
+      <SectionTitle action={<button onClick={startNew} className={btnPrimary}><Plus size={14} /> {lang === "fa" ? "کد تخفیف جدید" : "New Coupon"}</button>}>{aui("coupons", lang)}</SectionTitle>
+      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "برای هر کد می‌توانید نوع تخفیف (درصدی/مبلغی)، محدودیت استفاده، بازه‌ی زمانی و شرط حداقل سفارش را تعیین کنید." : "For each code you can set the discount type, usage limits, date range, and a minimum order requirement."}</p>
+      {coupons === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      <div className="space-y-2">
+        {coupons?.map((c) => (
+          <div key={c.id} className={cardCls + " flex items-center justify-between gap-3 flex-wrap"}>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span dir="ltr" className="font-black text-sm bg-black/5 rounded-md px-2 py-0.5">{c.code}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${c.enabled ? "bg-green-50 text-green-700 border border-green-200" : "bg-black/5 text-black/40 border border-black/10"}`}>{c.enabled ? (lang === "fa" ? "فعال" : "Enabled") : (lang === "fa" ? "غیرفعال" : "Disabled")}</span>
+                {c.label && <span className="text-black/40 text-xs">{c.label}</span>}
+              </div>
+              <p className="text-black/50 text-xs mt-1.5">
+                {c.type === "percent" ? `${c.value}%${c.maxDiscount ? ` (${lang === "fa" ? "سقف" : "cap"} ${fmtPrice(c.maxDiscount, lang)})` : ""}` : fmtPrice(c.value, lang)}
+                {" · "}{usageLabel(c)}
+                {" · "}{lang === "fa" ? `استفاده‌شده: ${c.usedCount}` : `Used: ${c.usedCount}`}
+                {" · "}{fmtDate(c.startDate, lang)} → {fmtDate(c.endDate, lang)}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={() => startEdit(c)} className={btnGhost}>{aui("edit", lang)}</button>
+              <button onClick={() => remove(c.id)} className="text-black/30 hover:text-red-600"><Trash2 size={16} /></button>
+            </div>
+          </div>
+        ))}
+        {coupons && coupons.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز کد تخفیفی نساخته‌اید." : "You haven't created any coupons yet."}</p>}
+      </div>
+    </div>
+  );
+}
+
+function AdminNotificationTemplates({ lang }) {
+  const [templates, setTemplates] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [creatingNew, setCreatingNew] = useState(false);
+  const [error, setError] = useState("");
+
+  const load = async () => { try { const { templates: list } = await api.adminListNotificationTemplates(); setTemplates(list); } catch (e) { setTemplates([]); } };
+  useEffect(() => { load(); }, []);
+
+  const startEdit = (t) => { setEditing({ ...t }); setCreatingNew(false); setError(""); };
+  const startNew = () => { setEditing({ id: null, key: "", label: "", channel: "email", subject: "", body: "", enabled: true }); setCreatingNew(true); setError(""); };
+
+  const save = async () => {
+    setError("");
+    try {
+      if (editing.id) await api.adminUpdateNotificationTemplate(editing.id, editing);
+      else await api.adminCreateNotificationTemplate(editing);
+      setEditing(null);
+      await load();
+    } catch (e) { setError(e.message); }
+  };
+  const remove = async (t) => {
+    if (!confirm(lang === "fa" ? "این قالب حذف شود؟" : "Delete this template?")) return;
+    try { await api.adminDeleteNotificationTemplate(t.id); await load(); } catch (e) { alert(e.message); }
+  };
+
+  const PLACEHOLDER_HINT = lang === "fa"
+    ? "متغیرهای قابل استفاده: {{customerName}} نام مشتری، {{trackingCode}} کد پیگیری، {{status}} وضعیت جدید، {{storeName}} نام فروشگاه، {{orderType}} نوع سفارش"
+    : "Available placeholders: {{customerName}}, {{trackingCode}}, {{status}}, {{storeName}}, {{orderType}}";
+
+  if (editing) {
+    const set = (k, v) => setEditing({ ...editing, [k]: v });
+    return (
+      <div className="max-w-xl">
+        <SectionTitle action={
+          <div className="flex gap-2">
+            <button onClick={() => setEditing(null)} className={btnGhost}>{aui("cancel", lang)}</button>
+            <button onClick={save} className={btnPrimary}>{aui("save", lang)}</button>
+          </div>
+        }>{creatingNew ? (lang === "fa" ? "قالب جدید" : "New Template") : aui("edit", lang)}</SectionTitle>
+        {error && <p className="text-red-600 text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">{error}</p>}
+        <div className="space-y-4">
+          <Field label={lang === "fa" ? "عنوان داخلی (فقط پنل)" : "Internal label"}><input className={inputCls} value={editing.label} onChange={(e) => set("label", e.target.value)} /></Field>
+          {creatingNew && (
+            <>
+              <Field label={lang === "fa" ? "کلید یکتا (بدون فاصله، انگلیسی)" : "Unique key (no spaces)"}><input dir="ltr" className={inputCls} value={editing.key} onChange={(e) => set("key", e.target.value.trim().replace(/\s+/g, "_"))} placeholder="my_custom_template" /></Field>
+              <Field label={lang === "fa" ? "کانال ارسال" : "Channel"}>
+                <select className={inputCls} value={editing.channel} onChange={(e) => set("channel", e.target.value)}>
+                  <option value="email">{lang === "fa" ? "ایمیل" : "Email"}</option>
+                  <option value="sms">{lang === "fa" ? "پیامک" : "SMS"}</option>
+                </select>
+              </Field>
+            </>
+          )}
+          {!creatingNew && (
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${editing.channel === "email" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-purple-50 text-purple-700 border-purple-200"}`}>{editing.channel === "email" ? (lang === "fa" ? "ایمیل" : "Email") : (lang === "fa" ? "پیامک" : "SMS")}</span>
+              {editing.isSystem && <span className="text-[10px] px-2 py-0.5 rounded-full border bg-black/5 text-black/40 border-black/10">{lang === "fa" ? "قالب سیستمی" : "System template"}</span>}
+              <span dir="ltr" className="text-[10px] text-black/30">{editing.key}</span>
+            </div>
+          )}
+          {editing.channel === "email" && (
+            <Field label={lang === "fa" ? "موضوع ایمیل" : "Email subject"}><input className={inputCls} value={editing.subject} onChange={(e) => set("subject", e.target.value)} /></Field>
+          )}
+          <Field label={lang === "fa" ? "متن پیام" : "Message body"}>
+            <textarea rows={6} className={inputCls} value={editing.body} onChange={(e) => set("body", e.target.value)} />
+          </Field>
+          <p className="text-[11px] text-black/40 bg-neutral-100 rounded-lg px-3 py-2 leading-relaxed">{PLACEHOLDER_HINT}</p>
+          <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={editing.enabled} onChange={(e) => set("enabled", e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "فعال باشد (در صورت غیرفعال بودن، پیام پیش‌فرض ارسال می‌شود)" : "Enabled (falls back to default text when disabled)"}</label>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl">
+      <SectionTitle action={<button onClick={startNew} className={btnPrimary}><Plus size={14} /> {lang === "fa" ? "قالب جدید" : "New Template"}</button>}>{aui("notifTemplates", lang)}</SectionTitle>
+      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "متن پیامک‌ها و ایمیل‌هایی که به‌صورت خودکار هنگام تغییر وضعیت سفارش برای مشتری ارسال می‌شود را اینجا ویرایش کنید." : "Edit the automatic emails and SMS messages sent to customers when an order's status changes."}</p>
+      {templates === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      <div className="space-y-2">
+        {templates?.map((t) => (
+          <div key={t.id} className={cardCls + " flex items-center justify-between gap-3 flex-wrap"}>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${t.channel === "email" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-purple-50 text-purple-700 border-purple-200"}`}>{t.channel === "email" ? (lang === "fa" ? "ایمیل" : "Email") : (lang === "fa" ? "پیامک" : "SMS")}</span>
+                <p className="font-bold text-sm">{t.label}</p>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${t.enabled ? "bg-green-50 text-green-700 border border-green-200" : "bg-black/5 text-black/40 border border-black/10"}`}>{t.enabled ? (lang === "fa" ? "فعال" : "Enabled") : (lang === "fa" ? "غیرفعال" : "Disabled")}</span>
+              </div>
+              <p className="text-black/40 text-xs mt-1.5 line-clamp-1">{t.body}</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={() => startEdit(t)} className={btnGhost}>{aui("edit", lang)}</button>
+              {!t.isSystem && <button onClick={() => remove(t)} className="text-black/30 hover:text-red-600"><Trash2 size={16} /></button>}
+            </div>
+          </div>
+        ))}
+        {templates && templates.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "قالبی وجود ندارد." : "No templates yet."}</p>}
       </div>
     </div>
   );

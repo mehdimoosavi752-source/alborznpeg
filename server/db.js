@@ -157,6 +157,46 @@ db.exec(`
     enabled INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS coupons (
+    id TEXT PRIMARY KEY,
+    code TEXT UNIQUE NOT NULL,
+    label TEXT NOT NULL DEFAULT '',
+    type TEXT NOT NULL DEFAULT 'percent',        -- percent | fixed
+    value INTEGER NOT NULL DEFAULT 0,             -- درصد (0-100) یا مبلغ ثابت به تومان
+    max_discount INTEGER NOT NULL DEFAULT 0,      -- سقف تخفیف برای نوع درصدی؛ 0 = بدون سقف
+    min_order_total INTEGER NOT NULL DEFAULT 0,   -- حداقل مبلغ سفارش برای اعمال کد
+    applies_to TEXT NOT NULL DEFAULT 'all',       -- all | shop | service
+    usage_limit_total INTEGER NOT NULL DEFAULT 0, -- 0 = نامحدود (گروهی) ، 1 = یکبار مصرف کلی، عدد دیگر = سقف مشخص
+    limit_one_per_user INTEGER NOT NULL DEFAULT 1,-- هر کاربر فقط یک‌بار بتواند استفاده کند
+    used_count INTEGER NOT NULL DEFAULT 0,
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS coupon_uses (
+    id TEXT PRIMARY KEY,
+    coupon_id TEXT NOT NULL,
+    username TEXT NOT NULL,
+    order_id TEXT NOT NULL DEFAULT '',
+    used_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS notification_templates (
+    id TEXT PRIMARY KEY,
+    key TEXT UNIQUE NOT NULL,
+    label TEXT NOT NULL DEFAULT '',
+    channel TEXT NOT NULL DEFAULT 'email',  -- email | sms
+    subject TEXT NOT NULL DEFAULT '',       -- فقط برای ایمیل استفاده می‌شود
+    body TEXT NOT NULL DEFAULT '',
+    is_system INTEGER NOT NULL DEFAULT 0,   -- قالب‌های پیش‌فرض سیستمی (کلید ثابت، فقط محتوا قابل ویرایش)
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
 `);
 
 function uid(prefix = "id") {
@@ -416,6 +456,8 @@ const orderMigrations = [
   ["issue_description", "TEXT NOT NULL DEFAULT ''"],
   ["customer_email", "TEXT NOT NULL DEFAULT ''"],
   ["updated_at", "TEXT NOT NULL DEFAULT ''"],
+  ["coupon_code", "TEXT NOT NULL DEFAULT ''"],
+  ["discount_amount", "INTEGER NOT NULL DEFAULT 0"],
 ];
 for (const [col, def] of orderMigrations) {
   if (!orderColumns.includes(col)) {
@@ -436,5 +478,38 @@ if (!paymentRow) {
     "INSERT INTO payment_settings (id, provider, merchant_id, api_key, enabled, updated_at) VALUES (1, '', '', '', 0, ?)"
   ).run(new Date().toISOString());
 }
+
+// --- بذرپاشی قالب‌های پیش‌فرض اعلان (ایمیل/پیامک تغییر وضعیت سفارش) ---
+const STATUS_LABELS_FA_SEED = {
+  reviewing: "در حال بررسی سفارش",
+  registered: "سفارش ثبت شد",
+  packing: "در حال بسته‌بندی",
+  shipped: "سفارش ارسال شد",
+  delivered: "سفارش تحویل شد",
+  working: "تکنسین‌ها مشغول بررسی و تعمیر هستند",
+  ready: "سفارش آماده‌ی تحویل است",
+};
+const insertTemplate = db.prepare(
+  `INSERT OR IGNORE INTO notification_templates (id, key, label, channel, subject, body, is_system, enabled, created_at, updated_at)
+   VALUES (?, ?, ?, ?, ?, ?, 1, 1, ?, ?)`
+);
+const nowT = new Date().toISOString();
+for (const [statusKey, statusLabel] of Object.entries(STATUS_LABELS_FA_SEED)) {
+  insertTemplate.run(
+    `tpl_order_${statusKey}_email`, `order_status_${statusKey}_email`,
+    `ایمیل تغییر وضعیت — ${statusLabel}`, "email",
+    "به‌روزرسانی سفارش شما — {{storeName}}",
+    `سلام {{customerName}}،\nوضعیت سفارش شما (کد پیگیری: {{trackingCode}}) به‌روزرسانی شد:\n«${statusLabel}»\n\nبا تشکر از خرید شما،\n{{storeName}}`,
+    nowT, nowT
+  );
+  insertTemplate.run(
+    `tpl_order_${statusKey}_sms`, `order_status_${statusKey}_sms`,
+    `پیامک تغییر وضعیت — ${statusLabel}`, "sms",
+    "",
+    `${statusLabel} — کد پیگیری: {{trackingCode}} — {{storeName}}`,
+    nowT, nowT
+  );
+}
+console.log("[seed] قالب‌های پیش‌فرض اعلان ایمیل/پیامک بررسی و در صورت نیاز تکمیل شدند");
 
 export { uid };

@@ -347,13 +347,125 @@ app.delete("/api/admin/addresses/:id", authenticate, requireAdmin, (req, res) =>
   res.json({ ok: true });
 });
 
+/* ============================== کدهای تخفیف ============================== */
+
+function rowToCoupon(c) {
+  return {
+    id: c.id,
+    code: c.code,
+    label: c.label,
+    type: c.type,
+    value: c.value,
+    maxDiscount: c.max_discount,
+    minOrderTotal: c.min_order_total,
+    appliesTo: c.applies_to,
+    usageLimitTotal: c.usage_limit_total,
+    limitOnePerUser: !!c.limit_one_per_user,
+    usedCount: c.used_count,
+    startDate: c.start_date,
+    endDate: c.end_date,
+    enabled: !!c.enabled,
+    createdAt: c.created_at,
+  };
+}
+
+// اعتبارسنجی کد تخفیف؛ commitUsage=false یعنی فقط پیش‌نمایش (هنگام تایپ کد در سبد خرید)
+function evaluateCoupon(code, { subtotal, orderType, username }) {
+  const clean = String(code || "").trim().toUpperCase();
+  if (!clean) return { ok: false, error: "کد تخفیف را وارد کنید" };
+  const c = db.prepare("SELECT * FROM coupons WHERE UPPER(code) = ?").get(clean);
+  if (!c) return { ok: false, error: "کد تخفیف پیدا نشد" };
+  if (!c.enabled) return { ok: false, error: "این کد تخفیف غیرفعال است" };
+  const now = new Date().toISOString();
+  if (c.start_date && now < c.start_date) return { ok: false, error: "این کد تخفیف هنوز شروع نشده است" };
+  if (c.end_date && now > c.end_date) return { ok: false, error: "این کد تخفیف منقضی شده است" };
+  if (c.applies_to !== "all" && orderType && c.applies_to !== orderType) {
+    return { ok: false, error: "این کد تخفیف برای این نوع سفارش معتبر نیست" };
+  }
+  if (subtotal < (c.min_order_total || 0)) {
+    return { ok: false, error: `حداقل مبلغ سفارش برای این کد ${c.min_order_total.toLocaleString("fa-IR")} تومان است` };
+  }
+  if (c.usage_limit_total > 0 && c.used_count >= c.usage_limit_total) {
+    return { ok: false, error: "ظرفیت استفاده از این کد تخفیف تمام شده است" };
+  }
+  if (c.limit_one_per_user) {
+    if (!username) return { ok: false, error: "برای استفاده از کد تخفیف ابتدا وارد حساب کاربری شوید" };
+    const used = db.prepare("SELECT id FROM coupon_uses WHERE coupon_id = ? AND username = ?").get(c.id, username);
+    if (used) return { ok: false, error: "شما قبلاً از این کد تخفیف استفاده کرده‌اید" };
+  }
+  let discount = c.type === "percent" ? Math.floor((subtotal * c.value) / 100) : c.value;
+  if (c.type === "percent" && c.max_discount > 0) discount = Math.min(discount, c.max_discount);
+  discount = Math.max(0, Math.min(discount, subtotal));
+  return { ok: true, coupon: rowToCoupon(c), discount };
+}
+
+app.post("/api/coupons/apply", authenticate, (req, res) => {
+  const { code, subtotal, orderType } = req.body || {};
+  const result = evaluateCoupon(code, { subtotal: Number(subtotal) || 0, orderType: orderType || "shop", username: req.user.username });
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ ok: true, discount: result.discount, code: result.coupon.code, type: result.coupon.type, value: result.coupon.value });
+});
+
+app.get("/api/admin/coupons", authenticate, requireAdmin, (req, res) => {
+  const rows = db.prepare("SELECT * FROM coupons ORDER BY created_at DESC").all();
+  res.json({ coupons: rows.map(rowToCoupon) });
+});
+
+app.post("/api/admin/coupons", authenticate, requireAdmin, (req, res) => {
+  const b = req.body || {};
+  if (!b.code || !b.startDate || !b.endDate) return res.status(400).json({ error: "کد، تاریخ شروع و تاریخ انقضا الزامی است" });
+  const existing = db.prepare("SELECT id FROM coupons WHERE UPPER(code) = ?").get(String(b.code).trim().toUpperCase());
+  if (existing) return res.status(400).json({ error: "این کد تخفیف قبلاً ثبت شده است" });
+  const id = uid("coupon");
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO coupons (id, code, label, type, value, max_discount, min_order_total, applies_to, usage_limit_total, limit_one_per_user, used_count, start_date, end_date, enabled, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`
+  ).run(
+    id, String(b.code).trim().toUpperCase(), b.label || "", b.type === "fixed" ? "fixed" : "percent",
+    Number(b.value) || 0, Number(b.maxDiscount) || 0, Number(b.minOrderTotal) || 0, ["all", "shop", "service"].includes(b.appliesTo) ? b.appliesTo : "all",
+    Number(b.usageLimitTotal) || 0, b.limitOnePerUser === false ? 0 : 1,
+    b.startDate, b.endDate, b.enabled === false ? 0 : 1, now, now
+  );
+  res.json({ ok: true, id });
+});
+
+app.put("/api/admin/coupons/:id", authenticate, requireAdmin, (req, res) => {
+  const c = db.prepare("SELECT * FROM coupons WHERE id = ?").get(req.params.id);
+  if (!c) return res.status(404).json({ error: "کد تخفیف پیدا نشد" });
+  const b = req.body || {};
+  if (b.code) {
+    const dupe = db.prepare("SELECT id FROM coupons WHERE UPPER(code) = ? AND id != ?").get(String(b.code).trim().toUpperCase(), c.id);
+    if (dupe) return res.status(400).json({ error: "این کد تخفیف قبلاً ثبت شده است" });
+  }
+  db.prepare(
+    `UPDATE coupons SET code=?, label=?, type=?, value=?, max_discount=?, min_order_total=?, applies_to=?, usage_limit_total=?, limit_one_per_user=?, start_date=?, end_date=?, enabled=?, updated_at=? WHERE id=?`
+  ).run(
+    b.code ? String(b.code).trim().toUpperCase() : c.code, b.label ?? c.label, b.type === "fixed" ? "fixed" : (b.type === "percent" ? "percent" : c.type),
+    b.value === undefined ? c.value : Number(b.value) || 0, b.maxDiscount === undefined ? c.max_discount : Number(b.maxDiscount) || 0,
+    b.minOrderTotal === undefined ? c.min_order_total : Number(b.minOrderTotal) || 0,
+    ["all", "shop", "service"].includes(b.appliesTo) ? b.appliesTo : c.applies_to,
+    b.usageLimitTotal === undefined ? c.usage_limit_total : Number(b.usageLimitTotal) || 0,
+    b.limitOnePerUser === undefined ? c.limit_one_per_user : (b.limitOnePerUser ? 1 : 0),
+    b.startDate ?? c.start_date, b.endDate ?? c.end_date, b.enabled === undefined ? c.enabled : (b.enabled ? 1 : 0),
+    new Date().toISOString(), c.id
+  );
+  res.json({ ok: true });
+});
+
+app.delete("/api/admin/coupons/:id", authenticate, requireAdmin, (req, res) => {
+  db.prepare("DELETE FROM coupons WHERE id = ?").run(req.params.id);
+  db.prepare("DELETE FROM coupon_uses WHERE coupon_id = ?").run(req.params.id);
+  res.json({ ok: true });
+});
+
 /* ============================== سفارشات (فروشگاه و خدمات) ============================== */
 
 const SHOP_STATUSES = ["reviewing", "registered", "packing", "shipped", "delivered"];
 const SERVICE_STATUSES = ["reviewing", "working", "ready", "delivered"];
 
 app.post("/api/orders", authenticate, (req, res) => {
-  const { orderType, items, total, customer, deviceInfo, issueDescription } = req.body || {};
+  const { orderType, items, total, customer, deviceInfo, issueDescription, couponCode } = req.body || {};
   const type = orderType === "service" ? "service" : "shop";
   if (!customer?.name || !customer?.phone) return res.status(400).json({ error: "اطلاعات مشتری ناقص است" });
   if (type === "shop" && (!items?.length || !total || !customer?.address)) {
@@ -362,18 +474,38 @@ app.post("/api/orders", authenticate, (req, res) => {
   if (type === "service" && (!deviceInfo || !issueDescription)) {
     return res.status(400).json({ error: "توضیح دستگاه و مشکل الزامی است" });
   }
+
+  let finalTotal = total || 0;
+  let discountAmount = 0;
+  let appliedCouponRow = null;
+  if (couponCode) {
+    const result = evaluateCoupon(couponCode, { subtotal: total || 0, orderType: type, username: req.user.username });
+    if (!result.ok) return res.status(400).json({ error: result.error });
+    discountAmount = result.discount;
+    finalTotal = Math.max(0, (total || 0) - discountAmount);
+    appliedCouponRow = result.coupon;
+  }
+
   const id = uid("order");
   const trackingCode = `NP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
   const now = new Date().toISOString();
   db.prepare(
-    `INSERT INTO orders (id, order_type, status, username, items, total, customer_name, customer_phone, customer_email, customer_province, customer_city, customer_postal_code, customer_address, device_info, issue_description, created_at, updated_at, tracking_code)
-     VALUES (?, ?, 'reviewing', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO orders (id, order_type, status, username, items, total, customer_name, customer_phone, customer_email, customer_province, customer_city, customer_postal_code, customer_address, device_info, issue_description, created_at, updated_at, tracking_code, coupon_code, discount_amount)
+     VALUES (?, ?, 'reviewing', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
-    id, type, req.user?.username || null, JSON.stringify(items || []), total || 0,
+    id, type, req.user?.username || null, JSON.stringify(items || []), finalTotal,
     customer.name, customer.phone, customer.email || "", customer.province || "", customer.city || "", customer.postalCode || "", customer.address || "",
-    deviceInfo || "", issueDescription || "", now, now, trackingCode
+    deviceInfo || "", issueDescription || "", now, now, trackingCode, appliedCouponRow?.code || "", discountAmount
   );
-  res.json({ ok: true, id, trackingCode });
+
+  if (appliedCouponRow) {
+    db.prepare("INSERT INTO coupon_uses (id, coupon_id, username, order_id, used_at) VALUES (?, ?, ?, ?, ?)").run(
+      uid("cpu"), appliedCouponRow.id, req.user.username, id, now
+    );
+    db.prepare("UPDATE coupons SET used_count = used_count + 1 WHERE id = ?").run(appliedCouponRow.id);
+  }
+
+  res.json({ ok: true, id, trackingCode, discount: discountAmount, total: finalTotal });
 });
 
 function rowToOrder(o) {
@@ -384,6 +516,8 @@ function rowToOrder(o) {
     username: o.username || "مهمان",
     items: JSON.parse(o.items),
     total: o.total,
+    couponCode: o.coupon_code || "",
+    discountAmount: o.discount_amount || 0,
     customer: { name: o.customer_name, phone: o.customer_phone, email: o.customer_email, province: o.customer_province, city: o.customer_city, postalCode: o.customer_postal_code, address: o.customer_address },
     deviceInfo: o.device_info,
     issueDescription: o.issue_description,
@@ -532,22 +666,31 @@ const STATUS_LABELS_FA = {
   ready: "سفارش آماده‌ی تحویل است",
 };
 
+function renderTemplate(str, vars) {
+  return String(str || "").replace(/\{\{(\w+)\}\}/g, (m, key) => (vars[key] !== undefined ? vars[key] : m));
+}
+
+function getTemplate(key) {
+  return db.prepare("SELECT * FROM notification_templates WHERE key = ?").get(key);
+}
+
 async function sendEmailNotification(order, status) {
   const cfg = db.prepare("SELECT * FROM notification_settings WHERE id = 1").get();
   if (!cfg.email_enabled || !cfg.email_host || !cfg.email_user) return { ok: false, error: "سرویس ایمیل هنوز تنظیم نشده است" };
-  // ایمیل مشتری در سفارش ذخیره نمی‌شود (فقط شماره تلفن)؛ اگر بعداً فیلد ایمیل به فرم اضافه شود، همینجا استفاده می‌شود.
   if (!order.customer_email) return { ok: false, error: "برای این سفارش ایمیل مشتری ثبت نشده است" };
+  const vars = {
+    storeName: STORE_NAME, customerName: order.customer_name, trackingCode: order.tracking_code || order.id,
+    status: STATUS_LABELS_FA[status] || status, orderType: order.order_type === "service" ? "خدمات" : "خرید",
+  };
+  const tpl = getTemplate(`order_status_${status}_email`);
+  const subject = tpl && tpl.enabled ? renderTemplate(tpl.subject, vars) : `به‌روزرسانی سفارش شما`;
+  const text = tpl && tpl.enabled ? renderTemplate(tpl.body, vars) : `وضعیت جدید سفارش شما: ${STATUS_LABELS_FA[status] || status}`;
   try {
     const transporter = nodemailer.createTransport({
       host: cfg.email_host, port: cfg.email_port || 587, secure: (cfg.email_port || 587) === 465,
       auth: { user: cfg.email_user, pass: cfg.email_pass },
     });
-    await transporter.sendMail({
-      from: cfg.email_from || cfg.email_user,
-      to: order.customer_email,
-      subject: `به‌روزرسانی سفارش شما`,
-      text: `وضعیت جدید سفارش شما: ${STATUS_LABELS_FA[status] || status}`,
-    });
+    await transporter.sendMail({ from: cfg.email_from || cfg.email_user, to: order.customer_email, subject, text });
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e.message };
@@ -557,11 +700,17 @@ async function sendEmailNotification(order, status) {
 async function sendSmsNotification(order, status) {
   const cfg = db.prepare("SELECT * FROM notification_settings WHERE id = 1").get();
   if (!cfg.sms_enabled || !cfg.sms_webhook_url) return { ok: false, error: "سرویس پیامک هنوز تنظیم نشده است" };
+  const vars = {
+    storeName: STORE_NAME, customerName: order.customer_name, trackingCode: order.tracking_code || order.id,
+    status: STATUS_LABELS_FA[status] || status, orderType: order.order_type === "service" ? "خدمات" : "خرید",
+  };
+  const tpl = getTemplate(`order_status_${status}_sms`);
+  const message = tpl && tpl.enabled ? renderTemplate(tpl.body, vars) : `${STATUS_LABELS_FA[status] || status} — نوین پلی‌تکنیک البرز`;
   try {
     const res2 = await fetch(cfg.sms_webhook_url, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(cfg.sms_api_key ? { Authorization: `Bearer ${cfg.sms_api_key}` } : {}) },
-      body: JSON.stringify({ to: order.customer_phone, sender: cfg.sms_sender, message: `${STATUS_LABELS_FA[status] || status} — نوین پلی‌تکنیک البرز` }),
+      body: JSON.stringify({ to: order.customer_phone, sender: cfg.sms_sender, message }),
     });
     if (!res2.ok) return { ok: false, error: `سرویس پیامک خطا داد (${res2.status})` };
     return { ok: true };
@@ -569,6 +718,51 @@ async function sendSmsNotification(order, status) {
     return { ok: false, error: e.message };
   }
 }
+
+app.get("/api/admin/notification-templates", authenticate, requireAdmin, (req, res) => {
+  const rows = db.prepare("SELECT * FROM notification_templates ORDER BY channel ASC, key ASC").all();
+  res.json({
+    templates: rows.map((t) => ({
+      id: t.id, key: t.key, label: t.label, channel: t.channel, subject: t.subject, body: t.body,
+      isSystem: !!t.is_system, enabled: !!t.enabled, updatedAt: t.updated_at,
+    })),
+  });
+});
+
+app.post("/api/admin/notification-templates", authenticate, requireAdmin, (req, res) => {
+  const { key, label, channel, subject, body, enabled } = req.body || {};
+  if (!key || !label) return res.status(400).json({ error: "کلید و عنوان قالب الزامی است" });
+  const existing = db.prepare("SELECT id FROM notification_templates WHERE key = ?").get(key);
+  if (existing) return res.status(400).json({ error: "قالبی با این کلید قبلاً وجود دارد" });
+  const id = uid("tpl");
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO notification_templates (id, key, label, channel, subject, body, is_system, enabled, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`
+  ).run(id, key, label, channel === "sms" ? "sms" : "email", subject || "", body || "", enabled === false ? 0 : 1, now, now);
+  res.json({ ok: true, id });
+});
+
+app.put("/api/admin/notification-templates/:id", authenticate, requireAdmin, (req, res) => {
+  const t = db.prepare("SELECT * FROM notification_templates WHERE id = ?").get(req.params.id);
+  if (!t) return res.status(404).json({ error: "قالب پیدا نشد" });
+  const { label, subject, body, enabled } = req.body || {};
+  db.prepare(
+    `UPDATE notification_templates SET label=?, subject=?, body=?, enabled=?, updated_at=? WHERE id=?`
+  ).run(
+    label ?? t.label, subject === undefined ? t.subject : subject, body === undefined ? t.body : body,
+    enabled === undefined ? t.enabled : (enabled ? 1 : 0), new Date().toISOString(), t.id
+  );
+  res.json({ ok: true });
+});
+
+app.delete("/api/admin/notification-templates/:id", authenticate, requireAdmin, (req, res) => {
+  const t = db.prepare("SELECT * FROM notification_templates WHERE id = ?").get(req.params.id);
+  if (!t) return res.status(404).json({ error: "قالب پیدا نشد" });
+  if (t.is_system) return res.status(400).json({ error: "قالب‌های سیستمی قابل حذف نیستند؛ می‌توانید غیرفعالش کنید" });
+  db.prepare("DELETE FROM notification_templates WHERE id = ?").run(t.id);
+  res.json({ ok: true });
+});
 
 app.get("/api/admin/notification-settings", authenticate, requireAdmin, (req, res) => {
   const row = db.prepare("SELECT * FROM notification_settings WHERE id = 1").get();
