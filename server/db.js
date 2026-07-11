@@ -121,6 +121,28 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS addresses (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    title TEXT NOT NULL DEFAULT '',
+    receiver_name TEXT NOT NULL DEFAULT '',
+    phone TEXT NOT NULL DEFAULT '',
+    province TEXT NOT NULL DEFAULT '',
+    city TEXT NOT NULL DEFAULT '',
+    postal_code TEXT NOT NULL DEFAULT '',
+    address TEXT NOT NULL DEFAULT '',
+    is_default INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS wishlist (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(username, product_id)
+  );
+
   CREATE TABLE IF NOT EXISTS popups (
     id TEXT PRIMARY KEY,
     label TEXT NOT NULL,
@@ -142,6 +164,16 @@ function uid(prefix = "id") {
 }
 
 // --- مهاجرت سبک: اگر دیتابیس قدیمی‌تر است و ستون جدید را ندارد، اضافه‌اش کن ---
+const userColumns = db.prepare("PRAGMA table_info(users)").all().map((c) => c.name);
+if (!userColumns.includes("phone")) {
+  db.exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
+  console.log("[migrate] ستون phone به جدول users اضافه شد");
+}
+if (!userColumns.includes("email")) {
+  db.exec("ALTER TABLE users ADD COLUMN email TEXT NOT NULL DEFAULT ''");
+  console.log("[migrate] ستون email به جدول users اضافه شد");
+}
+
 const pageColumns = db.prepare("PRAGMA table_info(pages)").all().map((c) => c.name);
 if (!pageColumns.includes("is_article")) {
   db.exec("ALTER TABLE pages ADD COLUMN is_article INTEGER NOT NULL DEFAULT 0");

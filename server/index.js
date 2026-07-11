@@ -47,7 +47,7 @@ app.post("/api/admin/upload", authenticate, requireEditor, (req, res) => {
   });
 });
 
-const toPublicUser = (u) => ({ id: u.id, username: u.username, name: u.name, role: u.role, createdAt: u.created_at });
+const toPublicUser = (u) => ({ id: u.id, username: u.username, name: u.name, role: u.role, phone: u.phone || "", email: u.email || "", createdAt: u.created_at });
 
 /* ============================== سلامت سرور ============================== */
 app.get("/api/health", (req, res) => res.json({ ok: true }));
@@ -90,6 +90,107 @@ app.get("/api/auth/me", authenticate, (req, res) => {
   const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
   if (!user) return res.status(404).json({ error: "کاربر یافت نشد" });
   res.json({ user: toPublicUser(user) });
+});
+
+app.patch("/api/account/profile", authenticate, (req, res) => {
+  const { name, phone, email } = req.body || {};
+  if (!name || !String(name).trim()) return res.status(400).json({ error: "نام نمی‌تواند خالی باشد" });
+  db.prepare("UPDATE users SET name = ?, phone = ?, email = ? WHERE id = ?").run(
+    String(name).trim(), phone || "", email || "", req.user.id
+  );
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
+  const token = signToken(user);
+  res.json({ ok: true, token, user: toPublicUser(user) });
+});
+
+app.patch("/api/account/password", authenticate, (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword || !newPassword) return res.status(400).json({ error: "رمز عبور فعلی و جدید را وارد کنید" });
+  if (newPassword.length < 6) return res.status(400).json({ error: "رمز عبور جدید باید حداقل ۶ کاراکتر باشد" });
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
+  if (!user || !bcrypt.compareSync(currentPassword, user.password_hash)) {
+    return res.status(401).json({ error: "رمز عبور فعلی اشتباه است" });
+  }
+  const hash = bcrypt.hashSync(newPassword, 10);
+  db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hash, user.id);
+  res.json({ ok: true });
+});
+
+/* ============================== آدرس‌ها ============================== */
+
+function rowToAddress(a) {
+  return {
+    id: a.id, title: a.title, receiverName: a.receiver_name, phone: a.phone,
+    province: a.province, city: a.city, postalCode: a.postal_code, address: a.address,
+    isDefault: !!a.is_default, createdAt: a.created_at,
+  };
+}
+
+app.get("/api/addresses/mine", authenticate, (req, res) => {
+  const rows = db.prepare("SELECT * FROM addresses WHERE username = ? ORDER BY is_default DESC, created_at DESC").all(req.user.username);
+  res.json({ addresses: rows.map(rowToAddress) });
+});
+
+app.post("/api/addresses", authenticate, (req, res) => {
+  const { title, receiverName, phone, province, city, postalCode, address, isDefault } = req.body || {};
+  if (!receiverName || !phone || !city || !address) return res.status(400).json({ error: "اطلاعات آدرس ناقص است" });
+  const id = uid("addr");
+  const now = new Date().toISOString();
+  if (isDefault) db.prepare("UPDATE addresses SET is_default = 0 WHERE username = ?").run(req.user.username);
+  db.prepare(
+    `INSERT INTO addresses (id, username, title, receiver_name, phone, province, city, postal_code, address, is_default, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, req.user.username, title || "", receiverName, phone, province || "", city, postalCode || "", address, isDefault ? 1 : 0, now);
+  res.json({ ok: true, id });
+});
+
+function findAddressForUser(id, username, isAdmin) {
+  const row = db.prepare("SELECT * FROM addresses WHERE id = ?").get(id);
+  if (!row) return null;
+  if (!isAdmin && row.username !== username) return null;
+  return row;
+}
+
+app.put("/api/addresses/:id", authenticate, (req, res) => {
+  const isAdmin = req.user.role === "admin";
+  const row = findAddressForUser(req.params.id, req.user.username, isAdmin);
+  if (!row) return res.status(404).json({ error: "آدرس یافت نشد" });
+  const { title, receiverName, phone, province, city, postalCode, address, isDefault } = req.body || {};
+  if (isDefault) db.prepare("UPDATE addresses SET is_default = 0 WHERE username = ?").run(row.username);
+  db.prepare(
+    `UPDATE addresses SET title = ?, receiver_name = ?, phone = ?, province = ?, city = ?, postal_code = ?, address = ?, is_default = ? WHERE id = ?`
+  ).run(title ?? row.title, receiverName ?? row.receiver_name, phone ?? row.phone, province ?? row.province, city ?? row.city, postalCode ?? row.postal_code, address ?? row.address, isDefault ? 1 : (isDefault === false ? 0 : row.is_default), row.id);
+  res.json({ ok: true });
+});
+
+app.delete("/api/addresses/:id", authenticate, (req, res) => {
+  const isAdmin = req.user.role === "admin";
+  const row = findAddressForUser(req.params.id, req.user.username, isAdmin);
+  if (!row) return res.status(404).json({ error: "آدرس یافت نشد" });
+  db.prepare("DELETE FROM addresses WHERE id = ?").run(row.id);
+  res.json({ ok: true });
+});
+
+/* ============================== لیست علاقه‌مندی‌ها ============================== */
+
+app.get("/api/wishlist/mine", authenticate, (req, res) => {
+  const rows = db.prepare("SELECT product_id FROM wishlist WHERE username = ? ORDER BY created_at DESC").all(req.user.username);
+  res.json({ productIds: rows.map((r) => r.product_id) });
+});
+
+app.post("/api/wishlist/:productId", authenticate, (req, res) => {
+  const id = uid("wish");
+  try {
+    db.prepare("INSERT INTO wishlist (id, username, product_id, created_at) VALUES (?, ?, ?, ?)").run(
+      id, req.user.username, req.params.productId, new Date().toISOString()
+    );
+  } catch (e) { /* از قبل در لیست بوده */ }
+  res.json({ ok: true });
+});
+
+app.delete("/api/wishlist/:productId", authenticate, (req, res) => {
+  db.prepare("DELETE FROM wishlist WHERE username = ? AND product_id = ?").run(req.user.username, req.params.productId);
+  res.json({ ok: true });
 });
 
 /* ============================== محتوای سایت ============================== */
@@ -214,10 +315,35 @@ app.get("/api/users", authenticate, requireAdmin, (req, res) => {
 });
 
 app.patch("/api/users/:id", authenticate, requireAdmin, (req, res) => {
-  const { role } = req.body || {};
-  if (!["subscriber", "author", "editor", "admin"].includes(role)) return res.status(400).json({ error: "نقش نامعتبر" });
-  const result = db.prepare("UPDATE users SET role = ? WHERE id = ?").run(role, req.params.id);
-  if (result.changes === 0) return res.status(404).json({ error: "کاربر یافت نشد" });
+  const target = db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
+  if (!target) return res.status(404).json({ error: "کاربر یافت نشد" });
+  const { role, name, phone, email } = req.body || {};
+  if (role !== undefined && !["subscriber", "author", "editor", "admin"].includes(role)) {
+    return res.status(400).json({ error: "نقش نامعتبر" });
+  }
+  db.prepare("UPDATE users SET role = ?, name = ?, phone = ?, email = ? WHERE id = ?").run(
+    role ?? target.role, name !== undefined ? name : target.name, phone !== undefined ? phone : target.phone, email !== undefined ? email : target.email, target.id
+  );
+  res.json({ ok: true });
+});
+
+// جزئیات کامل یک کاربر برای مدیر: پروفایل + آدرس‌ها + علاقه‌مندی‌ها + خلاصه سفارش‌ها
+app.get("/api/admin/users/:id/detail", authenticate, requireAdmin, (req, res) => {
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
+  if (!user) return res.status(404).json({ error: "کاربر یافت نشد" });
+  const addresses = db.prepare("SELECT * FROM addresses WHERE username = ? ORDER BY is_default DESC, created_at DESC").all(user.username).map(rowToAddress);
+  const wishlistRows = db.prepare("SELECT product_id FROM wishlist WHERE username = ? ORDER BY created_at DESC").all(user.username);
+  const orders = db.prepare("SELECT * FROM orders WHERE username = ? ORDER BY created_at DESC LIMIT 20").all(user.username).map(rowToOrder);
+  res.json({
+    user: toPublicUser(user),
+    addresses,
+    wishlistProductIds: wishlistRows.map((r) => r.product_id),
+    orders,
+  });
+});
+
+app.delete("/api/admin/addresses/:id", authenticate, requireAdmin, (req, res) => {
+  db.prepare("DELETE FROM addresses WHERE id = ?").run(req.params.id);
   res.json({ ok: true });
 });
 

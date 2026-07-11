@@ -49,6 +49,19 @@ export const api = {
   login: (username, password) =>
     request("/api/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
   me: () => request("/api/auth/me"),
+  updateProfile: (payload) => request("/api/account/profile", { method: "PATCH", body: JSON.stringify(payload) }),
+  changePassword: (payload) => request("/api/account/password", { method: "PATCH", body: JSON.stringify(payload) }),
+
+  // آدرس‌ها
+  myAddresses: () => request("/api/addresses/mine"),
+  createAddress: (payload) => request("/api/addresses", { method: "POST", body: JSON.stringify(payload) }),
+  updateAddress: (id, payload) => request(`/api/addresses/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  deleteAddress: (id) => request(`/api/addresses/${id}`, { method: "DELETE" }),
+
+  // لیست علاقه‌مندی‌ها
+  myWishlist: () => request("/api/wishlist/mine"),
+  addToWishlist: (productId) => request(`/api/wishlist/${encodeURIComponent(productId)}`, { method: "POST" }),
+  removeFromWishlist: (productId) => request(`/api/wishlist/${encodeURIComponent(productId)}`, { method: "DELETE" }),
 
   // صفحات (مثل ویرایشگر صفحات وردپرس)
   getPagesPublic: () => request("/api/pages"),
@@ -65,6 +78,9 @@ export const api = {
   // کاربران (فقط مدیر)
   listUsers: () => request("/api/users"),
   setUserRole: (id, role) => request(`/api/users/${id}`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  updateUser: (id, payload) => request(`/api/users/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  getUserDetail: (id) => request(`/api/admin/users/${id}/detail`),
+  adminDeleteAddress: (id) => request(`/api/admin/addresses/${id}`, { method: "DELETE" }),
 
   // سفارشات
   createOrder: (payload) => request("/api/orders", { method: "POST", body: JSON.stringify(payload) }),

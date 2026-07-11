@@ -7,6 +7,7 @@ import {
   ShieldCheck, Zap, Clock, ChevronLeft, Layers, RotateCcw, Search,
   SlidersHorizontal, BadgeCheck, Truck, Mail, ChevronRight, Users as UsersIcon,
   Eye, EyeOff, Image as ImageIcon, Type, AlignLeft, MousePointerClick, Globe, LifeBuoy, Star, HardDrive, Play, Megaphone,
+  Heart, Pencil, Home as HomeIcon, KeyRound, ChevronsRight,
 } from "lucide-react";
 import { api, resolveImageUrl } from "./lib/api.js";
 
@@ -151,6 +152,40 @@ const UI = {
   galleryKicker: { fa: "دسته‌بندی خدمات", en: "SERVICE CATEGORIES" },
   feedKicker: { fa: "همین حالا در نوین پلی‌تکنیک البرز", en: "RIGHT NOW AT NOVIN POLYTECHNIC ALBORZ" },
   feedTitle: { fa: "چه خبر است؟", en: "What's Happening" },
+  overview: { fa: "خلاصه فعالیت‌ها", en: "Overview" },
+  myWishlist: { fa: "لیست علاقه‌مندی‌ها", en: "My Wishlist" },
+  myAddresses: { fa: "آدرس‌ها", en: "Addresses" },
+  accountInfo: { fa: "اطلاعات حساب کاربری", en: "Account Info" },
+  supportTickets: { fa: "تیکت‌های پشتیبانی", en: "Support Tickets" },
+  totalOrders: { fa: "سفارش‌ها", en: "Orders" },
+  deliveredOrders: { fa: "تحویل شده", en: "Delivered" },
+  activeOrders: { fa: "در حال انجام", en: "In Progress" },
+  wishlistCountLabel: { fa: "علاقه‌مندی‌ها", en: "Wishlist" },
+  noWishlistYet: { fa: "هنوز محصولی به علاقه‌مندی‌ها اضافه نکرده‌اید.", en: "You haven't added anything to your wishlist yet." },
+  removeFromWishlist: { fa: "حذف از علاقه‌مندی‌ها", en: "Remove from wishlist" },
+  addToWishlistAction: { fa: "افزودن به علاقه‌مندی‌ها", en: "Add to wishlist" },
+  noAddressesYet: { fa: "هنوز آدرسی ثبت نکرده‌اید.", en: "You haven't added any addresses yet." },
+  addAddress: { fa: "افزودن آدرس جدید", en: "Add New Address" },
+  editAddress: { fa: "ویرایش آدرس", en: "Edit Address" },
+  deleteAddress: { fa: "حذف آدرس", en: "Delete address" },
+  defaultAddress: { fa: "آدرس پیش‌فرض", en: "Default address" },
+  setAsDefault: { fa: "انتخاب به‌عنوان پیش‌فرض", en: "Set as default" },
+  addressTitle: { fa: "عنوان آدرس (مثلاً خانه، محل کار)", en: "Address label (e.g. Home, Work)" },
+  receiverName: { fa: "نام گیرنده", en: "Receiver's Name" },
+  province: { fa: "استان", en: "Province" },
+  city: { fa: "شهر", en: "City" },
+  postalCode: { fa: "کد پستی", en: "Postal Code" },
+  editProfile: { fa: "ویرایش پروفایل", en: "Edit Profile" },
+  saveChanges: { fa: "ذخیره تغییرات", en: "Save Changes" },
+  profileUpdated: { fa: "اطلاعات با موفقیت به‌روزرسانی شد.", en: "Your information was updated successfully." },
+  changePassword: { fa: "تغییر رمز عبور", en: "Change Password" },
+  currentPassword: { fa: "رمز عبور فعلی", en: "Current Password" },
+  newPassword: { fa: "رمز عبور جدید", en: "New Password" },
+  passwordChanged: { fa: "رمز عبور با موفقیت تغییر کرد.", en: "Password changed successfully." },
+  confirmLogout: { fa: "آیا مطمئنید می‌خواهید از حساب کاربری خارج شوید؟", en: "Are you sure you want to log out?" },
+  confirmDelete: { fa: "آیا از حذف مطمئن هستید؟", en: "Are you sure you want to delete this?" },
+  optional: { fa: "اختیاری", en: "optional" },
+  email: { fa: "ایمیل", en: "Email" },
 };
 const ui = (key, lang) => UI[key]?.[lang] || UI[key]?.fa || key;
 
@@ -196,6 +231,18 @@ const ADMIN_UI = {
   bgImage: { fa: "تصویر زمینه", en: "Background Image" },
   saved: { fa: "ذخیره شد", en: "Saved" },
   loadFailed: { fa: "ذخیره ناموفق بود", en: "Save failed" },
+  userDetail: { fa: "جزئیات کاربر", en: "User Detail" },
+  close: { fa: "بستن", en: "Close" },
+  role: { fa: "نقش", en: "Role" },
+  phone: { fa: "شماره تماس", en: "Phone" },
+  email: { fa: "ایمیل", en: "Email" },
+  name: { fa: "نام", en: "Name" },
+  addressesOfUser: { fa: "آدرس‌های کاربر", en: "User's Addresses" },
+  wishlistOfUser: { fa: "علاقه‌مندی‌های کاربر", en: "User's Wishlist" },
+  ordersOfUser: { fa: "سفارش‌های اخیر کاربر", en: "User's Recent Orders" },
+  noneYet: { fa: "موردی ثبت نشده است.", en: "Nothing here yet." },
+  viewDetails: { fa: "مشاهده جزئیات", en: "View Details" },
+  searchUsers: { fa: "جستجوی کاربر...", en: "Search users..." },
 };
 const aui = (key, lang) => ADMIN_UI[key]?.[lang] || ADMIN_UI[key]?.fa || key;
 
@@ -469,6 +516,7 @@ export default function NovinPolytechnic() {
   const [paymentStatus, setPaymentStatus] = useState({ enabled: false, provider: null });
 
   const [currentUser, setCurrentUser] = useState(null);
+  const [wishlistIds, setWishlistIds] = useState([]);
   const [showAuth, setShowAuth] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -490,7 +538,10 @@ export default function NovinPolytechnic() {
       await refreshPages();
       try { const st = await api.getPaymentStatus(); setPaymentStatus(st); } catch (e) { /* ignore */ }
       if (api.getToken()) {
-        try { const { user } = await api.me(); setCurrentUser(user); } catch (e) { api.setToken(null); }
+        try {
+          const { user } = await api.me(); setCurrentUser(user);
+          try { const { productIds } = await api.myWishlist(); setWishlistIds(productIds); } catch (e) { /* ignore */ }
+        } catch (e) { api.setToken(null); }
       }
       setLoading(false);
     })();
@@ -563,6 +614,7 @@ export default function NovinPolytechnic() {
     try {
       const { token, user } = await api.login(username, password);
       api.setToken(token); setCurrentUser(user); setShowAuth(false);
+      try { const { productIds } = await api.myWishlist(); setWishlistIds(productIds); } catch (e) { /* ignore */ }
       return null;
     } catch (e) { return e.message; }
   };
@@ -573,7 +625,16 @@ export default function NovinPolytechnic() {
       return null;
     } catch (e) { return e.message; }
   };
-  const doLogout = () => { api.setToken(null); setCurrentUser(null); setUserMenuOpen(false); setShowAdmin(false); };
+  const doLogout = () => { api.setToken(null); setCurrentUser(null); setWishlistIds([]); setUserMenuOpen(false); setShowAdmin(false); };
+
+  const toggleWishlist = async (productId) => {
+    if (!currentUser) { setShowAuth(true); return; }
+    const has = wishlistIds.includes(productId);
+    setWishlistIds((prev) => (has ? prev.filter((id) => id !== productId) : [...prev, productId]));
+    try {
+      if (has) await api.removeFromWishlist(productId); else await api.addToWishlist(productId);
+    } catch (e) { setWishlistIds((prev) => (has ? [...prev, productId] : prev.filter((id) => id !== productId))); }
+  };
 
   const placeOrder = async (form) => {
     if (!currentUser) { setShowCheckout(false); setShowAuth(true); return; }
@@ -626,14 +687,14 @@ export default function NovinPolytechnic() {
       <main key={route.join("/") + lang} className="page-fade">
         {activePage === "home" && <HomePage content={content} navigate={navigate} lang={lang} />}
         {activePage === "services" && <ServicesPage content={content} lang={lang} onRequestService={placeServiceRequest} />}
-        {activePage === "shop" && <ShopPage content={content} addToCart={addToCart} lang={lang} />}
+        {activePage === "shop" && <ShopPage content={content} addToCart={addToCart} lang={lang} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
         {activePage === "articles" && <ArticlesPage pages={pages} content={content} lang={lang} />}
         {activePage === "faq" && <FAQPage content={content} lang={lang} />}
         {activePage === "about" && <AboutPage content={content} lang={lang} />}
         {activePage === "contact" && <ContactPage content={content} onSend={sendMessage} lang={lang} />}
         {activePage === "tracking" && <TrackingPage lang={lang} />}
-        {activePage === "account" && <AccountPage currentUser={currentUser} content={content} onGoShop={() => navigate("shop")} lang={lang} />}
-        {activePage === "product" && <ProductDetailPage content={content} id={route[1]} addToCart={addToCart} lang={lang} currentUser={currentUser} onNeedAuth={() => setShowAuth(true)} />}
+        {activePage === "account" && <AccountPage currentUser={currentUser} setCurrentUser={setCurrentUser} content={content} onGoShop={() => navigate("shop")} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} onLogout={doLogout} lang={lang} />}
+        {activePage === "product" && <ProductDetailPage content={content} id={route[1]} addToCart={addToCart} lang={lang} currentUser={currentUser} onNeedAuth={() => setShowAuth(true)} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
         {activePage === "page" && <CustomPageView page={pages.find((p) => p.id === route[1])} lang={lang} />}
       </main>
 
@@ -1159,15 +1220,24 @@ function ServiceRequestModal({ onClose, onSubmit, lang }) {
 
 /* ============================== محیط فروشگاه ============================== */
 
-function ProductCard({ p, onAdd, dark, lang }) {
+function ProductCard({ p, onAdd, dark, lang, isWishlisted, onToggleWishlist }) {
   return (
-    <TiltCard className={`group rounded-2xl overflow-hidden border transition-colors duration-300 h-full flex flex-col ${dark ? "border-white/10 hover:border-red-600 bg-neutral-900" : "border-black/10 hover:border-red-600 bg-white"}`}>
+    <TiltCard className={`relative group rounded-2xl overflow-hidden border transition-colors duration-300 h-full flex flex-col ${dark ? "border-white/10 hover:border-red-600 bg-neutral-900" : "border-black/10 hover:border-red-600 bg-white"}`}>
       <button onClick={() => navigate(`product/${p.id}`)} className="text-right">
         <PatternBox pattern={p.pattern} image={productImage(p)} className="h-40 flex items-center justify-center">
           <IconBadge name={p.icon} className="text-white group-hover:scale-110 transition-transform duration-300" size={52} />
           <span className="absolute top-3 right-3 text-[10px] bg-black/70 border border-red-500/50 rounded-full px-2 py-1 text-red-400">{tr(p.category, lang)}</span>
         </PatternBox>
       </button>
+      {onToggleWishlist && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleWishlist(p.id); }}
+          title={isWishlisted ? ui("removeFromWishlist", lang) : ui("addToWishlistAction", lang)}
+          className="absolute top-3 left-3 w-8 h-8 rounded-full bg-black/60 border border-white/20 flex items-center justify-center hover:bg-black/80 transition-colors z-10"
+        >
+          <Heart size={15} className={isWishlisted ? "fill-red-600 text-red-600" : "text-white"} />
+        </button>
+      )}
       <div className="p-5 flex flex-col flex-1">
         <div className={`flex items-center justify-between mb-1 text-[11px] ${dark ? "text-white/40" : "text-black/40"}`}>
           <span>{p.brand}</span><span>{p.resolution}</span>
@@ -1186,7 +1256,7 @@ function ProductCard({ p, onAdd, dark, lang }) {
   );
 }
 
-function ShopPage({ content, addToCart, lang }) {
+function ShopPage({ content, addToCart, lang, wishlistIds = [], onToggleWishlist }) {
   const products = content.products;
   const catMap = new Map();
   products.forEach((p) => catMap.set(p.category.fa, p.category));
@@ -1255,7 +1325,7 @@ function ShopPage({ content, addToCart, lang }) {
             <div className="text-center py-20 text-black/40 text-sm">{ui("noProductsFound", lang)}</div>
           ) : (
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filtered.map((p, idx) => <Reveal key={p.id} delay={Math.min(idx, 6) * 60}><ProductCard p={p} onAdd={() => addToCart(p)} lang={lang} /></Reveal>)}
+              {filtered.map((p, idx) => <Reveal key={p.id} delay={Math.min(idx, 6) * 60}><ProductCard p={p} onAdd={() => addToCart(p)} lang={lang} isWishlisted={wishlistIds.includes(p.id)} onToggleWishlist={onToggleWishlist} /></Reveal>)}
             </div>
           )}
         </div>
@@ -1264,7 +1334,7 @@ function ShopPage({ content, addToCart, lang }) {
   );
 }
 
-function ProductDetailPage({ content, id, addToCart, lang, currentUser, onNeedAuth }) {
+function ProductDetailPage({ content, id, addToCart, lang, currentUser, onNeedAuth, wishlistIds = [], onToggleWishlist }) {
   const p = content.products.find((x) => x.id === id);
   if (!p) return <div className="pt-40 pb-24 text-center text-black/50">{ui("productNotFound", lang)}</div>;
   const related = content.products.filter((x) => x.id !== p.id && x.category.fa === p.category.fa).slice(0, 3);
@@ -1291,9 +1361,18 @@ function ProductDetailPage({ content, id, addToCart, lang, currentUser, onNeedAu
                 <div key={k} className={`flex justify-between text-sm px-4 py-2.5 ${i % 2 ? "bg-neutral-50" : ""}`}><span className="text-black/40">{k}</span><span className="font-bold">{v}</span></div>
               ))}
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <span className="text-2xl font-black text-red-600">{fmtPrice(p.price, lang)}</span>
-              <button onClick={() => addToCart(p)} className="glow-pulse bg-red-600 hover:bg-red-700 text-white transition-colors px-6 py-3 rounded-xl font-bold flex items-center gap-2"><Plus size={16} /> {ui("addToCart", lang)}</button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onToggleWishlist && onToggleWishlist(p.id)}
+                  title={wishlistIds.includes(p.id) ? ui("removeFromWishlist", lang) : ui("addToWishlistAction", lang)}
+                  className="w-12 h-12 rounded-xl border border-black/15 hover:border-red-600 flex items-center justify-center transition-colors shrink-0"
+                >
+                  <Heart size={18} className={wishlistIds.includes(p.id) ? "fill-red-600 text-red-600" : "text-black/60"} />
+                </button>
+                <button onClick={() => addToCart(p)} className="glow-pulse bg-red-600 hover:bg-red-700 text-white transition-colors px-6 py-3 rounded-xl font-bold flex items-center gap-2"><Plus size={16} /> {ui("addToCart", lang)}</button>
+              </div>
             </div>
           </div>
         </div>
@@ -1303,7 +1382,7 @@ function ProductDetailPage({ content, id, addToCart, lang, currentUser, onNeedAu
         {related.length > 0 && (
           <div className="mt-20">
             <h3 className="font-bold text-lg mb-6">{ui("relatedProducts", lang)}</h3>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">{related.map((r) => <ProductCard key={r.id} p={r} onAdd={() => addToCart(r)} lang={lang} />)}</div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">{related.map((r) => <ProductCard key={r.id} p={r} onAdd={() => addToCart(r)} lang={lang} isWishlisted={wishlistIds.includes(r.id)} onToggleWishlist={onToggleWishlist} />)}</div>
           </div>
         )}
       </div>
@@ -1446,7 +1525,17 @@ function TrackingPage({ lang }) {
 
 /* ============================== حساب کاربری ============================== */
 
-function AccountPage({ currentUser, content, onGoShop, lang }) {
+const ACCOUNT_TABS = [
+  { id: "overview", icon: LayoutGrid },
+  { id: "myOrders", icon: ShoppingCart },
+  { id: "myWishlist", icon: Heart },
+  { id: "myAddresses", icon: MapPin },
+  { id: "supportTickets", icon: LifeBuoy },
+  { id: "accountInfo", icon: User },
+];
+
+function AccountPage({ currentUser, setCurrentUser, content, onGoShop, wishlistIds = [], onToggleWishlist, onLogout, lang }) {
+  const [tab, setTab] = useState("overview");
   const [orders, setOrders] = useState(null);
   const [tickets, setTickets] = useState(null);
   const [activeTicket, setActiveTicket] = useState(null);
@@ -1462,69 +1551,301 @@ function AccountPage({ currentUser, content, onGoShop, lang }) {
 
   if (!currentUser) return <div className="pt-40 pb-24 text-center text-black/50">{ui("signInFirst", lang)}</div>;
 
+  const deliveredCount = orders?.filter((o) => o.status === "delivered").length ?? 0;
+  const activeCount = orders ? orders.length - deliveredCount : 0;
+
   if (activeTicket) return (
     <div className="pt-32 pb-20 px-4 sm:px-6 max-w-3xl mx-auto">
       <TicketThread ticketId={activeTicket} onBack={() => { setActiveTicket(null); loadTickets(); }} isAdmin={false} lang={lang} />
     </div>
   );
 
+  const StatCard = ({ icon: Ico, label, value, color }) => (
+    <div className="border border-black/10 rounded-xl p-4 bg-white flex items-center gap-3">
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${color}`}><Ico size={18} /></div>
+      <div><p className="text-lg font-black leading-none">{fmtNum(value, lang)}</p><p className="text-black/40 text-[11px] mt-1">{label}</p></div>
+    </div>
+  );
+
   return (
-    <div className="pt-32 pb-20 px-4 sm:px-6 max-w-3xl mx-auto">
-      <div className="flex items-center gap-4 mb-10">
-        <div className="w-14 h-14 rounded-full bg-red-50 border border-red-200 flex items-center justify-center"><User className="text-red-600" size={24} /></div>
-        <div>
-          <h1 className="font-black text-xl">{currentUser.name}</h1>
+    <div className="pt-28 pb-20 px-4 sm:px-6 max-w-6xl mx-auto">
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-14 h-14 rounded-full bg-red-50 border border-red-200 flex items-center justify-center shrink-0"><User className="text-red-600" size={24} /></div>
+        <div className="min-w-0">
+          <h1 className="font-black text-xl truncate">{currentUser.name}</h1>
           <p className="text-black/40 text-xs">{currentUser.username} — {tr(ROLE_LABELS[currentUser.role], lang)}</p>
         </div>
       </div>
-      <h3 className="font-bold mb-4">{ui("myOrders", lang)}</h3>
-      {orders === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
-      {orders && orders.length === 0 && (
-        <div className="text-center py-12 border border-black/10 rounded-xl mb-10">
-          <p className="text-black/40 text-sm mb-4">{ui("noOrdersYet", lang)}</p>
-          <button onClick={onGoShop} className="text-red-600 text-sm">{ui("goToShop", lang)}</button>
-        </div>
-      )}
-      <div className="space-y-3 mb-10">
-        {orders?.map((o) => (
-          <div key={o.id} className="border border-black/10 rounded-xl p-4">
-            <div className="flex justify-between text-sm mb-1">
-              <span className="font-bold">{o.orderType === "service" ? (lang === "fa" ? "درخواست تعمیر" : "Repair Request") : `${fmtNum(o.items.length, lang)} ${ui("itemsCount", lang)}`}</span>
-              <span className="text-red-600 font-black">{o.orderType === "service" ? tr(STATUS_LABELS[o.status], lang) : fmtPrice(o.total, lang)}</span>
+
+      <div className="flex flex-col md:flex-row gap-8">
+        <aside className="md:w-56 shrink-0">
+          <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-2 md:pb-0 border-b md:border-b-0 md:border-l border-black/10 md:pl-4">
+            {ACCOUNT_TABS.map((t) => {
+              const Ico = t.icon;
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${tab === t.id ? "bg-red-50 text-red-600 font-bold" : "text-black/60 hover:bg-black/5"}`}>
+                  <Ico size={16} /> {ui(t.id, lang)}
+                </button>
+              );
+            })}
+            <button onClick={onLogout} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm whitespace-nowrap text-black/60 hover:bg-red-50 hover:text-red-600 transition-colors shrink-0">
+              <LogOut size={16} /> {ui("logout", lang)}
+            </button>
+          </nav>
+        </aside>
+
+        <div className="flex-1 min-w-0">
+          {tab === "overview" && (
+            <div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+                <StatCard icon={ShoppingCart} label={ui("totalOrders", lang)} value={orders?.length ?? 0} color="bg-red-50 text-red-600" />
+                <StatCard icon={Truck} label={ui("deliveredOrders", lang)} value={deliveredCount} color="bg-green-50 text-green-700" />
+                <StatCard icon={Clock} label={ui("activeOrders", lang)} value={activeCount} color="bg-amber-50 text-amber-700" />
+                <StatCard icon={Heart} label={ui("wishlistCountLabel", lang)} value={wishlistIds.length} color="bg-pink-50 text-pink-600" />
+              </div>
+              <h3 className="font-bold mb-4">{ui("myOrders", lang)}</h3>
+              {orders === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+              {orders && orders.length === 0 && (
+                <div className="text-center py-12 border border-black/10 rounded-xl mb-10">
+                  <p className="text-black/40 text-sm mb-4">{ui("noOrdersYet", lang)}</p>
+                  <button onClick={onGoShop} className="text-red-600 text-sm">{ui("goToShop", lang)}</button>
+                </div>
+              )}
+              <div className="space-y-3 mb-10">
+                {orders?.slice(0, 3).map((o) => <OrderRowCard key={o.id} o={o} lang={lang} />)}
+              </div>
+              <div className="border border-red-100 bg-red-50/50 rounded-2xl p-5">
+                <h3 className="font-bold mb-3">{lang === "fa" ? "پیشنهاد برای شما" : "Recommended for you"}</h3>
+                <div className="grid sm:grid-cols-3 gap-3">{content.products.slice(0, 3).map((p) => <button key={p.id} onClick={() => navigate(`product/${p.id}`)} className="text-right bg-white border border-black/10 rounded-xl p-3 hover:border-red-500 transition-colors"><p className="font-bold text-sm line-clamp-1">{tr(p.name, lang)}</p><p className="text-red-600 text-xs mt-1">{fmtPrice(p.price, lang)}</p></button>)}</div>
+              </div>
             </div>
-            <p className="text-black/40 text-xs">{tr(STATUS_LABELS[o.status], lang)}</p>
-            <p className="text-red-600 text-[11px] font-bold mt-1" dir="ltr">{o.trackingCode}</p>
-            <p className="text-black/30 text-[11px]">{fmtDateTime(o.date, lang)}</p>
+          )}
+
+          {tab === "myOrders" && (
+            <div>
+              <h3 className="font-bold mb-4">{ui("myOrders", lang)}</h3>
+              {orders === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+              {orders && orders.length === 0 && (
+                <div className="text-center py-12 border border-black/10 rounded-xl">
+                  <p className="text-black/40 text-sm mb-4">{ui("noOrdersYet", lang)}</p>
+                  <button onClick={onGoShop} className="text-red-600 text-sm">{ui("goToShop", lang)}</button>
+                </div>
+              )}
+              <div className="space-y-3">{orders?.map((o) => <OrderRowCard key={o.id} o={o} lang={lang} />)}</div>
+            </div>
+          )}
+
+          {tab === "myWishlist" && <AccountWishlist content={content} wishlistIds={wishlistIds} onToggleWishlist={onToggleWishlist} lang={lang} />}
+
+          {tab === "myAddresses" && <AccountAddresses lang={lang} />}
+
+          {tab === "supportTickets" && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold">{ui("supportTickets", lang)}</h3>
+                <button onClick={() => setShowNewTicket(true)} className={btnPrimary}><Plus size={14} /> {lang === "fa" ? "تیکت جدید" : "New Ticket"}</button>
+              </div>
+              {tickets === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+              {tickets && tickets.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز تیکتی ثبت نکرده‌اید." : "You haven't created any tickets yet."}</p>}
+              <div className="space-y-2">
+                {tickets?.map((t) => (
+                  <button key={t.id} onClick={() => setActiveTicket(t.id)} className="w-full text-right border border-black/10 rounded-xl p-4 hover:border-red-600 transition-colors flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-sm">{t.subject}</p>
+                      <p className="text-black/30 text-[11px]">{fmtDateTime(t.updatedAt, lang)}</p>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${t.status === "open" ? "bg-red-50 text-red-600 border border-red-200" : t.status === "answered" ? "bg-green-50 text-green-700 border border-green-200" : "bg-black/5 text-black/50 border border-black/10"}`}>
+                      {t.status === "open" ? (lang === "fa" ? "باز" : "Open") : t.status === "answered" ? (lang === "fa" ? "پاسخ داده شد" : "Answered") : (lang === "fa" ? "بسته" : "Closed")}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {showNewTicket && <NewTicketModal lang={lang} onClose={() => setShowNewTicket(false)} onCreated={() => { setShowNewTicket(false); loadTickets(); }} />}
+            </div>
+          )}
+
+          {tab === "accountInfo" && <AccountProfile currentUser={currentUser} setCurrentUser={setCurrentUser} lang={lang} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrderRowCard({ o, lang }) {
+  return (
+    <div className="border border-black/10 rounded-xl p-4">
+      <div className="flex justify-between text-sm mb-1">
+        <span className="font-bold">{o.orderType === "service" ? (lang === "fa" ? "درخواست تعمیر" : "Repair Request") : `${fmtNum(o.items.length, lang)} ${ui("itemsCount", lang)}`}</span>
+        <span className="text-red-600 font-black">{o.orderType === "service" ? tr(STATUS_LABELS[o.status], lang) : fmtPrice(o.total, lang)}</span>
+      </div>
+      <p className="text-black/40 text-xs">{tr(STATUS_LABELS[o.status], lang)}</p>
+      <p className="text-red-600 text-[11px] font-bold mt-1" dir="ltr">{o.trackingCode}</p>
+      <p className="text-black/30 text-[11px]">{fmtDateTime(o.date, lang)}</p>
+    </div>
+  );
+}
+
+function AccountWishlist({ content, wishlistIds, onToggleWishlist, lang }) {
+  const products = content.products.filter((p) => wishlistIds.includes(p.id));
+  return (
+    <div>
+      <h3 className="font-bold mb-4">{ui("myWishlist", lang)}</h3>
+      {products.length === 0 && <p className="text-black/40 text-sm text-center py-12 border border-black/10 rounded-xl">{ui("noWishlistYet", lang)}</p>}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {products.map((p) => (
+          <div key={p.id} className="border border-black/10 rounded-xl p-3 flex flex-col">
+            <button onClick={() => navigate(`product/${p.id}`)} className="text-right mb-2"><h4 className="font-bold text-sm line-clamp-1 hover:text-red-600">{tr(p.name, lang)}</h4></button>
+            <p className="text-red-600 font-black text-sm mb-3">{fmtPrice(p.price, lang)}</p>
+            <div className="mt-auto flex items-center gap-2">
+              <button onClick={() => navigate(`product/${p.id}`)} className="flex-1 text-xs border border-black/15 hover:border-red-600 rounded-lg px-3 py-2">{lang === "fa" ? "مشاهده" : "View"}</button>
+              <button onClick={() => onToggleWishlist(p.id)} title={ui("removeFromWishlist", lang)} className="w-9 h-9 rounded-lg border border-black/15 hover:border-red-600 flex items-center justify-center shrink-0"><Trash2 size={14} className="text-red-600" /></button>
+            </div>
           </div>
         ))}
       </div>
+    </div>
+  );
+}
 
-      <div className="border border-red-100 bg-red-50/50 rounded-2xl p-5 mb-10">
-        <h3 className="font-bold mb-3">{lang === "fa" ? "پیشنهاد برای شما" : "Recommended for you"}</h3>
-        <div className="grid sm:grid-cols-3 gap-3">{content.products.slice(0, 3).map((p) => <button key={p.id} onClick={() => navigate(`product/${p.id}`)} className="text-right bg-white border border-black/10 rounded-xl p-3 hover:border-red-500 transition-colors"><p className="font-bold text-sm line-clamp-1">{tr(p.name, lang)}</p><p className="text-red-600 text-xs mt-1">{fmtPrice(p.price, lang)}</p></button>)}</div>
-      </div>
+function emptyAddressForm() {
+  return { title: "", receiverName: "", phone: "", province: "", city: "", postalCode: "", address: "", isDefault: false };
+}
 
+function AccountAddresses({ lang }) {
+  const [addresses, setAddresses] = useState(null);
+  const [editing, setEditing] = useState(null); // null = closed, {} = new, {...} = edit
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => { try { const { addresses: list } = await api.myAddresses(); setAddresses(list); } catch (e) { setAddresses([]); } };
+  useEffect(() => { load(); }, []);
+
+  const remove = async (id) => {
+    if (!confirm(ui("confirmDelete", lang))) return;
+    try { await api.deleteAddress(id); await load(); } catch (e) { alert(e.message); }
+  };
+
+  const save = async (form) => {
+    setBusy(true);
+    try {
+      if (form.id) await api.updateAddress(form.id, form); else await api.createAddress(form);
+      setEditing(null); await load();
+    } catch (e) { alert(e.message); }
+    setBusy(false);
+  };
+
+  return (
+    <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold">{lang === "fa" ? "تیکت‌های پشتیبانی" : "Support Tickets"}</h3>
-        <button onClick={() => setShowNewTicket(true)} className={btnPrimary}><Plus size={14} /> {lang === "fa" ? "تیکت جدید" : "New Ticket"}</button>
+        <h3 className="font-bold">{ui("myAddresses", lang)}</h3>
+        <button onClick={() => setEditing(emptyAddressForm())} className={btnPrimary}><Plus size={14} /> {ui("addAddress", lang)}</button>
       </div>
-      {tickets === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
-      {tickets && tickets.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز تیکتی ثبت نکرده‌اید." : "You haven't created any tickets yet."}</p>}
-      <div className="space-y-2">
-        {tickets?.map((t) => (
-          <button key={t.id} onClick={() => setActiveTicket(t.id)} className="w-full text-right border border-black/10 rounded-xl p-4 hover:border-red-600 transition-colors flex items-center justify-between">
-            <div>
-              <p className="font-bold text-sm">{t.subject}</p>
-              <p className="text-black/30 text-[11px]">{fmtDateTime(t.updatedAt, lang)}</p>
+      {addresses === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      {addresses && addresses.length === 0 && <p className="text-black/40 text-sm text-center py-12 border border-black/10 rounded-xl">{ui("noAddressesYet", lang)}</p>}
+      <div className="space-y-3">
+        {addresses?.map((a) => (
+          <div key={a.id} className="border border-black/10 rounded-xl p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="font-bold text-sm">{a.title || (lang === "fa" ? "بدون عنوان" : "Untitled")}</span>
+                  {a.isDefault && <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 rounded-full px-2 py-0.5">{ui("defaultAddress", lang)}</span>}
+                </div>
+                <p className="text-black/60 text-sm">{a.receiverName} — <span dir="ltr">{a.phone}</span></p>
+                <p className="text-black/40 text-xs mt-1">{a.province}{a.province && a.city ? "، " : ""}{a.city} — {a.address} {a.postalCode && `(${a.postalCode})`}</p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => setEditing({ ...a })} className="w-8 h-8 rounded-lg border border-black/15 hover:border-red-600 flex items-center justify-center"><Pencil size={13} /></button>
+                <button onClick={() => remove(a.id)} className="w-8 h-8 rounded-lg border border-black/15 hover:border-red-600 flex items-center justify-center"><Trash2 size={13} className="text-red-600" /></button>
+              </div>
             </div>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${t.status === "open" ? "bg-red-50 text-red-600 border border-red-200" : t.status === "answered" ? "bg-green-50 text-green-700 border border-green-200" : "bg-black/5 text-black/50 border border-black/10"}`}>
-              {t.status === "open" ? (lang === "fa" ? "باز" : "Open") : t.status === "answered" ? (lang === "fa" ? "پاسخ داده شد" : "Answered") : (lang === "fa" ? "بسته" : "Closed")}
-            </span>
-          </button>
+          </div>
         ))}
       </div>
+      {editing && <AddressFormModal initial={editing} busy={busy} onClose={() => setEditing(null)} onSave={save} lang={lang} />}
+    </div>
+  );
+}
 
-      {showNewTicket && <NewTicketModal lang={lang} onClose={() => setShowNewTicket(false)} onCreated={() => { setShowNewTicket(false); loadTickets(); }} />}
+function AddressFormModal({ initial, busy, onClose, onSave, lang }) {
+  const [form, setForm] = useState(initial);
+  const set = (k, v) => setForm((prev) => ({ ...prev, [k]: v }));
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-white border border-black/10 rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <button onClick={onClose} className="absolute top-4 left-4 text-black/40 hover:text-black"><X size={18} /></button>
+        <h3 className="font-bold text-lg mb-4">{form.id ? ui("editAddress", lang) : ui("addAddress", lang)}</h3>
+        <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="space-y-3">
+          <input placeholder={ui("addressTitle", lang)} className={inputCls} value={form.title} onChange={(e) => set("title", e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <input required placeholder={ui("receiverName", lang)} className={inputCls} value={form.receiverName} onChange={(e) => set("receiverName", e.target.value)} />
+            <input required dir="ltr" placeholder={ui("mobileNumber", lang)} className={inputCls} value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <input placeholder={ui("province", lang)} className={inputCls} value={form.province} onChange={(e) => set("province", e.target.value)} />
+            <input required placeholder={ui("city", lang)} className={inputCls} value={form.city} onChange={(e) => set("city", e.target.value)} />
+          </div>
+          <input placeholder={`${ui("postalCode", lang)} (${ui("optional", lang)})`} dir="ltr" className={inputCls} value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} />
+          <textarea required rows={3} placeholder={ui("exactAddress", lang)} className={inputCls + " resize-none"} value={form.address} onChange={(e) => set("address", e.target.value)} />
+          <label className="flex items-center gap-2 text-sm text-black/60">
+            <input type="checkbox" checked={!!form.isDefault} onChange={(e) => set("isDefault", e.target.checked)} /> {ui("setAsDefault", lang)}
+          </label>
+          <button disabled={busy} className={btnPrimary + " w-full justify-center"}>{busy ? ui("checking", lang) : ui("saveChanges", lang)}</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function AccountProfile({ currentUser, setCurrentUser, lang }) {
+  const [form, setForm] = useState({ name: currentUser.name, phone: currentUser.phone || "", email: currentUser.email || "" });
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "" });
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwMsg, setPwMsg] = useState("");
+
+  const saveProfile = async (e) => {
+    e.preventDefault(); setBusy(true); setMsg("");
+    try {
+      const { token, user } = await api.updateProfile(form);
+      api.setToken(token); setCurrentUser?.(user);
+      setMsg(ui("profileUpdated", lang));
+    } catch (e) { setMsg(e.message); }
+    setBusy(false);
+  };
+
+  const savePassword = async (e) => {
+    e.preventDefault(); setPwBusy(true); setPwMsg("");
+    try {
+      await api.changePassword(pwForm);
+      setPwForm({ currentPassword: "", newPassword: "" });
+      setPwMsg(ui("passwordChanged", lang));
+    } catch (e) { setPwMsg(e.message); }
+    setPwBusy(false);
+  };
+
+  return (
+    <div className="max-w-lg space-y-10">
+      <div>
+        <h3 className="font-bold mb-4 flex items-center gap-2"><Pencil size={15} /> {ui("editProfile", lang)}</h3>
+        <form onSubmit={saveProfile} className="space-y-3">
+          <input required placeholder={ui("fullName", lang)} className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <input dir="ltr" placeholder={ui("yourPhone", lang)} className={inputCls} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          <input dir="ltr" type="email" placeholder={ui("email", lang)} className={inputCls} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          {msg && <p className="text-xs text-red-600">{msg}</p>}
+          <button disabled={busy} className={btnPrimary}>{busy ? ui("checking", lang) : ui("saveChanges", lang)}</button>
+        </form>
+      </div>
+      <div>
+        <h3 className="font-bold mb-4 flex items-center gap-2"><KeyRound size={15} /> {ui("changePassword", lang)}</h3>
+        <form onSubmit={savePassword} className="space-y-3">
+          <input required type="password" placeholder={ui("currentPassword", lang)} className={inputCls} value={pwForm.currentPassword} onChange={(e) => setPwForm({ ...pwForm, currentPassword: e.target.value })} />
+          <input required type="password" placeholder={ui("newPassword", lang)} className={inputCls} value={pwForm.newPassword} onChange={(e) => setPwForm({ ...pwForm, newPassword: e.target.value })} />
+          {pwMsg && <p className="text-xs text-red-600">{pwMsg}</p>}
+          <button disabled={pwBusy} className={btnPrimary}>{pwBusy ? ui("checking", lang) : ui("changePassword", lang)}</button>
+        </form>
+      </div>
     </div>
   );
 }
@@ -2545,6 +2866,8 @@ function AdminMessages({ lang }) {
 function AdminUsers({ lang }) {
   const [users, setUsers] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [q, setQ] = useState("");
+  const [openUserId, setOpenUserId] = useState(null);
   const load = async () => { try { const { users: list } = await api.listUsers(); setUsers(list); } catch (e) { setUsers([]); } };
   useEffect(() => { load(); }, []);
 
@@ -2554,6 +2877,8 @@ function AdminUsers({ lang }) {
     setBusyId(null);
   };
 
+  const filtered = users?.filter((u) => !q || (u.name + u.username).toLowerCase().includes(q.toLowerCase())) ?? null;
+
   return (
     <div className="max-w-3xl">
       <SectionTitle>{aui("users", lang)}</SectionTitle>
@@ -2562,20 +2887,115 @@ function AdminUsers({ lang }) {
           ? <>نقش‌ها دقیقاً مثل وردپرس: <b>مدیر</b> (دسترسی کامل)، <b>ویرایشگر</b> (مدیریت کل محتوای سایت)، <b>نویسنده</b> (فقط ساخت و ویرایش صفحات خودش)، <b>مشترک</b> (فقط حساب کاربری و خرید).</>
           : <>Roles work just like WordPress: <b>Admin</b> (full access), <b>Editor</b> (manages all site content), <b>Author</b> (creates and edits only their own pages), <b>Subscriber</b> (account and purchases only).</>}
       </p>
-      {users === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      <input placeholder={aui("searchUsers", lang)} className={inputCls + " mb-4"} value={q} onChange={(e) => setQ(e.target.value)} />
+      {filtered === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
       <div className="space-y-2">
-        {users?.map((u) => (
-          <div key={u.id} className="flex items-center justify-between border border-black/10 rounded-lg p-3 bg-white">
-            <div><p className="text-sm font-bold">{u.name}</p><p className="text-black/40 text-xs">{u.username}</p></div>
-            <select disabled={busyId === u.id} value={u.role} onChange={(e) => changeRole(u, e.target.value)} className={inputCls + " w-auto"}>
-              {ROLE_ORDER.map((r) => <option key={r} value={r}>{tr(ROLE_LABELS[r], lang)}</option>)}
-            </select>
+        {filtered?.map((u) => (
+          <div key={u.id} className="border border-black/10 rounded-lg p-3 bg-white">
+            <div className="flex items-center justify-between gap-3">
+              <button onClick={() => setOpenUserId(openUserId === u.id ? null : u.id)} className="text-right flex-1 min-w-0">
+                <p className="text-sm font-bold truncate">{u.name}</p>
+                <p className="text-black/40 text-xs">{u.username}{u.phone ? ` — ${u.phone}` : ""}</p>
+              </button>
+              <select disabled={busyId === u.id} value={u.role} onChange={(e) => changeRole(u, e.target.value)} className={inputCls + " w-auto shrink-0"}>
+                {ROLE_ORDER.map((r) => <option key={r} value={r}>{tr(ROLE_LABELS[r], lang)}</option>)}
+              </select>
+              <button onClick={() => setOpenUserId(openUserId === u.id ? null : u.id)} className="w-8 h-8 rounded-lg border border-black/15 hover:border-red-600 flex items-center justify-center shrink-0">
+                {openUserId === u.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+            </div>
+            {openUserId === u.id && <AdminUserDetail userId={u.id} lang={lang} onChanged={load} />}
           </div>
         ))}
       </div>
     </div>
   );
 }
+
+function AdminUserDetail({ userId, lang, onChanged }) {
+  const [detail, setDetail] = useState(null);
+  const [form, setForm] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  const load = async () => {
+    try {
+      const d = await api.getUserDetail(userId);
+      setDetail(d);
+      setForm({ name: d.user.name, phone: d.user.phone || "", email: d.user.email || "" });
+    } catch (e) { setDetail(false); }
+  };
+  useEffect(() => { load(); }, [userId]); // eslint-disable-line
+
+  const saveProfile = async (e) => {
+    e.preventDefault(); setBusy(true); setMsg("");
+    try { await api.updateUser(userId, form); setMsg(aui("saved", lang)); onChanged?.(); await load(); } catch (e) { setMsg(e.message); }
+    setBusy(false);
+  };
+
+  const removeAddress = async (id) => {
+    if (!confirm(ui("confirmDelete", lang))) return;
+    try { await api.adminDeleteAddress(id); await load(); } catch (e) { alert(e.message); }
+  };
+
+  if (detail === null) return <p className="text-black/40 text-sm mt-3">{ui("loading", lang)}</p>;
+  if (detail === false) return <p className="text-red-600 text-sm mt-3">{aui("loadFailed", lang)}</p>;
+
+  return (
+    <div className="mt-4 pt-4 border-t border-black/10 space-y-6">
+      <form onSubmit={saveProfile} className="grid sm:grid-cols-3 gap-2">
+        <input placeholder={aui("name", lang)} className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <input dir="ltr" placeholder={aui("phone", lang)} className={inputCls} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+        <input dir="ltr" placeholder={aui("email", lang)} className={inputCls} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        <div className="sm:col-span-3 flex items-center gap-2">
+          <button disabled={busy} className={btnPrimary}>{busy ? ui("checking", lang) : aui("save", lang)}</button>
+          {msg && <span className="text-xs text-black/50">{msg}</span>}
+        </div>
+      </form>
+
+      <div>
+        <h4 className="font-bold text-xs mb-2 text-black/60">{aui("addressesOfUser", lang)}</h4>
+        {detail.addresses.length === 0 && <p className="text-black/30 text-xs">{aui("noneYet", lang)}</p>}
+        <div className="space-y-2">
+          {detail.addresses.map((a) => (
+            <div key={a.id} className="flex items-start justify-between gap-2 border border-black/10 rounded-lg p-2.5 text-xs">
+              <div className="min-w-0">
+                <p className="font-bold">{a.title || "-"} {a.isDefault && <span className="text-red-600">★</span>}</p>
+                <p className="text-black/50">{a.receiverName} — <span dir="ltr">{a.phone}</span></p>
+                <p className="text-black/40">{a.province}{a.province && a.city ? "، " : ""}{a.city} — {a.address} {a.postalCode && `(${a.postalCode})`}</p>
+              </div>
+              <button onClick={() => removeAddress(a.id)} className="w-7 h-7 rounded-lg border border-black/15 hover:border-red-600 flex items-center justify-center shrink-0"><Trash2 size={12} className="text-red-600" /></button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h4 className="font-bold text-xs mb-2 text-black/60">{aui("wishlistOfUser", lang)} ({fmtNum(detail.wishlistProductIds.length, lang)})</h4>
+        {detail.wishlistProductIds.length === 0 && <p className="text-black/30 text-xs">{aui("noneYet", lang)}</p>}
+        <div className="flex flex-wrap gap-1.5">
+          {detail.wishlistProductIds.map((pid) => <span key={pid} className="text-[10px] bg-black/5 border border-black/10 rounded-full px-2 py-1">{pid}</span>)}
+        </div>
+      </div>
+
+      <div>
+        <h4 className="font-bold text-xs mb-2 text-black/60">{aui("ordersOfUser", lang)} ({fmtNum(detail.orders.length, lang)})</h4>
+        {detail.orders.length === 0 && <p className="text-black/30 text-xs">{aui("noneYet", lang)}</p>}
+        <div className="space-y-1.5">
+          {detail.orders.slice(0, 8).map((o) => (
+            <div key={o.id} className="flex items-center justify-between text-xs border border-black/10 rounded-lg p-2">
+              <span dir="ltr" className="text-red-600 font-bold">{o.trackingCode}</span>
+              <span className="text-black/50">{tr(STATUS_LABELS[o.status], lang)}</span>
+              <span className="text-black/30">{fmtDate(o.date, lang)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 
 function AdminPayment({ lang }) {
   const [cfg, setCfg] = useState(null);
