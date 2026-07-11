@@ -921,11 +921,18 @@ function TechGalleryCarousel({ content, lang }) {
   if (items.length === 0) return null;
   const current = items[active];
   return (
-    <section className="bg-[#111111] py-16 px-4 sm:px-6 border-b border-white/10">
-      <div className="max-w-6xl mx-auto">
+    <section className="relative bg-[#111111] py-16 px-4 sm:px-6 border-b border-white/10 overflow-hidden">
+      <span className="pointer-events-none select-none absolute -top-6 sm:-top-10 right-2 sm:right-6 text-white/[0.05] font-black leading-none text-[7rem] sm:text-[10rem]">{String(active + 1).padStart(2, "0")}</span>
+      <div className="relative max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <span className="text-white/60 text-xs sm:text-sm tracking-[0.25em] font-extrabold">{ui("galleryKicker", lang)}</span>
-          <span className="text-white/30 text-sm font-mono">{String(active + 1).padStart(2, "0")} / {String(items.length).padStart(2, "0")}</span>
+          <span className="inline-flex items-center gap-2 bg-red-600 text-white text-[11px] sm:text-xs font-black tracking-wide rounded-full pl-3 pr-1 py-1">
+            <span className="bg-white/20 rounded-full px-2 py-0.5">{ui("galleryKicker", lang)}</span>
+          </span>
+          <div className="flex items-center gap-1.5">
+            {items.map((it, i) => (
+              <button key={it.id} onClick={() => setActive(i)} className={`h-1.5 rounded-full transition-all ${i === active ? "w-8 bg-red-600" : "w-1.5 bg-white/15"}`} aria-label={tr(it.title, lang)} />
+            ))}
+          </div>
         </div>
         <div className="relative rounded-2xl overflow-hidden">
           <PatternBox pattern={current.pattern} image={current.image} strong className="h-72 sm:h-96 flex items-end">
@@ -935,11 +942,6 @@ function TechGalleryCarousel({ content, lang }) {
               <p className="hero-text-shadow text-white/85 max-w-md text-sm sm:text-base leading-relaxed">{tr(current.desc, lang)}</p>
             </div>
           </PatternBox>
-        </div>
-        <div className="flex items-center gap-2 mt-5">
-          {items.map((it, i) => (
-            <button key={it.id} onClick={() => setActive(i)} className={`h-1 rounded-full transition-all ${i === active ? "w-10 bg-red-600" : "w-4 bg-white/15"}`} aria-label={tr(it.title, lang)} />
-          ))}
         </div>
       </div>
     </section>
@@ -956,8 +958,11 @@ function LiveStatusFeed({ content, lang }) {
     <section className="py-24 px-4 sm:px-6 bg-white">
       <div className="max-w-4xl mx-auto">
         <Reveal className="mb-12">
-          <span className="text-red-600 text-xs tracking-[0.3em] font-bold">{ui("feedKicker", lang)}</span>
-          <h2 className="text-3xl sm:text-4xl font-black mt-3">{ui("feedTitle", lang)}</h2>
+          <span className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.2em] text-black/50 mb-2">
+            <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-red-600" /></span>
+            {ui("feedKicker", lang)}
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">{ui("feedTitle", lang)}</h2>
         </Reveal>
         <div className="divide-y divide-black/10 border-t border-b border-black/10">
           {rows.map((r, i) => (
@@ -1027,11 +1032,11 @@ function HomePage({ content, navigate, lang }) {
       <TrustBar lang={lang} />
       <LiveStatusFeed content={content} lang={lang} />
 
-      <section className="py-24 px-4 sm:px-6">
+      <section className="py-24 px-4 sm:px-6 bg-neutral-50 border-t border-black/5">
         <div className="max-w-7xl mx-auto">
-          <Reveal className="text-center mb-14">
-            <span className="text-red-600 text-xs sm:text-sm tracking-[0.25em] font-extrabold">{ui("everythingAtGlance", lang)}</span>
-            <h2 className="text-3xl sm:text-4xl font-black mt-3">{ui("whichSectionHome", lang)}</h2>
+          <Reveal className="mb-10 flex items-baseline gap-3 border-b border-black/10 pb-4">
+            <h2 className="text-lg sm:text-xl font-bold shrink-0">{ui("whichSectionHome", lang)}</h2>
+            <span className="text-black/35 text-xs sm:text-sm">{ui("everythingAtGlance", lang)}</span>
           </Reveal>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {HOME_LINKS.map((item, idx) => (
