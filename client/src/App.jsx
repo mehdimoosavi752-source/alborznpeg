@@ -233,19 +233,22 @@ function Reveal({ children, className = "", delay = 0 }) {
     </div>
   );
 }
-function PatternBox({ pattern, image, className = "", children }) {
+function PatternBox({ pattern, image, className = "", strong = false, children }) {
+  const overlay = strong
+    ? "bg-gradient-to-t from-black/90 via-black/45 to-black/5"
+    : "bg-gradient-to-t from-black/60 via-black/10 to-transparent";
   if (image) {
     return (
       <div className={`relative overflow-hidden ${className}`}>
         <img src={resolveImageUrl(image)} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+        <div className={`absolute inset-0 ${overlay}`} />
         {children}
       </div>
     );
   }
   return (
     <div className={`relative overflow-hidden ${className}`} style={patternStyle(pattern)}>
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+      <div className={`absolute inset-0 ${overlay}`} />
       {children}
     </div>
   );
@@ -690,6 +693,7 @@ function GlobalStyles() {
       .hero-wide-chip { animation: heroChip 4.5s ease-in-out infinite; }
       .hero-wide-chip-delay { animation-delay: -1.7s; }
       .hero-wide-chip-slow { animation-duration: 6.4s; animation-delay: -3s; }
+      .hero-text-shadow { text-shadow: 0 2px 14px rgba(0,0,0,.9), 0 1px 3px rgba(0,0,0,.95); }
       .glass-consult { background: rgba(255,255,255,.82); border:1px solid rgba(255,255,255,.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
       @keyframes consultRingPulse { 0% { transform: scale(1); opacity:.9; } 70%,100% { transform: scale(1.55); opacity:0; } }
       .consult-ring { animation: consultRingPulse 2.2s ease-out infinite; }
@@ -854,11 +858,11 @@ function TechGalleryCarousel({ content, lang }) {
           <span className="text-white/30 text-sm font-mono">{String(active + 1).padStart(2, "0")} / {String(items.length).padStart(2, "0")}</span>
         </div>
         <div className="relative rounded-2xl overflow-hidden">
-          <PatternBox pattern={current.pattern} image={current.image} className="h-72 sm:h-96 flex items-end">
+          <PatternBox pattern={current.pattern} image={current.image} strong className="h-72 sm:h-96 flex items-end">
             <div className="relative z-10 p-8">
               <IconBadge name={current.icon} className="text-white mb-4" size={36} />
-              <h3 className="text-2xl sm:text-3xl font-black text-white mb-2">{tr(current.title, lang)}</h3>
-              <p className="text-white/60 max-w-md text-sm leading-relaxed">{tr(current.desc, lang)}</p>
+              <h3 className="hero-text-shadow text-2xl sm:text-3xl font-black text-white mb-2">{tr(current.title, lang)}</h3>
+              <p className="hero-text-shadow text-white/80 max-w-md text-sm leading-relaxed">{tr(current.desc, lang)}</p>
             </div>
           </PatternBox>
         </div>
@@ -915,6 +919,7 @@ function HomePage({ content, navigate, lang }) {
           <div className="poster-scanline-once absolute inset-x-0 h-[2px] bg-red-400 shadow-[0_0_20px_4px_rgba(239,68,68,.65)] pointer-events-none" />
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#0b0b0c]/25 to-[#0b0b0c]" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0c]/60 via-transparent to-[#0b0b0c]/40" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/70 to-black/95 lg:hidden" />
           <div className="hero-wide-chip poster-chip-reveal absolute left-[18%] top-[24%] w-14 h-14 rounded-2xl border border-red-400/50 bg-black/65 backdrop-blur flex items-center justify-center"><HardDrive className="text-red-400" /></div>
           <div className="hero-wide-chip hero-wide-chip-delay poster-chip-reveal absolute left-[38%] bottom-[22%] w-14 h-14 rounded-2xl border border-white/20 bg-black/65 backdrop-blur flex items-center justify-center" style={{ animationDelay: "120ms" }}><Monitor className="text-white" /></div>
           <div className="hero-wide-chip hero-wide-chip-slow poster-chip-reveal absolute left-[8%] bottom-[14%] w-14 h-14 rounded-2xl border border-red-400/40 bg-black/65 backdrop-blur flex items-center justify-center" style={{ animationDelay: "240ms" }}><Gamepad2 className="text-red-400" /></div>
@@ -929,13 +934,13 @@ function HomePage({ content, navigate, lang }) {
               </span>
             </Reveal>
             <Reveal delay={80}>
-              <p className="text-2xl sm:text-3xl font-light text-white/50 leading-tight mb-1">{ui("heroFragment1", lang)}</p>
+              <p className="hero-text-shadow text-2xl sm:text-3xl font-light text-white/60 leading-tight mb-1">{ui("heroFragment1", lang)}</p>
             </Reveal>
             <Reveal delay={160}>
-              <p className="text-3xl sm:text-4xl font-black text-white leading-tight mb-6">{ui("heroFragment2", lang)}</p>
+              <p className="hero-text-shadow text-3xl sm:text-4xl font-black text-white leading-tight mb-6">{ui("heroFragment2", lang)}</p>
             </Reveal>
-            <Reveal delay={220}><h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-6 text-red-500">{tr(h.title, lang)}</h1></Reveal>
-            <Reveal delay={280}><p className="text-white/50 text-lg max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed">{tr(h.subtitle, lang)}</p></Reveal>
+            <Reveal delay={220}><h1 className="hero-text-shadow text-2xl sm:text-3xl font-black tracking-tight mb-6 text-red-500">{tr(h.title, lang)}</h1></Reveal>
+            <Reveal delay={280}><p className="hero-text-shadow text-white/70 text-lg max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed">{tr(h.subtitle, lang)}</p></Reveal>
             <Reveal delay={340}>
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
                 <button onClick={() => navigate("services")} className="glow-pulse bg-red-600 hover:bg-red-700 text-white transition-all px-8 py-3.5 rounded-xl font-bold hover:scale-105">{tr(h.ctaText, lang)}</button>
