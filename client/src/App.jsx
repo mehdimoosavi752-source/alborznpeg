@@ -383,14 +383,16 @@ function ConsultationWidget({ lang }) {
   return (
     <a
       href="tel:02632536821"
-      className="consult-fab fixed z-30 left-3 sm:left-5 top-[88px] sm:top-[92px] glass-consult rounded-xl pl-2.5 pr-3.5 py-2 flex items-center gap-2.5 shadow-2xl hover:scale-[1.04] hover:border-red-300 transition-all"
+      className="consult-fab consult-breathe fixed z-30 left-3 sm:left-5 top-[88px] sm:top-[92px] glass-consult rounded-xl pl-2.5 pr-3.5 py-2 flex items-center gap-2.5 shadow-2xl hover:scale-[1.06] hover:border-red-300 transition-all overflow-hidden"
     >
+      <span className="consult-shine absolute inset-0 pointer-events-none" />
       <span className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-red-500 to-red-700 text-white flex items-center justify-center shrink-0 shadow-lg shadow-red-600/30">
         <span className="absolute inset-0 rounded-lg border-2 border-red-400/70 consult-ring" />
-        <Phone size={13} className="relative" />
+        <span className="absolute inset-0 rounded-lg border-2 border-red-300/50 consult-ring consult-ring-2" />
+        <Phone size={13} className="relative consult-wiggle" />
       </span>
-      <div className="text-right leading-tight">
-        <p className="font-black text-[11px] sm:text-xs flex items-center gap-1.5">
+      <div className="relative text-center leading-tight">
+        <p className="font-black text-[11px] sm:text-xs flex items-center justify-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 consult-dot shrink-0" />
           {lang === "fa" ? "مشاوره رایگان" : "Free consultation"}
         </p>
@@ -695,12 +697,19 @@ function GlobalStyles() {
       .hero-wide-chip-slow { animation-duration: 6.4s; animation-delay: -3s; }
       .hero-text-shadow { text-shadow: 0 2px 14px rgba(0,0,0,.9), 0 1px 3px rgba(0,0,0,.95); }
       .glass-consult { background: rgba(255,255,255,.82); border:1px solid rgba(255,255,255,.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-      @keyframes consultRingPulse { 0% { transform: scale(1); opacity:.9; } 70%,100% { transform: scale(1.55); opacity:0; } }
+      @keyframes consultRingPulse { 0% { transform: scale(1); opacity:.9; } 70%,100% { transform: scale(1.7); opacity:0; } }
       .consult-ring { animation: consultRingPulse 2.2s ease-out infinite; }
+      .consult-ring-2 { animation-delay: .75s; }
       @keyframes consultDotPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,.55); } 50% { box-shadow: 0 0 0 4px rgba(16,185,129,0); } }
       .consult-dot { animation: consultDotPulse 1.8s ease-in-out infinite; }
       .consult-fab { animation: consultFabIn .6s cubic-bezier(.22,.9,.3,1) both; animation-delay: .3s; }
       @keyframes consultFabIn { 0% { opacity:0; transform: translateX(-18px) scale(.92); } 100% { opacity:1; transform: translateX(0) scale(1); } }
+      @keyframes consultBreathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.035); } }
+      .consult-breathe { animation: consultBreathe 3.4s ease-in-out infinite; }
+      @keyframes consultWiggle { 0%,82%,100% { transform: rotate(0deg); } 85% { transform: rotate(-18deg); } 88% { transform: rotate(16deg); } 91% { transform: rotate(-10deg); } 94% { transform: rotate(6deg); } 97% { transform: rotate(0deg); } }
+      .consult-wiggle { display: inline-flex; animation: consultWiggle 3.4s ease-in-out infinite; }
+      @keyframes consultShine { 0%,10% { transform: translateX(-130%) skewX(-15deg); opacity:0; } 16% { opacity:.5; } 32%,100% { transform: translateX(230%) skewX(-15deg); opacity:0; } }
+      .consult-shine { background: linear-gradient(100deg, transparent, rgba(255,255,255,.6) 45%, transparent 65%); animation: consultShine 3.4s ease-in-out infinite; }
       @keyframes posterScanReveal { 0% { filter: grayscale(1) brightness(.5) contrast(1.2) blur(3px); opacity:.45; } 40% { filter: grayscale(.2) brightness(.85) blur(.5px); opacity:.85; } 58%,85% { filter: none; opacity:1; } 100% { filter: grayscale(1) brightness(.5) contrast(1.2) blur(3px); opacity:.45; } }
       .poster-scan-reveal { animation: posterScanReveal 6s cubic-bezier(.45,0,.3,1) infinite; }
       @keyframes scanTravelOnce { 0% { top:-4%; opacity:0; } 6% { opacity:1; } 52% { top:100%; opacity:1; } 60% { opacity:0; } 100% { top:-4%; opacity:0; } }
@@ -803,7 +812,7 @@ function TrustBar({ lang, variant = "general" }) {
     <div className="border-y border-black/10 bg-neutral-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
         {items.map((it, i) => (
-          <div key={i} className="flex items-center gap-2.5 text-black/70 text-xs sm:text-sm">
+          <div key={i} className="flex items-center gap-2.5 text-black/80 text-sm sm:text-base font-medium">
             <it.icon size={18} className="shrink-0 text-red-600" />
             <span>{ui(it.key, lang)}</span>
           </div>
@@ -829,10 +838,10 @@ function BrandMarquee({ content, lang }) {
   return (
     <div className="border-y border-black/10 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex items-center gap-8">
-        <span className="text-[11px] text-black/40 tracking-widest shrink-0 whitespace-nowrap">{lang === "fa" ? "برندهای موجود در فروشگاه" : "BRANDS WE CARRY"}</span>
+        <span className="text-xs sm:text-sm font-bold text-black/55 tracking-widest shrink-0 whitespace-nowrap">{lang === "fa" ? "برندهای موجود در فروشگاه" : "BRANDS WE CARRY"}</span>
         <div className="relative overflow-hidden flex-1">
           <div className="flex items-center gap-10 marquee-track whitespace-nowrap">
-            {loop.map((b, i) => <span key={i} className="text-black/30 font-black text-lg tracking-tight shrink-0">{b}</span>)}
+            {loop.map((b, i) => <span key={i} className="text-black/65 font-black text-xl tracking-tight shrink-0">{b}</span>)}
           </div>
         </div>
       </div>
@@ -854,7 +863,7 @@ function TechGalleryCarousel({ content, lang }) {
     <section className="bg-[#111111] py-16 px-4 sm:px-6 border-b border-white/10">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <span className="text-white/40 text-xs tracking-[0.3em] font-bold">{ui("galleryKicker", lang)}</span>
+          <span className="text-white/60 text-xs sm:text-sm tracking-[0.25em] font-extrabold">{ui("galleryKicker", lang)}</span>
           <span className="text-white/30 text-sm font-mono">{String(active + 1).padStart(2, "0")} / {String(items.length).padStart(2, "0")}</span>
         </div>
         <div className="relative rounded-2xl overflow-hidden">
@@ -862,7 +871,7 @@ function TechGalleryCarousel({ content, lang }) {
             <div className="relative z-10 p-8">
               <IconBadge name={current.icon} className="text-white mb-4" size={36} />
               <h3 className="hero-text-shadow text-2xl sm:text-3xl font-black text-white mb-2">{tr(current.title, lang)}</h3>
-              <p className="hero-text-shadow text-white/80 max-w-md text-sm leading-relaxed">{tr(current.desc, lang)}</p>
+              <p className="hero-text-shadow text-white/85 max-w-md text-sm sm:text-base leading-relaxed">{tr(current.desc, lang)}</p>
             </div>
           </PatternBox>
         </div>
@@ -960,7 +969,7 @@ function HomePage({ content, navigate, lang }) {
       <section className="py-24 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <Reveal className="text-center mb-14">
-            <span className="text-red-600 text-xs tracking-[0.3em] font-bold">{ui("everythingAtGlance", lang)}</span>
+            <span className="text-red-600 text-xs sm:text-sm tracking-[0.25em] font-extrabold">{ui("everythingAtGlance", lang)}</span>
             <h2 className="text-3xl sm:text-4xl font-black mt-3">{ui("whichSectionHome", lang)}</h2>
           </Reveal>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -973,8 +982,8 @@ function HomePage({ content, navigate, lang }) {
                   </PatternBox>
                   <div className="p-5 flex items-center justify-between">
                     <div>
-                      <h3 className="font-bold mb-1">{tr(item.title, lang)}</h3>
-                      <p className="text-black/50 text-xs">{tr(item.desc, lang)}</p>
+                      <h3 className="text-lg font-extrabold mb-1.5">{tr(item.title, lang)}</h3>
+                      <p className="text-black/65 text-sm leading-relaxed">{tr(item.desc, lang)}</p>
                     </div>
                     <ChevronLeft className="text-black/20 group-hover:text-red-600 group-hover:-translate-x-1 transition-all shrink-0" size={18} />
                   </div>
