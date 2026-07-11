@@ -376,6 +376,10 @@ function FloatingContact({ content, lang }) {
   );
 }
 
+function ConsultationWidget({ lang }) {
+  return <a href="tel:02632536821" className="fixed z-20 right-4 sm:right-6 bottom-5 sm:bottom-6 glass-consult rounded-2xl px-4 py-3 flex items-center gap-3 shadow-2xl hover:scale-[1.03] transition-transform"><div className="w-9 h-9 rounded-xl bg-red-600 text-white flex items-center justify-center"><Phone size={17} /></div><div><p className="font-black text-sm">{lang === "fa" ? "مشاوره رایگان" : "Free consultation"}</p><p dir="ltr" className="text-xs text-black/65">026 32536821 · 0912 464 7963</p></div></a>;
+}
+
 function SitePopup({ activePage, lang }) {
   const [popup, setPopup] = useState(null);
   useEffect(() => {
@@ -550,18 +554,22 @@ export default function NovinPolytechnic() {
   const doLogout = () => { api.setToken(null); setCurrentUser(null); setUserMenuOpen(false); setShowAdmin(false); };
 
   const placeOrder = async (form) => {
+    if (!currentUser) { setShowCheckout(false); setShowAuth(true); return; }
     try {
-      await api.createOrder({ orderType: "shop", items: cart, total: cartTotal, customer: form });
+      const result = await api.createOrder({ orderType: "shop", items: cart, total: cartTotal, customer: form });
+      alert(`${lang === "fa" ? "کد رهگیری سفارش شما" : "Your tracking code"}: ${result.trackingCode}`);
       setOrderDone(true); setCart([]);
     } catch (e) { alert("Order failed: " + e.message); }
   };
   const placeServiceRequest = async (form) => {
-    await api.createOrder({
+    if (!currentUser) { setShowAuth(true); throw new Error("برای ثبت خدمات وارد حساب کاربری شوید"); }
+    const result = await api.createOrder({
       orderType: "service",
       customer: { name: form.name, phone: form.phone, email: form.email },
       deviceInfo: form.deviceInfo,
       issueDescription: form.issueDescription,
     });
+    alert(`${lang === "fa" ? "کد رهگیری خدمات شما" : "Your service tracking code"}: ${result.trackingCode}`);
   };
   const sendMessage = async (form) => {
     try { await api.sendMessage(form); } catch (e) { /* handled inline in the form */ }
@@ -572,7 +580,7 @@ export default function NovinPolytechnic() {
   const activePage = route[0] || "home";
 
   return (
-    <div dir={lang === "fa" ? "rtl" : "ltr"} lang={lang} className="min-h-screen bg-white text-black font-sans" style={{ fontFamily: "'Segoe UI', Tahoma, Arial, sans-serif" }}>
+    <div dir={lang === "fa" ? "rtl" : "ltr"} lang={lang} className="min-h-screen bg-white text-black font-sans text-[16px]" style={{ fontFamily: "Vazirmatn, IRANSans, 'Segoe UI', Tahoma, Arial, sans-serif" }}>
       <GlobalStyles />
 
       {loadError && (
@@ -601,7 +609,8 @@ export default function NovinPolytechnic() {
         {activePage === "faq" && <FAQPage content={content} lang={lang} />}
         {activePage === "about" && <AboutPage content={content} lang={lang} />}
         {activePage === "contact" && <ContactPage content={content} onSend={sendMessage} lang={lang} />}
-        {activePage === "account" && <AccountPage currentUser={currentUser} onGoShop={() => navigate("shop")} lang={lang} />}
+        {activePage === "tracking" && <TrackingPage lang={lang} />}
+        {activePage === "account" && <AccountPage currentUser={currentUser} content={content} onGoShop={() => navigate("shop")} lang={lang} />}
         {activePage === "product" && <ProductDetailPage content={content} id={route[1]} addToCart={addToCart} lang={lang} currentUser={currentUser} onNeedAuth={() => setShowAuth(true)} />}
         {activePage === "page" && <CustomPageView page={pages.find((p) => p.id === route[1])} lang={lang} />}
       </main>
@@ -609,9 +618,10 @@ export default function NovinPolytechnic() {
       <ReviewsStrip lang={lang} />
       <Footer content={content} goToUrl={goToUrl} lang={lang} />
       <FloatingContact content={content} lang={lang} />
+      <ConsultationWidget lang={lang} />
       <SitePopup activePage={activePage} lang={lang} />
 
-      {showCart && <CartDrawer cart={cart} total={cartTotal} onClose={() => setShowCart(false)} onChangeQty={changeQty} onRemove={removeFromCart} onCheckout={() => { setShowCart(false); setShowCheckout(true); }} lang={lang} />}
+      {showCart && <CartDrawer cart={cart} total={cartTotal} onClose={() => setShowCart(false)} onChangeQty={changeQty} onRemove={removeFromCart} onCheckout={() => { setShowCart(false); if (!currentUser) setShowAuth(true); else setShowCheckout(true); }} lang={lang} />}
       {showCheckout && <CheckoutModal total={cartTotal} orderDone={orderDone} onClose={() => { setShowCheckout(false); setOrderDone(false); }} onSubmit={placeOrder} currentUser={currentUser} paymentStatus={paymentStatus} lang={lang} />}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onLogin={doLogin} onRegister={doRegister} lang={lang} />}
 
@@ -663,6 +673,7 @@ function GlobalStyles() {
       .hero-wide-chip { animation: heroChip 4.5s ease-in-out infinite; }
       .hero-wide-chip-delay { animation-delay: -1.7s; }
       .hero-wide-chip-slow { animation-duration: 6.4s; animation-delay: -3s; }
+      .glass-consult { background: rgba(255,255,255,.76); border:1px solid rgba(255,255,255,.78); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: #f4f4f4; }
       ::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 8px; }
@@ -1375,9 +1386,20 @@ function InfoCard({ icon, title, value }) {
   );
 }
 
+function TrackingPage({ lang }) {
+  const [code, setCode] = useState("");
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+  const track = async (e) => {
+    e.preventDefault(); setError(""); setResult(null);
+    try { const data = await api.trackOrder(code); setResult(data.order); } catch (err) { setError(lang === "fa" ? "کد رهگیری معتبر نیست." : "Tracking code was not found."); }
+  };
+  return <section className="pt-36 pb-24 px-4 sm:px-6 min-h-[60vh] bg-neutral-50"><div className="max-w-xl mx-auto bg-white border border-black/10 rounded-3xl p-6 sm:p-9 shadow-sm"><div className="text-center mb-7"><Package className="text-red-600 mx-auto mb-3" size={32} /><h1 className="text-2xl font-black">{lang === "fa" ? "پیگیری سفارش و خدمات" : "Order & Service Tracking"}</h1><p className="text-sm text-black/45 mt-2">{lang === "fa" ? "کد رهگیری را وارد کنید." : "Enter your tracking code."}</p></div><form onSubmit={track} className="flex gap-2"><input required dir="ltr" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="NP-..." className="flex-1 border border-black/15 focus:border-red-600 outline-none rounded-xl px-4 py-3 text-sm"/><button className="bg-red-600 text-white px-5 rounded-xl font-bold">{lang === "fa" ? "پیگیری" : "Track"}</button></form>{error && <p className="text-red-600 text-xs mt-4">{error}</p>}{result && <div className="mt-6 rounded-2xl bg-neutral-50 border border-black/10 p-5 space-y-2 text-sm"><p><span className="text-black/45">{lang === "fa" ? "کد رهگیری: " : "Code: "}</span><b dir="ltr">{result.trackingCode}</b></p><p><span className="text-black/45">{lang === "fa" ? "نوع: " : "Type: "}</span>{result.orderType === "service" ? (lang === "fa" ? "خدمات" : "Service") : (lang === "fa" ? "خرید" : "Shop")}</p><p><span className="text-black/45">{lang === "fa" ? "وضعیت: " : "Status: "}</span><b className="text-red-600">{result.status}</b></p></div>}</div></section>;
+}
+
 /* ============================== حساب کاربری ============================== */
 
-function AccountPage({ currentUser, onGoShop, lang }) {
+function AccountPage({ currentUser, content, onGoShop, lang }) {
   const [orders, setOrders] = useState(null);
   const [tickets, setTickets] = useState(null);
   const [activeTicket, setActiveTicket] = useState(null);
@@ -1424,9 +1446,15 @@ function AccountPage({ currentUser, onGoShop, lang }) {
               <span className="text-red-600 font-black">{o.orderType === "service" ? tr(STATUS_LABELS[o.status], lang) : fmtPrice(o.total, lang)}</span>
             </div>
             <p className="text-black/40 text-xs">{tr(STATUS_LABELS[o.status], lang)}</p>
+            <p className="text-red-600 text-[11px] font-bold mt-1" dir="ltr">{o.trackingCode}</p>
             <p className="text-black/30 text-[11px]">{fmtDateTime(o.date, lang)}</p>
           </div>
         ))}
+      </div>
+
+      <div className="border border-red-100 bg-red-50/50 rounded-2xl p-5 mb-10">
+        <h3 className="font-bold mb-3">{lang === "fa" ? "پیشنهاد برای شما" : "Recommended for you"}</h3>
+        <div className="grid sm:grid-cols-3 gap-3">{content.products.slice(0, 3).map((p) => <button key={p.id} onClick={() => navigate(`product/${p.id}`)} className="text-right bg-white border border-black/10 rounded-xl p-3 hover:border-red-500 transition-colors"><p className="font-bold text-sm line-clamp-1">{tr(p.name, lang)}</p><p className="text-red-600 text-xs mt-1">{fmtPrice(p.price, lang)}</p></button>)}</div>
       </div>
 
       <div className="flex items-center justify-between mb-4">

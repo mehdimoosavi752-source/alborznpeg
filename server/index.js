@@ -15,6 +15,9 @@ const app = express();
 const PORT = process.env.PORT || 8787;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 
+// Migration for traceable orders on existing databases.
+try { db.exec("ALTER TABLE orders ADD COLUMN tracking_code TEXT"); } catch (e) { /* column already exists */ }
+
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
 
@@ -223,7 +226,7 @@ app.patch("/api/users/:id", authenticate, requireAdmin, (req, res) => {
 const SHOP_STATUSES = ["reviewing", "registered", "packing", "shipped", "delivered"];
 const SERVICE_STATUSES = ["reviewing", "working", "ready", "delivered"];
 
-app.post("/api/orders", optionalAuthenticate, (req, res) => {
+app.post("/api/orders", authenticate, (req, res) => {
   const { orderType, items, total, customer, deviceInfo, issueDescription } = req.body || {};
   const type = orderType === "service" ? "service" : "shop";
   if (!customer?.name || !customer?.phone) return res.status(400).json({ error: "اطلاعات مشتری ناقص است" });
@@ -234,16 +237,17 @@ app.post("/api/orders", optionalAuthenticate, (req, res) => {
     return res.status(400).json({ error: "توضیح دستگاه و مشکل الزامی است" });
   }
   const id = uid("order");
+  const trackingCode = `NP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
   const now = new Date().toISOString();
   db.prepare(
-    `INSERT INTO orders (id, order_type, status, username, items, total, customer_name, customer_phone, customer_email, customer_province, customer_city, customer_postal_code, customer_address, device_info, issue_description, created_at, updated_at)
-     VALUES (?, ?, 'reviewing', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO orders (id, order_type, status, username, items, total, customer_name, customer_phone, customer_email, customer_province, customer_city, customer_postal_code, customer_address, device_info, issue_description, created_at, updated_at, tracking_code)
+     VALUES (?, ?, 'reviewing', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id, type, req.user?.username || null, JSON.stringify(items || []), total || 0,
     customer.name, customer.phone, customer.email || "", customer.province || "", customer.city || "", customer.postalCode || "", customer.address || "",
-    deviceInfo || "", issueDescription || "", now, now
+    deviceInfo || "", issueDescription || "", now, now, trackingCode
   );
-  res.json({ ok: true, id });
+  res.json({ ok: true, id, trackingCode });
 });
 
 function rowToOrder(o) {
@@ -259,8 +263,17 @@ function rowToOrder(o) {
     issueDescription: o.issue_description,
     date: o.created_at,
     updatedAt: o.updated_at,
+    trackingCode: o.tracking_code || `NP-${o.id.slice(-8).toUpperCase()}`,
   };
 }
+
+app.get("/api/orders/track/:code", (req, res) => {
+  const code = String(req.params.code || "").trim();
+  const order = db.prepare("SELECT * FROM orders WHERE tracking_code = ? OR id = ?").get(code, code);
+  if (!order) return res.status(404).json({ error: "کد رهگیری پیدا نشد" });
+  const safe = rowToOrder(order);
+  res.json({ order: { trackingCode: safe.trackingCode, orderType: safe.orderType, status: safe.status, date: safe.date, updatedAt: safe.updatedAt } });
+});
 
 app.get("/api/orders/mine", authenticate, (req, res) => {
   const rows = db.prepare("SELECT * FROM orders WHERE username = ? ORDER BY created_at DESC").all(req.user.username);

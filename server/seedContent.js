@@ -110,6 +110,7 @@ export const DEFAULT_CONTENT = {
     { id: uid("menu"), label: { fa: "سوالات رایج", en: "FAQ" }, type: "route", target: "faq", visible: true, order: 5 },
     { id: uid("menu"), label: { fa: "درباره ما", en: "About Us" }, type: "route", target: "about", visible: true, order: 6 },
     { id: uid("menu"), label: { fa: "تماس با ما", en: "Contact" }, type: "route", target: "contact", visible: true, order: 7 },
+    { id: uid("menu"), label: { fa: "پیگیری سفارش", en: "Track Order" }, type: "route", target: "tracking", visible: true, order: 8 },
   ],
   faq: [
     {

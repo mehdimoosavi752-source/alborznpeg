@@ -69,6 +69,7 @@ export const api = {
   // سفارشات
   createOrder: (payload) => request("/api/orders", { method: "POST", body: JSON.stringify(payload) }),
   myOrders: () => request("/api/orders/mine"),
+  trackOrder: (code) => request(`/api/orders/track/${encodeURIComponent(code)}`),
   allOrders: () => request("/api/orders"),
   setOrderStatus: (id, status, notify) => request(`/api/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, notify }) }),
 
