@@ -9,7 +9,8 @@ export const DEFAULT_CONTENT = {
       fa: "تعمیر تخصصی کامپیوتر و پلی‌استیشن، بازیابی اطلاعات، و فروش اورجینال ویدئو پروژکتور",
       en: "Expert computer & PlayStation repair, data recovery, and genuine video projectors",
     },
-    phone: "021-91234567",
+    phone: "02632536821",
+    mobile: "09124647963",
     address: {
       fa: "کرج، عظیمیه، میدان طالقانی، پاساژ آسیا، طبقه همکف، واحد ۲۱",
       en: "Ground Floor, Unit 21, Asia Passage, Taleghani Square, Azimieh, Karaj, Iran",
@@ -18,6 +19,7 @@ export const DEFAULT_CONTENT = {
     telegram: "09301100256",
     whatsapp: "09124647963",
     bale: "09124647963",
+    aparat: "https://www.aparat.com/shorts/user/NovinPolytechnicAlborz/shorts",
     shopVideoUrl: "",
   },
   hero: {
@@ -38,13 +40,13 @@ export const DEFAULT_CONTENT = {
       priceRange: { fa: "از ۶۰۰,۰۰۰ تومان، بسته به شدت آسیب", en: "From 600,000 Toman, depending on severity" },
     },
     {
-      id: uid("srv"), icon: "Monitor", pattern: "circuit", image: "/assets/repair-lab.png",
+      id: uid("srv"), icon: "Monitor", pattern: "circuit", image: "/assets/laptop-repair.png",
       title: { fa: "تعمیر کامپیوتر و لپ‌تاپ", en: "Computer & Laptop Repair" },
       desc: { fa: "روشن نشدن، بلو اسکرین، کندی بیش‌ازحد یا صدای عجیب فن — قبل از تعویض قطعه، بذارید دقیق عیب‌یابی کنیم. خیلی وقت‌ها مشکل چیزی نیست که فکرش رو می‌کنید.", en: "Won't turn on, blue screens, painfully slow, or a fan that won't stop whining — before you replace anything, let us actually diagnose it. Often it's not what you think." },
       priceRange: { fa: "از ۲۵۰,۰۰۰ تا ۱,۵۰۰,۰۰۰ تومان", en: "250,000 – 1,500,000 Toman" },
     },
     {
-      id: uid("srv"), icon: "Gamepad2", pattern: "scan", image: "/assets/repair-lab.png",
+      id: uid("srv"), icon: "Gamepad2", pattern: "scan", image: "/assets/ps5-repair.png",
       title: { fa: "تعمیر پلی‌استیشن ۴ و ۵", en: "PS4 & PS5 Repair" },
       desc: { fa: "دیسک‌خور دیسک رو نمی‌خونه، کنسول خیلی داغ می‌کنه یا روی صفحه‌ی HDMI هیچی نمیاد؟ این‌ها رایج‌ترین خرابی‌هایی هستن که هر هفته می‌بینیم و می‌دونیم دقیقاً از کجا شروع کنیم.", en: "Disc drive won't read, console runs hot, or nothing shows up on HDMI? These are the faults we see every single week — we know exactly where to start looking." },
       priceRange: { fa: "از ۳۰۰,۰۰۰ تا ۲,۰۰۰,۰۰۰ تومان", en: "300,000 – 2,000,000 Toman" },

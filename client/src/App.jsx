@@ -26,9 +26,10 @@ const fmtDate = (d, lang) => new Date(d).toLocaleDateString(lang === "fa" ? "fa-
 const fmtDateTime = (d, lang) => new Date(d).toLocaleString(lang === "fa" ? "fa-IR" : "en-US");
 
 const PATTERNS = ["circuit", "hex", "scan", "dots", "grid", "wave"];
-const SERVICE_IMAGES = ["/assets/data-recovery.png", "/assets/repair-lab.png", "/assets/repair-lab.png", "/assets/repair-lab.png", "/assets/projector-product.png"];
+const SERVICE_IMAGES = ["/assets/data-recovery.png", "/assets/laptop-repair.png", "/assets/ps5-repair.png", "/assets/repair-lab.png", "/assets/projector-product.png"];
 const SECTION_IMAGES = { services: "/assets/repair-lab.png", shop: "/assets/projector-product.png", about: "/assets/repair-lab.png", contact: "/assets/data-recovery.png", faq: "/assets/repair-lab.png", articles: "/assets/data-recovery.png" };
 const productImage = (p) => p?.image || "/assets/projector-product.png";
+const DEFAULT_APARAT_URL = "https://www.aparat.com/shorts/user/NovinPolytechnicAlborz/shorts";
 const patternStyle = (pattern) => {
   switch (pattern) {
     case "circuit": return { backgroundImage: "linear-gradient(115deg, rgba(220,38,38,0.35) 0%, transparent 40%), repeating-linear-gradient(0deg, rgba(255,255,255,0.07) 0px, rgba(255,255,255,0.07) 1px, transparent 1px, transparent 22px), repeating-linear-gradient(90deg, rgba(255,255,255,0.07) 0px, rgba(255,255,255,0.07) 1px, transparent 1px, transparent 22px)", backgroundColor: "#0a0a0a" };
@@ -353,15 +354,19 @@ function useHashRoute() {
 function FloatingContact({ content, lang }) {
   const [open, setOpen] = useState(false);
   const s = content.settings;
+  const mobile = s.mobile || s.whatsapp;
+  const aparat = s.aparat || DEFAULT_APARAT_URL;
   return (
     <div className="fixed bottom-5 left-5 z-30 flex flex-col items-start gap-3">
       {open && (
         <div className="flex flex-col gap-2 bg-white border border-black/10 rounded-2xl shadow-xl p-2 mb-1">
-          <a href={`tel:${s.phone}`} className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Phone size={16} className="text-red-600" /> {lang === "fa" ? "تماس تلفنی" : "Call Us"}</a>
-          {s.whatsapp && <a href={`https://wa.me/${s.whatsapp.replace(/^0/, "98").replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><MessageCircle size={16} className="text-red-600" /> WhatsApp</a>}
-          {s.telegram && <a href={s.telegram.startsWith("http") ? s.telegram : (s.telegram.startsWith("@") ? `https://t.me/${s.telegram.slice(1)}` : `https://t.me/+${s.telegram.replace(/^0/, "98").replace(/[^0-9]/g, "")}`)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Send size={16} className="text-red-600" /> Telegram</a>}
-          {s.bale && <a href={`https://ble.ir/${s.bale.replace(/^0/, "98").replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Send size={16} className="text-red-600" /> {lang === "fa" ? "بله" : "Bale"}</a>}
-          {s.instagram && <a href={s.instagram.startsWith("http") ? s.instagram : `https://instagram.com/${s.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Instagram size={16} className="text-red-600" /> Instagram</a>}
+          {s.phone && <a href={`tel:${s.phone}`} dir="ltr" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Phone size={16} className="text-red-600" /> 026 32536821</a>}
+          {mobile && <a href={`tel:${mobile}`} dir="ltr" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-neutral-50 text-black/80"><Phone size={16} className="text-red-600" /> 0912 464 7963</a>}
+          {s.whatsapp && <a href={`https://wa.me/${s.whatsapp.replace(/^0/, "98").replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-[#25D366]/10 text-black/80"><MessageCircle size={16} className="text-[#25D366]" /> WhatsApp</a>}
+          {s.telegram && <a href={s.telegram.startsWith("http") ? s.telegram : (s.telegram.startsWith("@") ? `https://t.me/${s.telegram.slice(1)}` : `https://t.me/+${s.telegram.replace(/^0/, "98").replace(/[^0-9]/g, "")}`)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-[#229ED9]/10 text-black/80"><Send size={16} className="text-[#229ED9]" /> Telegram</a>}
+          {s.bale && <a href={`https://ble.ir/${s.bale.replace(/^0/, "98").replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-[#1eb77a]/10 text-black/80"><MessageCircle size={16} className="text-[#1eb77a]" /> {lang === "fa" ? "بله" : "Bale"}</a>}
+          {s.instagram && <a href={s.instagram.startsWith("http") ? s.instagram : `https://instagram.com/${s.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-[#E1306C]/10 text-black/80"><Instagram size={16} className="text-[#E1306C]" /> Instagram</a>}
+          <a href={aparat} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm px-3 py-2 rounded-xl hover:bg-red-50 text-black/80"><Play size={16} className="text-red-600 fill-red-600" /> Aparat</a>
         </div>
       )}
       <button onClick={() => setOpen((v) => !v)} className="glow-pulse w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-xl flex items-center justify-center transition-transform hover:scale-105">
@@ -652,6 +657,12 @@ function GlobalStyles() {
       .hero-scanline { animation: scanTravel 5.5s ease-in-out infinite; }
       @keyframes orbitSpin { to { transform: rotate(360deg); } }
       .hero-orbit { animation: orbitSpin 14s linear infinite; }
+      .hero-wide-image { animation: heroWideDrift 14s ease-in-out infinite alternate; transform: scale(1.06); }
+      @keyframes heroWideDrift { from { transform: scale(1.06) translate3d(0,0,0); } to { transform: scale(1.13) translate3d(2%, -1%, 0); } }
+      @keyframes heroChip { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-18px) rotate(4deg); } }
+      .hero-wide-chip { animation: heroChip 4.5s ease-in-out infinite; }
+      .hero-wide-chip-delay { animation-delay: -1.7s; }
+      .hero-wide-chip-slow { animation-duration: 6.4s; animation-delay: -3s; }
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: #f4f4f4; }
       ::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 8px; }
@@ -856,9 +867,17 @@ function HomePage({ content, navigate, lang }) {
   return (
     <>
       <section className="relative pt-40 pb-24 px-4 sm:px-6 overflow-hidden bg-[#0b0b0c] text-white">
+        <div className="absolute inset-y-0 left-0 w-full lg:w-[68%] overflow-hidden hero-wide-visual">
+          <img src="/assets/hero-data-recovery-v2.png" alt="" className="w-full h-full object-cover object-right hero-wide-image" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#0b0b0c]/25 to-[#0b0b0c]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0c]/60 via-transparent to-[#0b0b0c]/40" />
+          <div className="hero-wide-chip absolute left-[18%] top-[24%] w-14 h-14 rounded-2xl border border-red-400/50 bg-black/65 backdrop-blur flex items-center justify-center"><HardDrive className="text-red-400" /></div>
+          <div className="hero-wide-chip hero-wide-chip-delay absolute left-[38%] bottom-[22%] w-14 h-14 rounded-2xl border border-white/20 bg-black/65 backdrop-blur flex items-center justify-center"><Monitor className="text-white" /></div>
+          <div className="hero-wide-chip hero-wide-chip-slow absolute left-[8%] bottom-[14%] w-14 h-14 rounded-2xl border border-red-400/40 bg-black/65 backdrop-blur flex items-center justify-center"><Gamepad2 className="text-red-400" /></div>
+        </div>
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-red-900/30 rounded-full blur-3xl blob" />
         <div className="absolute bottom-0 -left-20 w-80 h-80 bg-red-950/40 rounded-full blur-3xl blob" style={{ animationDelay: "2s" }} />
-        <div className="relative max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+        <div className="relative max-w-6xl mx-auto grid lg:grid-cols-[1fr_.78fr] gap-10 items-center">
           <div className="text-center lg:text-right">
             <Reveal>
               <span className="inline-flex items-center gap-2 text-xs tracking-widest border border-red-800/50 bg-red-950/40 text-red-400 rounded-full px-4 py-1.5 mb-8">
@@ -880,7 +899,7 @@ function HomePage({ content, navigate, lang }) {
               </div>
             </Reveal>
           </div>
-          <Reveal delay={200}><HeroPoster stats={content.about.stats} lang={lang} /></Reveal>
+          <div className="hidden lg:block min-h-[300px]" aria-hidden="true" />
         </div>
       </section>
 
@@ -1310,6 +1329,7 @@ function AboutPage({ content, lang }) {
 
 function ContactPage({ content, onSend, lang }) {
   const s = content.settings;
+  const aparat = s.aparat || DEFAULT_APARAT_URL;
   const [form, setForm] = useState({ name: "", phone: "", message: "" });
   const [sent, setSent] = useState(false);
   const submit = async (e) => { e.preventDefault(); await onSend(form); setSent(true); setForm({ name: "", phone: "", message: "" }); };
@@ -1319,11 +1339,20 @@ function ContactPage({ content, onSend, lang }) {
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10">
           <div className="space-y-4">
-            <InfoCard icon={<Phone size={20} />} title={ui("phoneCall", lang)} value={s.phone} />
+            <InfoCard icon={<Phone size={20} />} title={lang === "fa" ? "تلفن ثابت" : "Landline"} value="026 32536821" />
+            <InfoCard icon={<Phone size={20} />} title={lang === "fa" ? "شماره موبایل" : "Mobile"} value={s.mobile || s.whatsapp} />
             <InfoCard icon={<MapPin size={20} />} title={ui("address", lang)} value={tr(s.address, lang)} />
             <a href={s.instagram} target="_blank" rel="noreferrer" className="block">
               <InfoCard icon={<Instagram size={20} />} title="Instagram" value={lang === "fa" ? "مشاهده پیج اینستاگرام" : "View Instagram Page"} />
             </a>
+            <a href={aparat} target="_blank" rel="noreferrer" className="block"><InfoCard icon={<Play size={20} />} title="Aparat" value={lang === "fa" ? "مشاهده ویدیوهای نوین پلی‌تکنیک البرز" : "Watch our Aparat videos"} /></a>
+            <div className="flex flex-wrap gap-2 pt-2">
+              {s.whatsapp && <a href={`https://wa.me/${s.whatsapp.replace(/^0/, "98")}`} className="p-3 rounded-xl bg-[#25D366]/10 text-[#25D366]" target="_blank" rel="noreferrer"><MessageCircle size={20} /></a>}
+              {s.telegram && <a href={`https://t.me/+${s.telegram.replace(/^0/, "98")}`} className="p-3 rounded-xl bg-[#229ED9]/10 text-[#229ED9]" target="_blank" rel="noreferrer"><Send size={20} /></a>}
+              {s.bale && <a href={`https://ble.ir/${s.bale.replace(/^0/, "98")}`} className="p-3 rounded-xl bg-[#1eb77a]/10 text-[#1eb77a]" target="_blank" rel="noreferrer"><MessageCircle size={20} /></a>}
+              {s.instagram && <a href={s.instagram} className="p-3 rounded-xl bg-[#E1306C]/10 text-[#E1306C]" target="_blank" rel="noreferrer"><Instagram size={20} /></a>}
+              <a href={aparat} className="p-3 rounded-xl bg-red-50 text-red-600" target="_blank" rel="noreferrer"><Play size={20} fill="currentColor" /></a>
+            </div>
           </div>
           <form onSubmit={submit} className="border border-black/10 rounded-2xl p-6 bg-neutral-50 space-y-3">
             {sent && <p className="text-xs bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2">{ui("messageSent", lang)}</p>}
@@ -1611,16 +1640,19 @@ function ReviewsStrip({ lang }) {
 function Footer({ content, goToUrl, lang }) {
   const f = content.footer;
   const s = content.settings;
+  const aparat = s.aparat || DEFAULT_APARAT_URL;
   return (
     <footer className="border-t border-black/10 bg-black text-white pt-16 pb-8 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
         <div>
           <Logo size={40} dark name={tr(s.siteName, lang)} />
           <p className="text-white/50 text-sm leading-relaxed mt-4">{tr(f.about, lang)}</p>
-          <div className="flex gap-3 mt-4">
-            <a className="p-2 border border-white/15 rounded-lg hover:border-red-500 hover:text-red-500 transition-colors" href="#"><Instagram size={16} /></a>
-            <a className="p-2 border border-white/15 rounded-lg hover:border-red-500 hover:text-red-500 transition-colors" href="#"><Send size={16} /></a>
-            <a className="p-2 border border-white/15 rounded-lg hover:border-red-500 hover:text-red-500 transition-colors" href="#"><MessageCircle size={16} /></a>
+          <div className="flex flex-wrap gap-3 mt-4">
+            {s.instagram && <a className="p-2 border border-white/15 rounded-lg hover:border-[#E1306C] text-[#E1306C] transition-colors" href={s.instagram} target="_blank" rel="noreferrer"><Instagram size={16} /></a>}
+            {s.telegram && <a className="p-2 border border-white/15 rounded-lg hover:border-[#229ED9] text-[#229ED9] transition-colors" href={`https://t.me/+${s.telegram.replace(/^0/, "98")}`} target="_blank" rel="noreferrer"><Send size={16} /></a>}
+            {s.whatsapp && <a className="p-2 border border-white/15 rounded-lg hover:border-[#25D366] text-[#25D366] transition-colors" href={`https://wa.me/${s.whatsapp.replace(/^0/, "98")}`} target="_blank" rel="noreferrer"><MessageCircle size={16} /></a>}
+            {s.bale && <a className="p-2 border border-white/15 rounded-lg hover:border-[#1eb77a] text-[#1eb77a] transition-colors" href={`https://ble.ir/${s.bale.replace(/^0/, "98")}`} target="_blank" rel="noreferrer"><MessageCircle size={16} /></a>}
+            <a className="p-2 border border-white/15 rounded-lg hover:border-red-500 text-red-500 transition-colors" href={aparat} target="_blank" rel="noreferrer"><Play size={16} fill="currentColor" /></a>
           </div>
         </div>
         {f.columns.map((col) => (
@@ -1631,7 +1663,7 @@ function Footer({ content, goToUrl, lang }) {
         ))}
         <div>
           <h4 className="font-bold mb-4">{ui("contactInfo", lang)}</h4>
-          <ul className="space-y-2 text-sm text-white/50"><li>{s.phone}</li><li>{tr(s.address, lang)}</li></ul>
+          <ul className="space-y-2 text-sm text-white/50"><li dir="ltr">026 32536821</li><li dir="ltr">{s.mobile || s.whatsapp}</li><li>{tr(s.address, lang)}</li></ul>
         </div>
       </div>
       <div className="max-w-7xl mx-auto border-t border-white/10 pt-6 text-center"><p className="text-white/40 text-xs">{tr(f.copyright, lang)}</p></div>
@@ -2783,11 +2815,13 @@ function AdminSettings({ content, update, lang }) {
         <BField label={lang === "fa" ? "نام سایت" : "Site Name"} value={s.siteName} onChange={(v) => set("siteName", v)} lang={lang} />
         <BField label={lang === "fa" ? "شعار سایت" : "Tagline"} value={s.tagline} onChange={(v) => set("tagline", v)} lang={lang} />
         <Field label={lang === "fa" ? "شماره تماس" : "Phone"}><input dir="ltr" className={inputCls} value={s.phone} onChange={(e) => set("phone", e.target.value)} /></Field>
+        <Field label={lang === "fa" ? "شماره موبایل" : "Mobile"}><input dir="ltr" className={inputCls} value={s.mobile || ""} onChange={(e) => set("mobile", e.target.value)} /></Field>
         <BField label={ui("address", lang)} value={s.address} onChange={(v) => set("address", v)} multiline lang={lang} />
         <Field label={lang === "fa" ? "لینک کامل اینستاگرام" : "Full Instagram URL"}><input dir="ltr" className={inputCls} value={s.instagram} onChange={(e) => set("instagram", e.target.value)} placeholder="https://instagram.com/..." /></Field>
         <Field label={lang === "fa" ? "آیدی تلگرام" : "Telegram Username"}><input dir="ltr" className={inputCls} value={s.telegram} onChange={(e) => set("telegram", e.target.value)} /></Field>
         <Field label={lang === "fa" ? "شماره واتساپ (با کد کشور، بدون +)" : "WhatsApp number (country code, no +)"}><input dir="ltr" className={inputCls} value={s.whatsapp || ""} onChange={(e) => set("whatsapp", e.target.value)} placeholder="989123456789" /></Field>
         <Field label={lang === "fa" ? "آیدی بله" : "Bale Username"}><input dir="ltr" className={inputCls} value={s.bale || ""} onChange={(e) => set("bale", e.target.value)} /></Field>
+        <Field label={lang === "fa" ? "لینک صفحه آپارات" : "Aparat profile URL"}><input dir="ltr" className={inputCls} value={s.aparat || ""} onChange={(e) => set("aparat", e.target.value)} /></Field>
         <Field label={lang === "fa" ? "لینک ویدیوی آپارات فروشگاه" : "Shop Aparat video URL"}><input dir="ltr" className={inputCls} value={s.shopVideoUrl || ""} onChange={(e) => set("shopVideoUrl", e.target.value)} placeholder="https://www.aparat.com/v/..." /></Field>
       </div>
     </div>

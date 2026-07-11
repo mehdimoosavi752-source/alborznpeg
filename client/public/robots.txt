@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Public pages and structured data are intentionally accessible to search engines and AI crawlers.
+User-agent: GPTBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: PerplexityBot
+Allow: /
