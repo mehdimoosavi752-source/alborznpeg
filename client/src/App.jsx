@@ -120,6 +120,7 @@ const UI = {
   faqSubtitle: { fa: "پاسخ سوالات پرتکرار درباره‌ی خدمات تعمیر و خرید از فروشگاه", en: "Answers to the questions we hear most often about repairs and shopping with us" },
   noFaqYet: { fa: "فعلاً سوالی ثبت نشده است.", en: "No questions added yet." },
   contactInfo: { fa: "اطلاعات تماس", en: "Contact Info" },
+  designedBy: { fa: "طراحی توسط تیم Vitra Studio", en: "Designed by Vitra Studio Team" },
   finalizeOrder: { fa: "نهایی‌سازی خرید", en: "Finalize Order" },
   enterShippingInfo: { fa: "اطلاعات ارسال را وارد کنید", en: "Enter your shipping details" },
   fullName: { fa: "نام و نام خانوادگی", en: "Full Name" },
@@ -316,6 +317,14 @@ function TiltCard({ children, className = "" }) {
   const onLeave = () => { if (ref.current) ref.current.style.transform = "perspective(800px) rotateY(0deg) rotateX(0deg)"; };
   return <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave} className={className} style={{ transition: "transform 0.2s ease-out", transformStyle: "preserve-3d" }}>{children}</div>;
 }
+function VitraStudioLogo({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" className="shrink-0">
+      <rect x="4" y="4" width="92" height="92" rx="26" fill="none" stroke="currentColor" strokeOpacity="0.4" strokeWidth="3" />
+      <path d="M24 26 L50 78 L76 26" fill="none" stroke="currentColor" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 function Logo({ size = 44, dark = false, name = "Novin Polytechnic Alborz" }) {
   return (
     <div className="flex items-center gap-2 select-none">
@@ -477,21 +486,35 @@ function SitePopup({ activePage, lang }) {
 
   return (
     <div className="fixed inset-0 z-[65] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={dismiss} />
-      <div className="relative w-full max-w-sm bg-white border border-black/10 rounded-2xl p-6 text-center">
-        <button onClick={dismiss} className="absolute top-4 left-4 text-black/40 hover:text-black"><X size={18} /></button>
-        {message && <p className="text-black/70 leading-relaxed mb-5 whitespace-pre-line">{message}</p>}
-        {buttonText && popup.buttonUrl && (
-          <a
-            href={popup.buttonUrl}
-            target={popup.buttonUrl.startsWith("http") ? "_blank" : undefined}
-            rel="noreferrer"
-            onClick={dismiss}
-            className="inline-block bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-bold transition-colors"
-          >
-            {buttonText}
-          </a>
+      <div className="popup-backdrop-in absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={dismiss} />
+      <div className="popup-card-in relative w-full max-w-sm bg-white border border-black/10 rounded-2xl overflow-hidden shadow-2xl text-center">
+        <button onClick={dismiss} className="absolute top-3 left-3 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors"><X size={16} /></button>
+        <div className="absolute -top-16 -right-16 w-52 h-52 bg-red-600/20 rounded-full blur-3xl blob pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-52 h-52 bg-red-900/15 rounded-full blur-3xl blob pointer-events-none" style={{ animationDelay: "2s" }} />
+        {popup.imageUrl ? (
+          <div className="relative w-full h-40 overflow-hidden">
+            <img src={resolveImageUrl(popup.imageUrl)} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/10 to-transparent" />
+          </div>
+        ) : (
+          <div className="relative flex items-center justify-center pt-8">
+            <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" /><span className="relative inline-flex rounded-full h-3 w-3 bg-red-600" /></span>
+          </div>
         )}
+        <div className="relative p-6 pt-5">
+          {message && <p className="text-black/70 leading-relaxed mb-5 whitespace-pre-line">{message}</p>}
+          {buttonText && popup.buttonUrl && (
+            <a
+              href={popup.buttonUrl}
+              target={popup.buttonUrl.startsWith("http") ? "_blank" : undefined}
+              rel="noreferrer"
+              onClick={dismiss}
+              className="inline-block bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-bold transition-colors glow-pulse"
+            >
+              {buttonText}
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -581,7 +604,7 @@ export default function NovinPolytechnic() {
             <div className="absolute inset-0 rounded-full border-2 border-red-100" />
             <div className="absolute inset-0 rounded-full border-2 border-t-red-600 animate-spin" />
           </div>
-          <div className="text-black/50 text-sm tracking-widest">{ui("loadingSite", lang)}</div>
+          <div className={`text-black/50 text-sm ${lang === "fa" ? "" : "tracking-widest"}`}>{ui("loadingSite", lang)}</div>
         </div>
       </div>
     );
@@ -786,6 +809,10 @@ function GlobalStyles() {
       .marquee-track { animation: marqueeScroll 22s linear infinite; }
       @keyframes fadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
       .feed-row { animation: fadeSlide 0.5s ease-out both; }
+      @keyframes popupIn { 0% { opacity:0; transform: scale(.9) translateY(16px); } 100% { opacity:1; transform: scale(1) translateY(0); } }
+      .popup-card-in { animation: popupIn .4s cubic-bezier(.22,.9,.3,1) both; }
+      @keyframes popupBackdropIn { from { opacity:0; } to { opacity:1; } }
+      .popup-backdrop-in { animation: popupBackdropIn .3s ease-out both; }
     `}</style>
   );
 }
@@ -899,7 +926,7 @@ function BrandMarquee({ content, lang }) {
   return (
     <div className="border-y border-black/10 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex items-center gap-8">
-        <span className="text-xs sm:text-sm font-bold text-black/55 tracking-widest shrink-0 whitespace-nowrap">{lang === "fa" ? "برندهای موجود در فروشگاه" : "BRANDS WE CARRY"}</span>
+        <span className={`text-xs sm:text-sm font-bold text-black/55 shrink-0 whitespace-nowrap ${lang === "fa" ? "" : "tracking-widest"}`}>{lang === "fa" ? "برندهای موجود در فروشگاه" : "BRANDS WE CARRY"}</span>
         <div className="relative overflow-hidden flex-1">
           <div className="flex items-center gap-10 marquee-track whitespace-nowrap">
             {loop.map((b, i) => <span key={i} className="text-black/65 font-black text-xl tracking-tight shrink-0">{b}</span>)}
@@ -925,7 +952,7 @@ function TechGalleryCarousel({ content, lang }) {
       <span className="pointer-events-none select-none absolute -top-6 sm:-top-10 right-2 sm:right-6 text-white/[0.05] font-black leading-none text-[7rem] sm:text-[10rem]">{String(active + 1).padStart(2, "0")}</span>
       <div className="relative max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <span className="inline-flex items-center gap-2 bg-red-600 text-white text-[11px] sm:text-xs font-black tracking-wide rounded-full pl-3 pr-1 py-1">
+          <span className={`inline-flex items-center gap-2 bg-red-600 text-white text-[11px] sm:text-xs font-black rounded-full pl-3 pr-1 py-1 ${lang === "fa" ? "" : "tracking-wide"}`}>
             <span className="bg-white/20 rounded-full px-2 py-0.5">{ui("galleryKicker", lang)}</span>
           </span>
           <div className="flex items-center gap-1.5">
@@ -958,7 +985,7 @@ function LiveStatusFeed({ content, lang }) {
     <section className="py-24 px-4 sm:px-6 bg-white">
       <div className="max-w-4xl mx-auto">
         <Reveal className="mb-12">
-          <span className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.2em] text-black/50 mb-2">
+          <span className={`inline-flex items-center gap-2 text-[11px] font-bold text-black/50 mb-2 ${lang === "fa" ? "" : "font-mono tracking-[0.2em]"}`}>
             <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-red-600" /></span>
             {ui("feedKicker", lang)}
           </span>
@@ -969,7 +996,7 @@ function LiveStatusFeed({ content, lang }) {
             <Reveal key={i} delay={i * 70}>
               <div className="feed-row py-6 flex items-start gap-6" style={{ animationDelay: `${i * 100}ms` }}>
                 <span className="font-mono text-black/25 text-sm shrink-0 pt-0.5">{String(i + 1).padStart(2, "0")}</span>
-                <span className="text-[10px] tracking-widest font-bold text-red-600 border border-red-200 bg-red-50 rounded-full px-2.5 py-1 shrink-0 mt-0.5">{r.tag}</span>
+                <span className={`text-[10px] font-bold text-red-600 border border-red-200 bg-red-50 rounded-full px-2.5 py-1 shrink-0 mt-0.5 ${lang === "fa" ? "" : "tracking-widest"}`}>{r.tag}</span>
                 <div className="min-w-0">
                   <h4 className="font-bold mb-1">{r.title}</h4>
                   <p className="text-black/50 text-sm leading-relaxed line-clamp-2">{r.desc}</p>
@@ -1004,7 +1031,7 @@ function HomePage({ content, navigate, lang }) {
         <div className="relative max-w-6xl mx-auto grid lg:grid-cols-[1fr_.78fr] gap-10 items-center">
           <div className={`text-center lg:text-right ${lang === "en" ? "lg:order-2" : ""}`}>
             <Reveal>
-              <span className="inline-flex items-center gap-2 text-xs tracking-widest border border-red-800/50 bg-red-950/40 text-red-400 rounded-full px-4 py-1.5 mb-8">
+              <span className={`inline-flex items-center gap-2 text-xs border border-red-800/50 bg-red-950/40 text-red-400 rounded-full px-4 py-1.5 mb-8 ${lang === "fa" ? "" : "tracking-widest"}`}>
                 <Zap size={14} /> {tr(h.eyebrow, lang)}
               </span>
             </Reveal>
@@ -1067,7 +1094,7 @@ function ServiceCard({ s, lang, fallbackImage }) {
   return (
     <TiltCard className={`group relative rounded-2xl overflow-hidden transition-all duration-300 h-full bg-white ${s.featured ? "border-2 border-red-600 shadow-xl sm:col-span-2 lg:col-span-1" : "border border-black/10 hover:border-red-600 hover:shadow-lg"}`}>
       {s.featured && (
-        <span className="absolute top-3 left-3 z-20 text-[10px] font-bold bg-red-600 text-white rounded-full px-3 py-1 tracking-wide">
+        <span className={`absolute top-3 left-3 z-20 text-[10px] font-bold bg-red-600 text-white rounded-full px-3 py-1 ${lang === "fa" ? "" : "tracking-wide"}`}>
           {lang === "fa" ? "مهم‌ترین خدمت ما" : "Our Top Service"}
         </span>
       )}
@@ -1140,7 +1167,7 @@ function SectionIllustration({ variant }) {
   }
 }
 
-function PageHeader({ eyebrow, title, subtitle, image, variant }) {
+function PageHeader({ eyebrow, title, subtitle, image, variant, lang }) {
   const displayImage = image || SECTION_IMAGES[variant];
   return (
     <section className="relative pt-32 pb-14 px-4 sm:px-6 border-b border-black/10 overflow-hidden bg-neutral-50">
@@ -1151,7 +1178,7 @@ function PageHeader({ eyebrow, title, subtitle, image, variant }) {
         ) : variant ? (
           <div className="mb-4"><SectionIllustration variant={variant} /></div>
         ) : null}
-        <span className="text-red-600 text-xs tracking-[0.3em] font-bold">{eyebrow}</span>
+        <span className={`text-red-600 text-xs font-bold ${lang === "fa" ? "" : "tracking-[0.3em]"}`}>{eyebrow}</span>
         <h1 className="text-3xl sm:text-5xl font-black mt-3">{title}</h1>
         {subtitle && <p className="text-black/60 mt-4 max-w-xl mx-auto">{subtitle}</p>}
       </div>
@@ -1163,7 +1190,7 @@ function ServicesPage({ content, lang, onRequestService }) {
   const [showRequest, setShowRequest] = useState(false);
   return (
     <div>
-      <PageHeader eyebrow={ui("ourServices", lang)} title={ui("servicesTitle", lang)} subtitle={ui("servicesSubtitle", lang)} image={content.pageHeaders?.services?.image} variant="services" />
+      <PageHeader eyebrow={ui("ourServices", lang)} title={ui("servicesTitle", lang)} subtitle={ui("servicesSubtitle", lang)} image={content.pageHeaders?.services?.image} variant="services" lang={lang} />
       <section className="py-10 px-4 sm:px-6 text-center">
         <button onClick={() => setShowRequest(true)} className="glow-pulse bg-red-600 hover:bg-red-700 text-white transition-all px-8 py-3.5 rounded-xl font-bold inline-flex items-center gap-2">
           <Wrench size={16} /> {lang === "fa" ? "درخواست تعمیر" : "Request a Repair"}
@@ -1288,7 +1315,7 @@ function ShopPage({ content, addToCart, lang, wishlistIds = [], onToggleWishlist
           ) : (
             <div className="mb-4 opacity-90"><SectionIllustration variant="shop" /></div>
           )}
-          <span className="text-xs tracking-[0.3em] font-bold text-red-500">{ui("originalShop", lang)}</span>
+          <span className={`text-xs font-bold text-red-500 ${lang === "fa" ? "" : "tracking-[0.3em]"}`}>{ui("originalShop", lang)}</span>
           <h1 className="text-3xl sm:text-5xl font-black mt-3 text-white">{ui("shopTitle", lang)}</h1>
           <p className="text-white/60 mt-3 max-w-xl mx-auto">{ui("shopSubtitle", lang)}</p>
           <div className="max-w-md mx-auto mt-6 relative">
@@ -1450,7 +1477,7 @@ function AboutPage({ content, lang }) {
   const a = content.about;
   return (
     <div>
-      <PageHeader eyebrow={ui("aboutUs", lang)} title={ui("whyNovin", lang)} image={content.pageHeaders?.about?.image} variant="about" />
+      <PageHeader eyebrow={ui("aboutUs", lang)} title={ui("whyNovin", lang)} image={content.pageHeaders?.about?.image} variant="about" lang={lang} />
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
           <Reveal><p className="text-black/65 leading-loose text-lg">{tr(a.content, lang)}</p></Reveal>
@@ -1472,12 +1499,12 @@ function AboutPage({ content, lang }) {
 function ContactPage({ content, onSend, lang }) {
   const s = content.settings;
   const aparat = s.aparat || DEFAULT_APARAT_URL;
-  const [form, setForm] = useState({ name: "", phone: "", message: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", message: "" });
   const [sent, setSent] = useState(false);
-  const submit = async (e) => { e.preventDefault(); await onSend(form); setSent(true); setForm({ name: "", phone: "", message: "" }); };
+  const submit = async (e) => { e.preventDefault(); await onSend(form); setSent(true); setForm({ name: "", phone: "", email: "", message: "" }); };
   return (
     <div>
-      <PageHeader eyebrow={ui("contactUs", lang)} title={ui("contactUsNow", lang)} image={content.pageHeaders?.contact?.image} variant="contact" />
+      <PageHeader eyebrow={ui("contactUs", lang)} title={ui("contactUsNow", lang)} image={content.pageHeaders?.contact?.image} variant="contact" lang={lang} />
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10">
           <div className="space-y-4">
@@ -1500,6 +1527,7 @@ function ContactPage({ content, onSend, lang }) {
             {sent && <p className="text-xs bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2">{ui("messageSent", lang)}</p>}
             <input required placeholder={ui("yourName", lang)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             <input required placeholder={ui("yourPhone", lang)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <input type="email" placeholder={lang === "fa" ? "ایمیل (اختیاری)" : "Email (optional)"} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             <textarea required rows={4} placeholder={ui("yourMessage", lang)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm resize-none" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
             <button className="w-full bg-red-600 hover:bg-red-700 text-white transition-colors py-3 rounded-xl font-bold flex items-center justify-center gap-2"><Mail size={16} /> {ui("sendMessage", lang)}</button>
           </form>
@@ -1893,7 +1921,7 @@ function ArticlesPage({ pages, content, lang }) {
   const articles = pages.filter((p) => p.isArticle).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   return (
     <div>
-      <PageHeader eyebrow={ui("blogTitle", lang)} title={ui("articlesTitle", lang)} subtitle={ui("articlesSubtitle", lang)} image={content?.pageHeaders?.articles?.image} variant="articles" />
+      <PageHeader eyebrow={ui("blogTitle", lang)} title={ui("articlesTitle", lang)} subtitle={ui("articlesSubtitle", lang)} image={content?.pageHeaders?.articles?.image} variant="articles" lang={lang} />
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
           {articles.length === 0 ? (
@@ -1943,7 +1971,7 @@ function FAQItem({ item, lang }) {
 function FAQPage({ content, lang }) {
   return (
     <div>
-      <PageHeader eyebrow={ui("support", lang)} title={ui("faqTitle", lang)} subtitle={ui("faqSubtitle", lang)} image={content.pageHeaders?.faq?.image} variant="faq" />
+      <PageHeader eyebrow={ui("support", lang)} title={ui("faqTitle", lang)} subtitle={ui("faqSubtitle", lang)} image={content.pageHeaders?.faq?.image} variant="faq" lang={lang} />
       <section className="py-16 px-4 sm:px-6">
         <div className="max-w-2xl mx-auto space-y-3">
           {content.faq.length === 0 ? (
@@ -2013,7 +2041,7 @@ function ReviewsStrip({ lang }) {
     <section className="py-16 px-4 sm:px-6 bg-neutral-50 border-t border-black/10 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <Reveal className="text-center mb-10">
-          <span className="text-red-600 text-xs tracking-[0.3em] font-bold">{lang === "fa" ? "نظرات مشتریان" : "Customer Reviews"}</span>
+          <span className={`text-red-600 text-xs font-bold ${lang === "fa" ? "" : "tracking-[0.3em]"}`}>{lang === "fa" ? "نظرات مشتریان" : "Customer Reviews"}</span>
           <h2 className="text-2xl sm:text-3xl font-black mt-2">{lang === "fa" ? "چه کسانی به ما اعتماد کردن؟" : "What Our Customers Say"}</h2>
         </Reveal>
         {reviews === null ? (
@@ -2067,7 +2095,20 @@ function Footer({ content, goToUrl, lang }) {
           <ul className="space-y-2 text-sm text-white/50"><li dir="ltr">026 32536821</li><li dir="ltr">{s.mobile || s.whatsapp}</li><li>{tr(s.address, lang)}</li></ul>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto border-t border-white/10 pt-6 text-center"><p className="text-white/40 text-xs">{tr(f.copyright, lang)}</p></div>
+      <div className="max-w-7xl mx-auto border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-start">
+        <p className="text-white/40 text-xs">{tr(f.copyright, lang)}</p>
+        {s.designerUrl ? (
+          <a href={s.designerUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-white/40 hover:text-red-500 text-xs transition-colors">
+            <VitraStudioLogo size={16} />
+            {ui("designedBy", lang)}
+          </a>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-white/40 text-xs">
+            <VitraStudioLogo size={16} />
+            {ui("designedBy", lang)}
+          </span>
+        )}
+      </div>
     </footer>
   );
 }
@@ -2847,9 +2888,41 @@ function AdminOrderRow({ order: o, lang, onChanged }) {
   );
 }
 
+const MESSAGE_STATUS_LABELS = {
+  new: { fa: "جدید", en: "New" },
+  read: { fa: "خوانده‌شده", en: "Read" },
+  replied: { fa: "پاسخ داده‌شده", en: "Replied" },
+};
+const MESSAGE_STATUS_STYLES = {
+  new: "bg-red-50 text-red-600 border border-red-200",
+  read: "bg-amber-50 text-amber-700 border border-amber-200",
+  replied: "bg-green-50 text-green-700 border border-green-200",
+};
+
 function AdminMessages({ lang }) {
   const [messages, setMessages] = useState(null);
-  useEffect(() => { (async () => { try { const { messages: list } = await api.allMessages(); setMessages(list); } catch (e) { setMessages([]); } })(); }, []);
+  const [openId, setOpenId] = useState(null);
+  const load = async () => { try { const { messages: list } = await api.allMessages(); setMessages(list); } catch (e) { setMessages([]); } };
+  useEffect(() => { load(); }, []);
+
+  const remove = async (id) => {
+    if (!confirm(lang === "fa" ? "این پیام حذف شود؟" : "Delete this message?")) return;
+    try { await api.deleteMessage(id); if (openId === id) setOpenId(null); await load(); } catch (e) { alert(e.message); }
+  };
+
+  const open = messages?.find((m) => m.id === openId);
+  if (open) {
+    return (
+      <AdminMessageDetail
+        message={open}
+        lang={lang}
+        onBack={() => setOpenId(null)}
+        onDelete={() => remove(open.id)}
+        onChanged={load}
+      />
+    );
+  }
+
   return (
     <div>
       <SectionTitle>{aui("messages", lang)}</SectionTitle>
@@ -2858,11 +2931,117 @@ function AdminMessages({ lang }) {
       <div className="space-y-3">
         {messages?.map((m) => (
           <div key={m.id} className={cardCls}>
-            <div className="flex justify-between text-sm mb-2"><span className="font-bold">{m.name}</span><span className="text-black/40 text-xs">{m.phone}</span></div>
-            <p className="text-black/60 text-sm mb-1">{m.message}</p>
-            <p className="text-black/30 text-[11px]">{fmtDateTime(m.date, lang)}</p>
+            <div className="flex justify-between items-start gap-2 text-sm mb-2">
+              <span className="font-bold flex items-center gap-2 flex-wrap">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${MESSAGE_STATUS_STYLES[m.status] || MESSAGE_STATUS_STYLES.new}`}>{tr(MESSAGE_STATUS_LABELS[m.status] || MESSAGE_STATUS_LABELS.new, lang)}</span>
+                {m.name}
+              </span>
+              <span className="text-black/30 text-[11px] shrink-0">{fmtDateTime(m.date, lang)}</span>
+            </div>
+            <p className="text-black/40 text-xs mb-1" dir="ltr">{m.phone}{m.email ? ` · ${m.email}` : ""}</p>
+            <p className="text-black/60 text-sm mb-3 line-clamp-2">{m.message}</p>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setOpenId(m.id)} className={btnGhost}>{lang === "fa" ? "مشاهده و پاسخ" : "View & Reply"}</button>
+              <button onClick={() => remove(m.id)} className="text-black/30 hover:text-red-600"><Trash2 size={16} /></button>
+            </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function AdminMessageDetail({ message: m, lang, onBack, onDelete, onChanged }) {
+  const [form, setForm] = useState({ name: m.name, phone: m.phone, email: m.email || "", message: m.message });
+  const [editing, setEditing] = useState(false);
+  const [reply, setReply] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const saveEdit = async () => {
+    setBusy(true);
+    try { await api.updateMessage(m.id, form); setEditing(false); await onChanged(); }
+    catch (e) { alert(e.message); }
+    setBusy(false);
+  };
+
+  const markRead = async () => {
+    try { await api.updateMessage(m.id, { status: "read" }); await onChanged(); } catch (e) { alert(e.message); }
+  };
+
+  const sendReply = async (via) => {
+    if (!reply.trim()) return;
+    setBusy(true); setResult(null);
+    try {
+      const res = await api.replyMessage(m.id, reply, via);
+      setResult({ via, ...res });
+      if (res.ok) { setReply(""); await onChanged(); }
+    } catch (e) { setResult({ via, ok: false, error: e.message }); }
+    setBusy(false);
+  };
+
+  return (
+    <div className="max-w-2xl">
+      <SectionTitle action={
+        <div className="flex gap-2">
+          <button onClick={onBack} className={btnGhost}>{lang === "fa" ? "بازگشت" : "Back"}</button>
+          <button onClick={onDelete} className="text-black/30 hover:text-red-600"><Trash2 size={16} /></button>
+        </div>
+      }>{lang === "fa" ? "جزئیات پیام" : "Message Detail"}</SectionTitle>
+
+      <div className={cardCls + " mb-5"}>
+        <div className="flex justify-between items-start gap-2 mb-3">
+          <span className={`text-[10px] px-2 py-0.5 rounded-full ${MESSAGE_STATUS_STYLES[m.status] || MESSAGE_STATUS_STYLES.new}`}>{tr(MESSAGE_STATUS_LABELS[m.status] || MESSAGE_STATUS_LABELS.new, lang)}</span>
+          <div className="flex items-center gap-2">
+            {m.status === "new" && <button onClick={markRead} className={btnGhost}>{lang === "fa" ? "علامت‌گذاری به‌عنوان خوانده‌شده" : "Mark as read"}</button>}
+            <button onClick={() => setEditing((v) => !v)} className={btnGhost}>{editing ? aui("cancel", lang) : aui("edit", lang)}</button>
+          </div>
+        </div>
+        {editing ? (
+          <div className="space-y-3">
+            <Field label={lang === "fa" ? "نام" : "Name"}><input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+            <Field label={lang === "fa" ? "موبایل" : "Phone"}><input dir="ltr" className={inputCls} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
+            <Field label={lang === "fa" ? "ایمیل" : "Email"}><input dir="ltr" className={inputCls} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
+            <Field label={lang === "fa" ? "متن پیام" : "Message"}><textarea rows={4} className={inputCls} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /></Field>
+            <button disabled={busy} onClick={saveEdit} className={btnPrimary}>{aui("save", lang)}</button>
+          </div>
+        ) : (
+          <>
+            <p className="font-bold text-sm mb-1">{m.name}</p>
+            <p className="text-black/40 text-xs mb-3" dir="ltr">{m.phone}{m.email ? ` · ${m.email}` : ""}</p>
+            <p className="text-black/70 text-sm leading-relaxed whitespace-pre-line">{m.message}</p>
+            <p className="text-black/30 text-[11px] mt-3">{fmtDateTime(m.date, lang)}</p>
+          </>
+        )}
+      </div>
+
+      {m.adminReply && (
+        <div className="rounded-xl border border-green-200 bg-green-50 p-4 mb-5">
+          <p className="text-[11px] font-bold text-green-700 mb-1">
+            {lang === "fa" ? `پاسخ ارسال‌شده (${m.repliedVia === "email" ? "ایمیل" : "پیامک"} — ${fmtDateTime(m.repliedAt, lang)})` : `Reply sent (${m.repliedVia} — ${fmtDateTime(m.repliedAt, lang)})`}
+          </p>
+          <p className="text-sm text-black/70 whitespace-pre-line">{m.adminReply}</p>
+        </div>
+      )}
+
+      <div className={cardCls}>
+        <h3 className="font-bold text-sm mb-3">{lang === "fa" ? "پاسخ جدید" : "New Reply"}</h3>
+        <textarea rows={4} placeholder={lang === "fa" ? "متن پاسخ..." : "Reply text..."} className={inputCls + " mb-3"} value={reply} onChange={(e) => setReply(e.target.value)} />
+        <div className="flex flex-wrap gap-2">
+          <button disabled={busy || !reply.trim() || !m.email} onClick={() => sendReply("email")} className={btnPrimary + " disabled:opacity-40"}>
+            <Mail size={14} /> {lang === "fa" ? "ارسال با ایمیل" : "Send via Email"}
+          </button>
+          <button disabled={busy || !reply.trim() || !m.phone} onClick={() => sendReply("sms")} className={btnPrimary + " disabled:opacity-40"}>
+            <MessageCircle size={14} /> {lang === "fa" ? "ارسال با پیامک" : "Send via SMS"}
+          </button>
+        </div>
+        {!m.email && <p className="text-black/30 text-[11px] mt-2">{lang === "fa" ? "این پیام ایمیل ندارد، فقط ارسال پیامکی ممکن است." : "This message has no email, only SMS reply is possible."}</p>}
+        <p className="text-black/30 text-[11px] mt-2">{lang === "fa" ? "برای فعال شدن ارسال، ابتدا سرویس ایمیل/پیامک را در بخش «اعلان‌ها» تنظیم کنید." : "Configure the email/SMS provider under \"Notifications\" first for sending to work."}</p>
+        {result && (
+          <p className={`text-xs mt-3 rounded-lg px-3 py-2 ${result.ok ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-600 border border-red-200"}`}>
+            {result.ok ? (lang === "fa" ? "پاسخ با موفقیت ارسال شد ✓" : "Reply sent successfully ✓") : (result.error || (lang === "fa" ? "ارسال ناموفق بود" : "Send failed"))}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -3228,7 +3407,7 @@ function AdminPopups({ lang }) {
     const later = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
     setEditing({
       id: null, label: lang === "fa" ? "پاپ‌آپ جدید" : "New Popup",
-      message: { fa: "", en: "" }, buttonText: { fa: "", en: "" }, buttonUrl: "",
+      message: { fa: "", en: "" }, buttonText: { fa: "", en: "" }, buttonUrl: "", imageUrl: "",
       targetPage: "all", startDate: toLocalInput(now.toISOString()), endDate: toLocalInput(later.toISOString()), enabled: true,
     });
   };
@@ -3260,6 +3439,7 @@ function AdminPopups({ lang }) {
         }>{editing.id ? aui("edit", lang) : (lang === "fa" ? "پاپ‌آپ جدید" : "New Popup")}</SectionTitle>
         <div className="space-y-4">
           <Field label={lang === "fa" ? "عنوان داخلی (فقط برای پنل)" : "Internal label (admin only)"}><input className={inputCls} value={editing.label} onChange={(e) => set("label", e.target.value)} /></Field>
+          <ImageUploadField label={lang === "fa" ? "تصویر پاپ‌آپ (اختیاری)" : "Popup image (optional)"} value={editing.imageUrl} onChange={(v) => set("imageUrl", v)} lang={lang} />
           <BField label={lang === "fa" ? "متن پیام" : "Message"} value={editing.message} onChange={(v) => set("message", v)} multiline lang={lang} />
           <BField label={lang === "fa" ? "متن دکمه" : "Button text"} value={editing.buttonText} onChange={(v) => set("buttonText", v)} lang={lang} />
           <Field label={lang === "fa" ? "لینک دکمه" : "Button link"}><input dir="ltr" className={inputCls} value={editing.buttonUrl} onChange={(e) => set("buttonUrl", e.target.value)} placeholder="https://... یا #/shop" /></Field>
@@ -3285,13 +3465,16 @@ function AdminPopups({ lang }) {
       {popups === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
       <div className="space-y-2">
         {popups?.map((p) => (
-          <div key={p.id} className={cardCls + " flex items-center justify-between"}>
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="font-bold text-sm">{p.label}</p>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.enabled ? "bg-green-50 text-green-700 border border-green-200" : "bg-black/5 text-black/40 border border-black/10"}`}>{p.enabled ? (lang === "fa" ? "فعال" : "Enabled") : (lang === "fa" ? "غیرفعال" : "Disabled")}</span>
+          <div key={p.id} className={cardCls + " flex items-center justify-between gap-3"}>
+            <div className="flex items-center gap-3 min-w-0">
+              {p.imageUrl && <img src={resolveImageUrl(p.imageUrl)} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0 border border-black/10" />}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-bold text-sm">{p.label}</p>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.enabled ? "bg-green-50 text-green-700 border border-green-200" : "bg-black/5 text-black/40 border border-black/10"}`}>{p.enabled ? (lang === "fa" ? "فعال" : "Enabled") : (lang === "fa" ? "غیرفعال" : "Disabled")}</span>
+                </div>
+                <p className="text-black/40 text-xs mt-1">{tr(POPUP_PAGE_OPTIONS.find((o) => o.value === p.targetPage)?.label, lang)} · {fmtDate(p.startDate, lang)} → {fmtDate(p.endDate, lang)}</p>
               </div>
-              <p className="text-black/40 text-xs mt-1">{tr(POPUP_PAGE_OPTIONS.find((o) => o.value === p.targetPage)?.label, lang)} · {fmtDate(p.startDate, lang)} → {fmtDate(p.endDate, lang)}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button onClick={() => startEdit(p)} className={btnGhost}>{aui("edit", lang)}</button>
@@ -3323,6 +3506,7 @@ function AdminSettings({ content, update, lang }) {
         <Field label={lang === "fa" ? "آیدی بله" : "Bale Username"}><input dir="ltr" className={inputCls} value={s.bale || ""} onChange={(e) => set("bale", e.target.value)} /></Field>
         <Field label={lang === "fa" ? "لینک صفحه آپارات" : "Aparat profile URL"}><input dir="ltr" className={inputCls} value={s.aparat || ""} onChange={(e) => set("aparat", e.target.value)} /></Field>
         <Field label={lang === "fa" ? "لینک ویدیوی آپارات فروشگاه" : "Shop Aparat video URL"}><input dir="ltr" className={inputCls} value={s.shopVideoUrl || ""} onChange={(e) => set("shopVideoUrl", e.target.value)} placeholder="https://www.aparat.com/v/..." /></Field>
+        <Field label={lang === "fa" ? "لینک سایت طراح (Vitra Studio) در فوتر" : "Designer (Vitra Studio) website link in footer"}><input dir="ltr" className={inputCls} value={s.designerUrl || ""} onChange={(e) => set("designerUrl", e.target.value)} placeholder="https://vitrastudio.example" /></Field>
       </div>
     </div>
   );

@@ -21,6 +21,7 @@ export const DEFAULT_CONTENT = {
     bale: "09124647963",
     aparat: "https://www.aparat.com/shorts/user/NovinPolytechnicAlborz/shorts",
     shopVideoUrl: "",
+    designerUrl: "https://vitra-studio.onrender.com/index.html",
   },
   hero: {
     eyebrow: { fa: "بیش از ۱۰ سال تجربه در تعمیر و بازیابی اطلاعات", en: "10+ years of repair & data recovery experience" },

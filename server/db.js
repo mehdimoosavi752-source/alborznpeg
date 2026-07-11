@@ -188,6 +188,34 @@ if (!pageColumns.includes("category")) {
   console.log("[migrate] ستون category به جدول pages اضافه شد");
 }
 
+const messageColumns = db.prepare("PRAGMA table_info(messages)").all().map((c) => c.name);
+if (!messageColumns.includes("email")) {
+  db.exec("ALTER TABLE messages ADD COLUMN email TEXT NOT NULL DEFAULT ''");
+  console.log("[migrate] ستون email به جدول messages اضافه شد");
+}
+if (!messageColumns.includes("status")) {
+  db.exec("ALTER TABLE messages ADD COLUMN status TEXT NOT NULL DEFAULT 'new'");
+  console.log("[migrate] ستون status به جدول messages اضافه شد");
+}
+if (!messageColumns.includes("admin_reply")) {
+  db.exec("ALTER TABLE messages ADD COLUMN admin_reply TEXT NOT NULL DEFAULT ''");
+  console.log("[migrate] ستون admin_reply به جدول messages اضافه شد");
+}
+if (!messageColumns.includes("replied_via")) {
+  db.exec("ALTER TABLE messages ADD COLUMN replied_via TEXT NOT NULL DEFAULT ''");
+  console.log("[migrate] ستون replied_via به جدول messages اضافه شد");
+}
+if (!messageColumns.includes("replied_at")) {
+  db.exec("ALTER TABLE messages ADD COLUMN replied_at TEXT NOT NULL DEFAULT ''");
+  console.log("[migrate] ستون replied_at به جدول messages اضافه شد");
+}
+
+const popupColumns = db.prepare("PRAGMA table_info(popups)").all().map((c) => c.name);
+if (!popupColumns.includes("image_url")) {
+  db.exec("ALTER TABLE popups ADD COLUMN image_url TEXT NOT NULL DEFAULT ''");
+  console.log("[migrate] ستون image_url به جدول popups اضافه شد");
+}
+
 // --- بذرپاشی اولیه (فقط یک‌بار، اگر دیتابیس خالی باشد) ---
 
 const userCount = db.prepare("SELECT COUNT(*) AS c FROM users").get().c;

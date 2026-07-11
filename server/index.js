@@ -429,22 +429,98 @@ app.patch("/api/orders/:id/status", authenticate, requireAdmin, async (req, res)
 /* ============================== پیام‌های تماس با ما ============================== */
 
 app.post("/api/messages", (req, res) => {
-  const { name, phone, message } = req.body || {};
+  const { name, phone, email, message } = req.body || {};
   if (!name || !phone || !message) return res.status(400).json({ error: "همه فیلدها را پر کنید" });
   const id = uid("msg");
-  db.prepare("INSERT INTO messages (id, name, phone, message, created_at) VALUES (?, ?, ?, ?, ?)").run(
-    id, name, phone, message, new Date().toISOString()
+  db.prepare("INSERT INTO messages (id, name, phone, email, message, status, created_at) VALUES (?, ?, ?, ?, ?, 'new', ?)").run(
+    id, name, phone, email || "", message, new Date().toISOString()
   );
   res.json({ ok: true, id });
 });
 
 app.get("/api/messages", authenticate, requireAdmin, (req, res) => {
   const rows = db.prepare("SELECT * FROM messages ORDER BY created_at DESC").all();
-  res.json({ messages: rows.map((m) => ({ id: m.id, name: m.name, phone: m.phone, message: m.message, date: m.created_at })) });
+  res.json({
+    messages: rows.map((m) => ({
+      id: m.id, name: m.name, phone: m.phone, email: m.email, message: m.message,
+      status: m.status || "new", adminReply: m.admin_reply || "", repliedVia: m.replied_via || "", repliedAt: m.replied_at || "",
+      date: m.created_at,
+    })),
+  });
+});
+
+app.patch("/api/messages/:id", authenticate, requireAdmin, (req, res) => {
+  const row = db.prepare("SELECT * FROM messages WHERE id = ?").get(req.params.id);
+  if (!row) return res.status(404).json({ error: "پیام پیدا نشد" });
+  const { name, phone, email, message, status } = req.body || {};
+  db.prepare(
+    "UPDATE messages SET name = ?, phone = ?, email = ?, message = ?, status = ? WHERE id = ?"
+  ).run(
+    name ?? row.name, phone ?? row.phone, email ?? row.email, message ?? row.message, status ?? row.status, req.params.id
+  );
+  res.json({ ok: true });
+});
+
+app.delete("/api/messages/:id", authenticate, requireAdmin, (req, res) => {
+  db.prepare("DELETE FROM messages WHERE id = ?").run(req.params.id);
+  res.json({ ok: true });
+});
+
+app.post("/api/messages/:id/reply", authenticate, requireAdmin, async (req, res) => {
+  const row = db.prepare("SELECT * FROM messages WHERE id = ?").get(req.params.id);
+  if (!row) return res.status(404).json({ error: "پیام پیدا نشد" });
+  const { reply, via } = req.body || {};
+  if (!reply) return res.status(400).json({ error: "متن پاسخ را وارد کنید" });
+
+  let result = { ok: false, error: "روش ارسال نامعتبر است" };
+  if (via === "email") result = await sendRawEmail(row.email, `پاسخ به پیام شما — ${STORE_NAME}`, reply);
+  else if (via === "sms") result = await sendRawSms(row.phone, reply);
+
+  if (result.ok) {
+    db.prepare("UPDATE messages SET admin_reply = ?, replied_via = ?, replied_at = ?, status = 'replied' WHERE id = ?").run(
+      reply, via, new Date().toISOString(), req.params.id
+    );
+  }
+  res.json(result);
 });
 
 /* ============================== اعلان‌ها: ایمیل و پیامک ============================== */
 // نکته: اطلاعات این بخش حساس است (رمز ایمیل، کلید API پیامک) و فقط برای مدیر برگردانده می‌شود.
+
+const STORE_NAME = "نوین پلی‌تکنیک البرز";
+
+async function sendRawEmail(to, subject, text) {
+  const cfg = db.prepare("SELECT * FROM notification_settings WHERE id = 1").get();
+  if (!cfg.email_enabled || !cfg.email_host || !cfg.email_user) return { ok: false, error: "سرویس ایمیل هنوز تنظیم نشده است" };
+  if (!to) return { ok: false, error: "برای این پیام ایمیلی ثبت نشده است" };
+  try {
+    const transporter = nodemailer.createTransport({
+      host: cfg.email_host, port: cfg.email_port || 587, secure: (cfg.email_port || 587) === 465,
+      auth: { user: cfg.email_user, pass: cfg.email_pass },
+    });
+    await transporter.sendMail({ from: cfg.email_from || cfg.email_user, to, subject, text });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+async function sendRawSms(to, text) {
+  const cfg = db.prepare("SELECT * FROM notification_settings WHERE id = 1").get();
+  if (!cfg.sms_enabled || !cfg.sms_webhook_url) return { ok: false, error: "سرویس پیامک هنوز تنظیم نشده است" };
+  if (!to) return { ok: false, error: "برای این پیام شماره‌ای ثبت نشده است" };
+  try {
+    const res2 = await fetch(cfg.sms_webhook_url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(cfg.sms_api_key ? { Authorization: `Bearer ${cfg.sms_api_key}` } : {}) },
+      body: JSON.stringify({ to, sender: cfg.sms_sender, message: text }),
+    });
+    if (!res2.ok) return { ok: false, error: `سرویس پیامک خطا داد (${res2.status})` };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
 
 const STATUS_LABELS_FA = {
   reviewing: "در حال بررسی سفارش",
@@ -664,6 +740,7 @@ function rowToPopup(p) {
     message: { fa: p.message_fa, en: p.message_en },
     buttonText: { fa: p.button_text_fa, en: p.button_text_en },
     buttonUrl: p.button_url,
+    imageUrl: p.image_url || "",
     targetPage: p.target_page,
     startDate: p.start_date,
     endDate: p.end_date,
@@ -687,15 +764,15 @@ app.get("/api/admin/popups", authenticate, requireEditor, (req, res) => {
 });
 
 app.post("/api/admin/popups", authenticate, requireEditor, (req, res) => {
-  const { label, message, buttonText, buttonUrl, targetPage, startDate, endDate, enabled } = req.body || {};
+  const { label, message, buttonText, buttonUrl, imageUrl, targetPage, startDate, endDate, enabled } = req.body || {};
   if (!label || !startDate || !endDate) return res.status(400).json({ error: "عنوان داخلی و بازه‌ی تاریخ الزامی است" });
   const id = uid("popup");
   db.prepare(
-    `INSERT INTO popups (id, label, message_fa, message_en, button_text_fa, button_text_en, button_url, target_page, start_date, end_date, enabled, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO popups (id, label, message_fa, message_en, button_text_fa, button_text_en, button_url, image_url, target_page, start_date, end_date, enabled, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id, label, message?.fa || "", message?.en || "", buttonText?.fa || "", buttonText?.en || "",
-    buttonUrl || "", targetPage || "all", startDate, endDate, enabled ? 1 : 0, new Date().toISOString()
+    buttonUrl || "", imageUrl || "", targetPage || "all", startDate, endDate, enabled ? 1 : 0, new Date().toISOString()
   );
   res.json({ ok: true, id });
 });
@@ -703,12 +780,12 @@ app.post("/api/admin/popups", authenticate, requireEditor, (req, res) => {
 app.put("/api/admin/popups/:id", authenticate, requireEditor, (req, res) => {
   const p = db.prepare("SELECT * FROM popups WHERE id = ?").get(req.params.id);
   if (!p) return res.status(404).json({ error: "پاپ‌آپ یافت نشد" });
-  const { label, message, buttonText, buttonUrl, targetPage, startDate, endDate, enabled } = req.body || {};
+  const { label, message, buttonText, buttonUrl, imageUrl, targetPage, startDate, endDate, enabled } = req.body || {};
   db.prepare(
-    `UPDATE popups SET label=?, message_fa=?, message_en=?, button_text_fa=?, button_text_en=?, button_url=?, target_page=?, start_date=?, end_date=?, enabled=? WHERE id=?`
+    `UPDATE popups SET label=?, message_fa=?, message_en=?, button_text_fa=?, button_text_en=?, button_url=?, image_url=?, target_page=?, start_date=?, end_date=?, enabled=? WHERE id=?`
   ).run(
     label ?? p.label, message?.fa ?? p.message_fa, message?.en ?? p.message_en,
-    buttonText?.fa ?? p.button_text_fa, buttonText?.en ?? p.button_text_en, buttonUrl ?? p.button_url,
+    buttonText?.fa ?? p.button_text_fa, buttonText?.en ?? p.button_text_en, buttonUrl ?? p.button_url, imageUrl ?? p.image_url,
     targetPage ?? p.target_page, startDate ?? p.start_date, endDate ?? p.end_date,
     enabled === undefined ? p.enabled : (enabled ? 1 : 0), p.id
   );

@@ -92,6 +92,9 @@ export const api = {
   // پیام‌های تماس با ما
   sendMessage: (payload) => request("/api/messages", { method: "POST", body: JSON.stringify(payload) }),
   allMessages: () => request("/api/messages"),
+  updateMessage: (id, payload) => request(`/api/messages/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteMessage: (id) => request(`/api/messages/${id}`, { method: "DELETE" }),
+  replyMessage: (id, reply, via) => request(`/api/messages/${id}/reply`, { method: "POST", body: JSON.stringify({ reply, via }) }),
 
   // آپلود تصویر
   uploadImage: async (file) => {
