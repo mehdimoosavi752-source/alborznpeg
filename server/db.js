@@ -197,6 +197,48 @@ db.exec(`
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS loyalty_settings (
+    id INTEGER PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 0,        -- فعال/غیرفعال بودن جشنواره‌ی امتیاز (استفاده از امتیاز به‌عنوان تخفیف)
+    earn_per_toman INTEGER NOT NULL DEFAULT 10000, -- به ازای هر چند تومان خرید، ۱ امتیاز
+    redeem_value_toman INTEGER NOT NULL DEFAULT 1000, -- هر امتیاز معادل چند تومان تخفیف
+    min_redeem_points INTEGER NOT NULL DEFAULT 10,
+    max_redeem_percent INTEGER NOT NULL DEFAULT 30, -- حداکثر درصد قابل پرداخت از سفارش با امتیاز
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS points_ledger (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    change INTEGER NOT NULL,
+    reason TEXT NOT NULL DEFAULT '',
+    order_id TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS reservation_settings (
+    id INTEGER PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    slots TEXT NOT NULL DEFAULT '["10:00","11:00","12:00","14:00","15:00","16:00","17:00","18:00"]',
+    closed_weekdays TEXT NOT NULL DEFAULT '[5]',
+    note_fa TEXT NOT NULL DEFAULT '',
+    note_en TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS reservations (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    res_date TEXT NOT NULL,
+    time_slot TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
 `);
 
 function uid(prefix = "id") {
@@ -212,6 +254,10 @@ if (!userColumns.includes("phone")) {
 if (!userColumns.includes("email")) {
   db.exec("ALTER TABLE users ADD COLUMN email TEXT NOT NULL DEFAULT ''");
   console.log("[migrate] ستون email به جدول users اضافه شد");
+}
+if (!userColumns.includes("points")) {
+  db.exec("ALTER TABLE users ADD COLUMN points INTEGER NOT NULL DEFAULT 0");
+  console.log("[migrate] ستون points به جدول users اضافه شد");
 }
 
 const pageColumns = db.prepare("PRAGMA table_info(pages)").all().map((c) => c.name);
@@ -281,12 +327,22 @@ if (!contentRow) {
   const existingRow = db.prepare("SELECT data FROM site_content WHERE id = 1").get();
   try {
     const existingData = JSON.parse(existingRow.data);
+    let changed = false;
     if (existingData?.settings?.designerUrl === "https://vitra-studio.onrender.com/index.html") {
       existingData.settings.designerUrl = "";
+      changed = true;
+    }
+    if (existingData.settings && existingData.settings.successfulRepairsCount === undefined) {
+      existingData.settings.successfulRepairsCount = 5000;
+      changed = true;
+    }
+    if (!Array.isArray(existingData.beforeAfter)) { existingData.beforeAfter = []; changed = true; }
+    if (!Array.isArray(existingData.testimonials)) { existingData.testimonials = []; changed = true; }
+    if (changed) {
       db.prepare("UPDATE site_content SET data = ?, updated_at = ? WHERE id = 1").run(
         JSON.stringify(existingData), new Date().toISOString()
       );
-      console.log("[migrate] لینک نمونه‌ی فوتر (Vitra Studio) پاک شد؛ از پنل مدیریت لینک درست را ثبت کنید");
+      console.log("[migrate] محتوای سایت با فیلدهای جدید (گالری قبل/بعد، نظرات ویدیویی، شمارنده) به‌روزرسانی شد");
     }
   } catch (e) { /* داده‌ی موجود قابل پارس نبود، از migration صرف‌نظر شد */ }
 }
@@ -471,6 +527,9 @@ const orderMigrations = [
   ["updated_at", "TEXT NOT NULL DEFAULT ''"],
   ["coupon_code", "TEXT NOT NULL DEFAULT ''"],
   ["discount_amount", "INTEGER NOT NULL DEFAULT 0"],
+  ["points_used", "INTEGER NOT NULL DEFAULT 0"],
+  ["points_discount", "INTEGER NOT NULL DEFAULT 0"],
+  ["points_awarded", "INTEGER NOT NULL DEFAULT 0"],
 ];
 for (const [col, def] of orderMigrations) {
   if (!orderColumns.includes(col)) {
@@ -524,5 +583,16 @@ for (const [statusKey, statusLabel] of Object.entries(STATUS_LABELS_FA_SEED)) {
   );
 }
 console.log("[seed] قالب‌های پیش‌فرض اعلان ایمیل/پیامک بررسی و در صورت نیاز تکمیل شدند");
+
+const loyaltyRow = db.prepare("SELECT id FROM loyalty_settings WHERE id = 1").get();
+if (!loyaltyRow) {
+  db.prepare("INSERT INTO loyalty_settings (id, updated_at) VALUES (1, ?)").run(new Date().toISOString());
+  console.log("[seed] تنظیمات پیش‌فرض باشگاه مشتریان ذخیره شد");
+}
+const reservationRow = db.prepare("SELECT id FROM reservation_settings WHERE id = 1").get();
+if (!reservationRow) {
+  db.prepare("INSERT INTO reservation_settings (id, updated_at) VALUES (1, ?)").run(new Date().toISOString());
+  console.log("[seed] تنظیمات پیش‌فرض رزرو نوبت ذخیره شد");
+}
 
 export { uid };

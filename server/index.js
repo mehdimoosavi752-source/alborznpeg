@@ -459,13 +459,120 @@ app.delete("/api/admin/coupons/:id", authenticate, requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+/* ============================== رزرو نوبت ============================== */
+
+function rowToReservation(r) {
+  return { id: r.id, username: r.username, name: r.name, phone: r.phone, note: r.note, date: r.res_date, timeSlot: r.time_slot, status: r.status, createdAt: r.created_at };
+}
+
+app.get("/api/reservations/settings", (req, res) => {
+  const rs = db.prepare("SELECT * FROM reservation_settings WHERE id = 1").get();
+  res.json({
+    enabled: !!rs.enabled, slots: JSON.parse(rs.slots || "[]"), closedWeekdays: JSON.parse(rs.closed_weekdays || "[]"),
+    note: { fa: rs.note_fa, en: rs.note_en },
+  });
+});
+
+app.get("/api/reservations/availability", (req, res) => {
+  const { date } = req.query;
+  if (!date) return res.status(400).json({ error: "تاریخ الزامی است" });
+  const rs = db.prepare("SELECT * FROM reservation_settings WHERE id = 1").get();
+  const taken = db.prepare("SELECT time_slot FROM reservations WHERE res_date = ? AND status != 'cancelled'").all(date).map((r) => r.time_slot);
+  res.json({ slots: JSON.parse(rs.slots || "[]"), taken });
+});
+
+app.post("/api/reservations", authenticate, (req, res) => {
+  const rs = db.prepare("SELECT * FROM reservation_settings WHERE id = 1").get();
+  if (!rs.enabled) return res.status(400).json({ error: "رزرو نوبت در حال حاضر فعال نیست" });
+  const { name, phone, note, date, timeSlot } = req.body || {};
+  if (!name || !phone || !date || !timeSlot) return res.status(400).json({ error: "همه‌ی فیلدهای لازم را پر کنید" });
+  const slots = JSON.parse(rs.slots || "[]");
+  if (!slots.includes(timeSlot)) return res.status(400).json({ error: "بازه‌ی زمانی نامعتبر است" });
+  const taken = db.prepare("SELECT id FROM reservations WHERE res_date = ? AND time_slot = ? AND status != 'cancelled'").get(date, timeSlot);
+  if (taken) return res.status(400).json({ error: "این بازه‌ی زمانی قبلاً رزرو شده است" });
+  const id = uid("rsv");
+  const now = new Date().toISOString();
+  db.prepare("INSERT INTO reservations (id, username, name, phone, note, res_date, time_slot, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)").run(
+    id, req.user.username, name, phone, note || "", date, timeSlot, now, now
+  );
+  res.json({ ok: true, id });
+});
+
+app.get("/api/reservations/mine", authenticate, (req, res) => {
+  const rows = db.prepare("SELECT * FROM reservations WHERE username = ? ORDER BY res_date DESC, time_slot DESC").all(req.user.username);
+  res.json({ reservations: rows.map(rowToReservation) });
+});
+
+app.get("/api/admin/reservations", authenticate, requireAdmin, (req, res) => {
+  const rows = db.prepare("SELECT * FROM reservations ORDER BY res_date DESC, time_slot DESC").all();
+  res.json({ reservations: rows.map(rowToReservation) });
+});
+
+app.put("/api/admin/reservations/:id", authenticate, requireAdmin, (req, res) => {
+  const r = db.prepare("SELECT * FROM reservations WHERE id = ?").get(req.params.id);
+  if (!r) return res.status(404).json({ error: "رزرو پیدا نشد" });
+  const { status } = req.body || {};
+  if (!["pending", "confirmed", "cancelled", "done"].includes(status)) return res.status(400).json({ error: "وضعیت نامعتبر" });
+  db.prepare("UPDATE reservations SET status = ?, updated_at = ? WHERE id = ?").run(status, new Date().toISOString(), r.id);
+  res.json({ ok: true });
+});
+
+app.get("/api/admin/reservation-settings", authenticate, requireAdmin, (req, res) => {
+  const rs = db.prepare("SELECT * FROM reservation_settings WHERE id = 1").get();
+  res.json({
+    enabled: !!rs.enabled, slots: JSON.parse(rs.slots || "[]"), closedWeekdays: JSON.parse(rs.closed_weekdays || "[]"),
+    noteFa: rs.note_fa, noteEn: rs.note_en,
+  });
+});
+
+app.put("/api/admin/reservation-settings", authenticate, requireAdmin, (req, res) => {
+  const b = req.body || {};
+  db.prepare(
+    "UPDATE reservation_settings SET enabled=?, slots=?, closed_weekdays=?, note_fa=?, note_en=?, updated_at=? WHERE id=1"
+  ).run(
+    b.enabled ? 1 : 0, JSON.stringify(Array.isArray(b.slots) ? b.slots : []), JSON.stringify(Array.isArray(b.closedWeekdays) ? b.closedWeekdays : []),
+    b.noteFa || "", b.noteEn || "", new Date().toISOString()
+  );
+  res.json({ ok: true });
+});
+
+/* ============================== آمار داشبورد مدیریت ============================== */
+
+app.get("/api/admin/stats/overview", authenticate, requireAdmin, (req, res) => {
+  const sixMonthsAgo = new Date(); sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5); sixMonthsAgo.setDate(1);
+  const monthlyRows = db.prepare(
+    `SELECT substr(created_at,1,7) as month, SUM(total) as revenue, COUNT(*) as count
+     FROM orders WHERE order_type = 'shop' AND created_at >= ? GROUP BY month ORDER BY month ASC`
+  ).all(sixMonthsAgo.toISOString());
+  const monthly = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(); d.setMonth(d.getMonth() - i); d.setDate(1);
+    const key = d.toISOString().slice(0, 7);
+    const found = monthlyRows.find((r) => r.month === key);
+    monthly.push({ month: key, revenue: found?.revenue || 0, count: found?.count || 0 });
+  }
+  const totalRevenue = db.prepare("SELECT SUM(total) as t FROM orders WHERE order_type = 'shop'").get().t || 0;
+  const totalOrders = db.prepare("SELECT COUNT(*) as c FROM orders").get().c || 0;
+  const pendingTickets = db.prepare("SELECT COUNT(*) as c FROM tickets WHERE status != 'closed'").get().c || 0;
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const todayOrders = db.prepare("SELECT COUNT(*) as c FROM orders WHERE created_at >= ?").get(todayStart.toISOString()).c || 0;
+  const upcomingReservations = db.prepare("SELECT COUNT(*) as c FROM reservations WHERE res_date >= date('now') AND status != 'cancelled'").get().c || 0;
+  const deliveredOrders = db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'delivered'").get().c || 0;
+  res.json({ monthly, totalRevenue, totalOrders, pendingTickets, todayOrders, upcomingReservations, deliveredOrders });
+});
+
+app.get("/api/stats/public", (req, res) => {
+  const deliveredOrders = db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'delivered'").get().c || 0;
+  res.json({ deliveredOrders });
+});
+
 /* ============================== سفارشات (فروشگاه و خدمات) ============================== */
 
 const SHOP_STATUSES = ["reviewing", "registered", "packing", "shipped", "delivered"];
 const SERVICE_STATUSES = ["reviewing", "working", "ready", "delivered"];
 
 app.post("/api/orders", authenticate, (req, res) => {
-  const { orderType, items, total, customer, deviceInfo, issueDescription, couponCode } = req.body || {};
+  const { orderType, items, total, customer, deviceInfo, issueDescription, couponCode, usePoints } = req.body || {};
   const type = orderType === "service" ? "service" : "shop";
   if (!customer?.name || !customer?.phone) return res.status(400).json({ error: "اطلاعات مشتری ناقص است" });
   if (type === "shop" && (!items?.length || !total || !customer?.address)) {
@@ -475,27 +582,36 @@ app.post("/api/orders", authenticate, (req, res) => {
     return res.status(400).json({ error: "توضیح دستگاه و مشکل الزامی است" });
   }
 
-  let finalTotal = total || 0;
+  let runningTotal = total || 0;
   let discountAmount = 0;
   let appliedCouponRow = null;
   if (couponCode) {
-    const result = evaluateCoupon(couponCode, { subtotal: total || 0, orderType: type, username: req.user.username });
+    const result = evaluateCoupon(couponCode, { subtotal: runningTotal, orderType: type, username: req.user.username });
     if (!result.ok) return res.status(400).json({ error: result.error });
     discountAmount = result.discount;
-    finalTotal = Math.max(0, (total || 0) - discountAmount);
+    runningTotal = Math.max(0, runningTotal - discountAmount);
     appliedCouponRow = result.coupon;
   }
+
+  let pointsUsed = 0, pointsDiscount = 0;
+  if (usePoints && type === "shop") {
+    const pr = evaluatePointsRedeem(req.user.username, runningTotal);
+    if (!pr.ok) return res.status(400).json({ error: pr.error });
+    pointsUsed = pr.pointsUsed; pointsDiscount = pr.discount;
+    runningTotal = Math.max(0, runningTotal - pointsDiscount);
+  }
+  const finalTotal = runningTotal;
 
   const id = uid("order");
   const trackingCode = `NP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
   const now = new Date().toISOString();
   db.prepare(
-    `INSERT INTO orders (id, order_type, status, username, items, total, customer_name, customer_phone, customer_email, customer_province, customer_city, customer_postal_code, customer_address, device_info, issue_description, created_at, updated_at, tracking_code, coupon_code, discount_amount)
-     VALUES (?, ?, 'reviewing', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO orders (id, order_type, status, username, items, total, customer_name, customer_phone, customer_email, customer_province, customer_city, customer_postal_code, customer_address, device_info, issue_description, created_at, updated_at, tracking_code, coupon_code, discount_amount, points_used, points_discount)
+     VALUES (?, ?, 'reviewing', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id, type, req.user?.username || null, JSON.stringify(items || []), finalTotal,
     customer.name, customer.phone, customer.email || "", customer.province || "", customer.city || "", customer.postalCode || "", customer.address || "",
-    deviceInfo || "", issueDescription || "", now, now, trackingCode, appliedCouponRow?.code || "", discountAmount
+    deviceInfo || "", issueDescription || "", now, now, trackingCode, appliedCouponRow?.code || "", discountAmount, pointsUsed, pointsDiscount
   );
 
   if (appliedCouponRow) {
@@ -504,8 +620,14 @@ app.post("/api/orders", authenticate, (req, res) => {
     );
     db.prepare("UPDATE coupons SET used_count = used_count + 1 WHERE id = ?").run(appliedCouponRow.id);
   }
+  if (pointsUsed > 0) {
+    db.prepare("UPDATE users SET points = points - ? WHERE username = ?").run(pointsUsed, req.user.username);
+    db.prepare("INSERT INTO points_ledger (id, username, change, reason, order_id, created_at) VALUES (?, ?, ?, ?, ?, ?)").run(
+      uid("plg"), req.user.username, -pointsUsed, "استفاده در سفارش", id, now
+    );
+  }
 
-  res.json({ ok: true, id, trackingCode, discount: discountAmount, total: finalTotal });
+  res.json({ ok: true, id, trackingCode, discount: discountAmount, pointsDiscount, total: finalTotal });
 });
 
 function rowToOrder(o) {
@@ -518,6 +640,8 @@ function rowToOrder(o) {
     total: o.total,
     couponCode: o.coupon_code || "",
     discountAmount: o.discount_amount || 0,
+    pointsUsed: o.points_used || 0,
+    pointsDiscount: o.points_discount || 0,
     customer: { name: o.customer_name, phone: o.customer_phone, email: o.customer_email, province: o.customer_province, city: o.customer_city, postalCode: o.customer_postal_code, address: o.customer_address },
     deviceInfo: o.device_info,
     issueDescription: o.issue_description,
@@ -554,10 +678,74 @@ app.patch("/api/orders/:id/status", authenticate, requireAdmin, async (req, res)
 
   db.prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?").run(status, new Date().toISOString(), order.id);
 
+  if (status === "delivered" && order.order_type === "shop" && !order.points_awarded && order.username) {
+    const ls = db.prepare("SELECT * FROM loyalty_settings WHERE id = 1").get();
+    const earned = ls && ls.earn_per_toman > 0 ? Math.floor(order.total / ls.earn_per_toman) : 0;
+    if (earned > 0) {
+      db.prepare("UPDATE users SET points = points + ? WHERE username = ?").run(earned, order.username);
+      db.prepare("INSERT INTO points_ledger (id, username, change, reason, order_id, created_at) VALUES (?, ?, ?, ?, ?, ?)").run(
+        uid("plg"), order.username, earned, "خرید از فروشگاه", order.id, new Date().toISOString()
+      );
+    }
+    db.prepare("UPDATE orders SET points_awarded = 1 WHERE id = ?").run(order.id);
+  }
+
   const notifyResult = { email: null, sms: null };
   if (notify?.email) notifyResult.email = await sendEmailNotification(order, status);
   if (notify?.sms) notifyResult.sms = await sendSmsNotification(order, status);
   res.json({ ok: true, notifyResult });
+});
+
+/* ============================== باشگاه مشتریان (امتیاز) ============================== */
+
+app.get("/api/loyalty/me", authenticate, (req, res) => {
+  const user = db.prepare("SELECT points FROM users WHERE username = ?").get(req.user.username);
+  const ledger = db.prepare("SELECT * FROM points_ledger WHERE username = ? ORDER BY created_at DESC LIMIT 30").all(req.user.username);
+  const ls = db.prepare("SELECT * FROM loyalty_settings WHERE id = 1").get();
+  res.json({
+    points: user?.points || 0,
+    ledger: ledger.map((l) => ({ id: l.id, change: l.change, reason: l.reason, orderId: l.order_id, date: l.created_at })),
+    settings: { enabled: !!ls.enabled, redeemValueToman: ls.redeem_value_toman, minRedeemPoints: ls.min_redeem_points, maxRedeemPercent: ls.max_redeem_percent, earnPerToman: ls.earn_per_toman },
+  });
+});
+
+app.post("/api/loyalty/redeem-preview", authenticate, (req, res) => {
+  const { subtotal } = req.body || {};
+  const result = evaluatePointsRedeem(req.user.username, Number(subtotal) || 0);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ ok: true, pointsUsed: result.pointsUsed, discount: result.discount });
+});
+
+function evaluatePointsRedeem(username, subtotal) {
+  const ls = db.prepare("SELECT * FROM loyalty_settings WHERE id = 1").get();
+  if (!ls.enabled) return { ok: false, error: "استفاده از امتیاز در حال حاضر فعال نیست" };
+  const user = db.prepare("SELECT points FROM users WHERE username = ?").get(username);
+  const points = user?.points || 0;
+  if (points < ls.min_redeem_points) return { ok: false, error: `حداقل ${ls.min_redeem_points} امتیاز برای استفاده لازم است` };
+  const maxByPercent = Math.floor((subtotal * ls.max_redeem_percent) / 100 / ls.redeem_value_toman);
+  const pointsUsed = Math.max(0, Math.min(points, maxByPercent));
+  if (pointsUsed <= 0) return { ok: false, error: "امکان استفاده از امتیاز برای این مبلغ سفارش وجود ندارد" };
+  const discount = Math.min(pointsUsed * ls.redeem_value_toman, subtotal);
+  return { ok: true, pointsUsed, discount };
+}
+
+app.get("/api/admin/loyalty-settings", authenticate, requireAdmin, (req, res) => {
+  const ls = db.prepare("SELECT * FROM loyalty_settings WHERE id = 1").get();
+  res.json({
+    enabled: !!ls.enabled, earnPerToman: ls.earn_per_toman, redeemValueToman: ls.redeem_value_toman,
+    minRedeemPoints: ls.min_redeem_points, maxRedeemPercent: ls.max_redeem_percent,
+  });
+});
+
+app.put("/api/admin/loyalty-settings", authenticate, requireAdmin, (req, res) => {
+  const b = req.body || {};
+  db.prepare(
+    "UPDATE loyalty_settings SET enabled=?, earn_per_toman=?, redeem_value_toman=?, min_redeem_points=?, max_redeem_percent=?, updated_at=? WHERE id=1"
+  ).run(
+    b.enabled ? 1 : 0, Number(b.earnPerToman) || 10000, Number(b.redeemValueToman) || 1000,
+    Number(b.minRedeemPoints) || 0, Number(b.maxRedeemPercent) || 100, new Date().toISOString()
+  );
+  res.json({ ok: true });
 });
 
 /* ============================== پیام‌های تماس با ما ============================== */

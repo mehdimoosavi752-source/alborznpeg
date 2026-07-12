@@ -147,4 +147,24 @@ export const api = {
   adminCreateNotificationTemplate: (payload) => request("/api/admin/notification-templates", { method: "POST", body: JSON.stringify(payload) }),
   adminUpdateNotificationTemplate: (id, payload) => request(`/api/admin/notification-templates/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   adminDeleteNotificationTemplate: (id) => request(`/api/admin/notification-templates/${id}`, { method: "DELETE" }),
+
+  // باشگاه مشتریان (امتیاز)
+  myLoyalty: () => request("/api/loyalty/me"),
+  previewPointsRedeem: (subtotal) => request("/api/loyalty/redeem-preview", { method: "POST", body: JSON.stringify({ subtotal }) }),
+  adminGetLoyaltySettings: () => request("/api/admin/loyalty-settings"),
+  adminUpdateLoyaltySettings: (payload) => request("/api/admin/loyalty-settings", { method: "PUT", body: JSON.stringify(payload) }),
+
+  // رزرو نوبت
+  getReservationSettings: () => request("/api/reservations/settings"),
+  getReservationAvailability: (date) => request(`/api/reservations/availability?date=${encodeURIComponent(date)}`),
+  createReservation: (payload) => request("/api/reservations", { method: "POST", body: JSON.stringify(payload) }),
+  myReservations: () => request("/api/reservations/mine"),
+  adminListReservations: () => request("/api/admin/reservations"),
+  adminSetReservationStatus: (id, status) => request(`/api/admin/reservations/${id}`, { method: "PUT", body: JSON.stringify({ status }) }),
+  adminGetReservationSettings: () => request("/api/admin/reservation-settings"),
+  adminUpdateReservationSettings: (payload) => request("/api/admin/reservation-settings", { method: "PUT", body: JSON.stringify(payload) }),
+
+  // آمار
+  adminStatsOverview: () => request("/api/admin/stats/overview"),
+  publicStats: () => request("/api/stats/public"),
 };

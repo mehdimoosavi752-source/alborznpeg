@@ -22,7 +22,10 @@ export const DEFAULT_CONTENT = {
     aparat: "https://www.aparat.com/shorts/user/NovinPolytechnicAlborz/shorts",
     shopVideoUrl: "",
     designerUrl: "",
+    successfulRepairsCount: 5000,
   },
+  beforeAfter: [],
+  testimonials: [],
   hero: {
     eyebrow: { fa: "بیش از ۱۰ سال تجربه در تعمیر و بازیابی اطلاعات", en: "10+ years of repair & data recovery experience" },
     title: { fa: "نوین پلی‌تکنیک البرز", en: "Novin Polytechnic Alborz" },

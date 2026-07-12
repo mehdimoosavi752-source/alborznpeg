@@ -8,6 +8,7 @@ import {
   SlidersHorizontal, BadgeCheck, Truck, Mail, ChevronRight, Users as UsersIcon,
   Eye, EyeOff, Image as ImageIcon, Type, AlignLeft, MousePointerClick, Globe, LifeBuoy, Star, HardDrive, Play, Megaphone,
   Heart, Pencil, Home as HomeIcon, KeyRound, ChevronsRight, Tag, MessageSquareText,
+  Gift, CalendarDays, TrendingUp, Download, Award, Sparkles, ArrowUpRight,
 } from "lucide-react";
 import { api, resolveImageUrl } from "./lib/api.js";
 
@@ -156,6 +157,8 @@ const UI = {
   overview: { fa: "خلاصه فعالیت‌ها", en: "Overview" },
   myWishlist: { fa: "لیست علاقه‌مندی‌ها", en: "My Wishlist" },
   myAddresses: { fa: "آدرس‌ها", en: "Addresses" },
+  myPoints: { fa: "امتیاز من", en: "My Points" },
+  myReservations: { fa: "نوبت‌های من", en: "My Reservations" },
   accountInfo: { fa: "اطلاعات حساب کاربری", en: "Account Info" },
   supportTickets: { fa: "تیکت‌های پشتیبانی", en: "Support Tickets" },
   totalOrders: { fa: "سفارش‌ها", en: "Orders" },
@@ -209,6 +212,10 @@ const ADMIN_UI = {
   popups: { fa: "پاپ‌آپ‌ها", en: "Popups" },
   coupons: { fa: "کدهای تخفیف", en: "Coupons" },
   notifTemplates: { fa: "قالب پیام‌ها", en: "Message Templates" },
+  loyalty: { fa: "باشگاه مشتریان", en: "Loyalty Club" },
+  reservations: { fa: "رزرو نوبت", en: "Reservations" },
+  beforeAfter: { fa: "گالری قبل و بعد", en: "Before & After" },
+  testimonials: { fa: "نظرات ویدیویی", en: "Video Testimonials" },
   users: { fa: "کاربران", en: "Users" },
   payment: { fa: "درگاه پرداخت", en: "Payment Gateway" },
   settings: { fa: "تنظیمات", en: "Settings" },
@@ -688,7 +695,7 @@ export default function NovinPolytechnic() {
   const placeOrder = async (form) => {
     if (!currentUser) { setShowCheckout(false); setShowAuth(true); return; }
     try {
-      const result = await api.createOrder({ orderType: "shop", items: cart, total: cartTotal, customer: form, couponCode: form.couponCode || "" });
+      const result = await api.createOrder({ orderType: "shop", items: cart, total: cartTotal, customer: form, couponCode: form.couponCode || "", usePoints: !!form.usePoints });
       alert(`${lang === "fa" ? "کد رهگیری سفارش شما" : "Your tracking code"}: ${result.trackingCode}`);
       setOrderDone(true); setCart([]);
     } catch (e) { alert("Order failed: " + e.message); }
@@ -806,6 +813,16 @@ function GlobalStyles() {
       .hero-wide-chip-delay { animation-delay: -1.7s; }
       .hero-wide-chip-slow { animation-duration: 6.4s; animation-delay: -3s; }
       .hero-text-shadow { text-shadow: 0 2px 14px rgba(0,0,0,.9), 0 1px 3px rgba(0,0,0,.95); }
+      @keyframes adminHeaderGlow { 0%,100% { opacity:.5; transform: translateX(-10%); } 50% { opacity:1; transform: translateX(10%); } }
+      .admin-header-glow { background: radial-gradient(400px 60px at 30% 0%, rgba(220,38,38,.35), transparent 70%); animation: adminHeaderGlow 6s ease-in-out infinite; }
+      .admin-tab-btn:hover { transform: translateX(-2px); }
+      @keyframes adminTabDot { 0%,100% { opacity:.5; transform: scale(1); } 50% { opacity:1; transform: scale(1.4); } }
+      .admin-tab-dot { animation: adminTabDot 1.6s ease-in-out infinite; }
+      @keyframes adminContentIn { 0% { opacity:0; transform: translateY(8px); } 100% { opacity:1; transform: translateY(0); } }
+      .admin-content-in { animation: adminContentIn .35s cubic-bezier(.22,.9,.3,1) both; }
+      .stat-card-btn { animation: adminContentIn .4s cubic-bezier(.22,.9,.3,1) both; }
+      @keyframes chartBarGrow { 0% { height: 0% !important; opacity: .3; } 100% { opacity: 1; } }
+      .chart-bar-grow { animation: chartBarGrow .6s cubic-bezier(.22,.9,.3,1) both; }
       @keyframes islandPop { 0% { opacity:0; transform: translateY(10px) scale(.7); } 70% { transform: translateY(-2px) scale(1.05); } 100% { opacity:1; transform: translateY(0) scale(1); } }
       .island-pop { animation: islandPop .38s cubic-bezier(.34,1.56,.64,1) both; }
       .glass-consult { background: rgba(255,255,255,.82); border:1px solid rgba(255,255,255,.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
@@ -1114,7 +1131,146 @@ function HomePage({ content, navigate, lang }) {
           </div>
         </div>
       </section>
+
+      <LiveRepairCounter baseCount={content.settings.successfulRepairsCount} lang={lang} />
+
+      {content.beforeAfter?.length > 0 && (
+        <section className="py-20 px-4 sm:px-6 bg-neutral-50">
+          <div className="max-w-6xl mx-auto">
+            <Reveal className="mb-10 text-center">
+              <span className="text-red-600 text-xs sm:text-sm tracking-[0.25em] font-extrabold">{lang === "fa" ? "نمونه کار" : "PORTFOLIO"}</span>
+              <h2 className="text-2xl sm:text-3xl font-black mt-2">{lang === "fa" ? "قبل و بعد از تعمیر" : "Before & After Repair"}</h2>
+              <p className="text-black/40 text-sm mt-2">{lang === "fa" ? "خط وسط تصویر را بکشید تا تفاوت را ببینید" : "Drag the middle line to reveal the difference"}</p>
+            </Reveal>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {content.beforeAfter.map((item, idx) => (
+                <Reveal key={item.id} delay={idx * 80}><BeforeAfterCard item={item} lang={lang} /></Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {content.testimonials?.length > 0 && (
+        <section className="py-20 px-4 sm:px-6">
+          <div className="max-w-6xl mx-auto">
+            <Reveal className="mb-10 text-center">
+              <span className="text-red-600 text-xs sm:text-sm tracking-[0.25em] font-extrabold">{lang === "fa" ? "نظرات مشتریان" : "TESTIMONIALS"}</span>
+              <h2 className="text-2xl sm:text-3xl font-black mt-2">{lang === "fa" ? "چه کسی بهتر از خود مشتری‌ها می‌گه؟" : "Hear it from our customers"}</h2>
+            </Reveal>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {content.testimonials.map((t, idx) => (
+                <Reveal key={t.id} delay={idx * 80}><TestimonialCard item={t} lang={lang} /></Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </>
+  );
+}
+
+function LiveRepairCounter({ baseCount, lang }) {
+  const [extra, setExtra] = useState(0);
+  const [display, setDisplay] = useState(0);
+  const ref = useRef(null);
+  useEffect(() => { api.publicStats().then((r) => setExtra(r.deliveredOrders || 0)).catch(() => {}); }, []);
+  const target = (baseCount || 0) + extra;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !target) return;
+    let done = false;
+    const obs = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !done) {
+        done = true;
+        const start = performance.now();
+        const duration = 1500;
+        const tick = (now) => {
+          const p = Math.min(1, (now - start) / duration);
+          setDisplay(Math.floor(p * target));
+          if (p < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        obs.disconnect();
+      }
+    }, { threshold: 0.3 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [target]);
+  return (
+    <section ref={ref} className="py-14 px-4 sm:px-6 bg-[#0b0b0c] text-white text-center relative overflow-hidden">
+      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 50% 0%, rgba(220,38,38,.4), transparent 60%)" }} />
+      <div className="relative flex items-center justify-center gap-3">
+        <ShieldCheck className="text-red-500" size={28} />
+        <span className="text-4xl sm:text-6xl font-black tabular-nums">{fmtNum(display, lang)}+</span>
+      </div>
+      <p className="relative text-white/50 text-sm sm:text-base mt-3">{lang === "fa" ? "تعمیر موفق تا امروز" : "Successful repairs to date"}</p>
+    </section>
+  );
+}
+
+function BeforeAfterCard({ item, lang }) {
+  const [pct, setPct] = useState(50);
+  const ref = useRef(null);
+  const dragging = useRef(false);
+  const onMove = (clientX) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const p = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+    setPct(p);
+  };
+  return (
+    <div className="rounded-2xl overflow-hidden border border-black/10 bg-white shadow-sm hover:shadow-xl transition-shadow">
+      <div
+        ref={ref}
+        className="relative h-64 select-none cursor-ew-resize touch-none"
+        onMouseDown={() => { dragging.current = true; }}
+        onMouseUp={() => { dragging.current = false; }}
+        onMouseLeave={() => { dragging.current = false; }}
+        onMouseMove={(e) => dragging.current && onMove(e.clientX)}
+        onTouchStart={() => { dragging.current = true; }}
+        onTouchEnd={() => { dragging.current = false; }}
+        onTouchMove={(e) => onMove(e.touches[0].clientX)}
+      >
+        <img src={resolveImageUrl(item.afterImage)} alt="" draggable={false} className="absolute inset-0 w-full h-full object-cover" />
+        <span className="absolute top-2 left-2 text-[10px] bg-black/60 text-white px-2 py-0.5 rounded-full z-10">{lang === "fa" ? "بعد" : "After"}</span>
+        <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - pct}% 0 0)` }}>
+          <img src={resolveImageUrl(item.beforeImage)} alt="" draggable={false} className="absolute inset-0 w-full h-full object-cover" />
+          <span className="absolute top-2 right-2 text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full">{lang === "fa" ? "قبل" : "Before"}</span>
+        </div>
+        <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg pointer-events-none" style={{ left: `${pct}%` }}>
+          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-white shadow-lg flex items-center justify-center gap-0.5">
+            <ChevronLeft size={12} className="text-black/50" />
+            <ChevronRight size={12} className="text-black/50" />
+          </div>
+        </div>
+      </div>
+      <div className="p-4">
+        <h3 className="font-bold text-sm mb-1">{tr(item.title, lang)}</h3>
+        {tr(item.desc, lang) && <p className="text-black/50 text-xs leading-relaxed">{tr(item.desc, lang)}</p>}
+      </div>
+    </div>
+  );
+}
+
+function TestimonialCard({ item, lang }) {
+  return (
+    <div className="rounded-2xl overflow-hidden border border-black/10 bg-white shadow-sm hover:shadow-xl transition-shadow">
+      {item.videoUrl ? (
+        <div className="aspect-video bg-black">
+          <iframe src={item.videoUrl} allowFullScreen className="w-full h-full" title={item.customerName} />
+        </div>
+      ) : (
+        <div className="aspect-video bg-neutral-100 flex items-center justify-center"><Play className="text-black/20" size={32} /></div>
+      )}
+      <div className="p-4">
+        <div className="flex items-center gap-1 mb-2">
+          {Array.from({ length: 5 }).map((_, i) => <Star key={i} size={13} className={i < (item.rating || 5) ? "fill-amber-400 text-amber-400" : "text-black/15"} />)}
+        </div>
+        <p className="text-sm text-black/70 leading-relaxed mb-2">{tr(item.quote, lang)}</p>
+        <p className="text-black/40 text-xs font-bold">— {item.customerName}</p>
+      </div>
+    </div>
   );
 }
 
@@ -1589,6 +1745,8 @@ function TrackingPage({ lang }) {
 const ACCOUNT_TABS = [
   { id: "overview", icon: LayoutGrid },
   { id: "myOrders", icon: ShoppingCart },
+  { id: "myPoints", icon: Award },
+  { id: "myReservations", icon: CalendarDays },
   { id: "myWishlist", icon: Heart },
   { id: "myAddresses", icon: MapPin },
   { id: "supportTickets", icon: LifeBuoy },
@@ -1601,6 +1759,7 @@ function AccountPage({ currentUser, setCurrentUser, content, onGoShop, wishlistI
   const [tickets, setTickets] = useState(null);
   const [activeTicket, setActiveTicket] = useState(null);
   const [showNewTicket, setShowNewTicket] = useState(false);
+  const [loyalty, setLoyalty] = useState(null);
 
   const loadTickets = async () => { try { const { tickets: list } = await api.myTickets(); setTickets(list); } catch (e) { setTickets([]); } };
 
@@ -1608,6 +1767,7 @@ function AccountPage({ currentUser, setCurrentUser, content, onGoShop, wishlistI
     if (!currentUser) return;
     (async () => { try { const { orders: list } = await api.myOrders(); setOrders(list); } catch (e) { setOrders([]); } })();
     loadTickets();
+    api.myLoyalty().then(setLoyalty).catch(() => setLoyalty({ points: 0, ledger: [], settings: {} }));
   }, [currentUser]);
 
   if (!currentUser) return <div className="pt-40 pb-24 text-center text-black/50">{ui("signInFirst", lang)}</div>;
@@ -1621,11 +1781,12 @@ function AccountPage({ currentUser, setCurrentUser, content, onGoShop, wishlistI
     </div>
   );
 
-  const StatCard = ({ icon: Ico, label, value, color }) => (
-    <div className="border border-black/10 rounded-xl p-4 bg-white flex items-center gap-3">
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${color}`}><Ico size={18} /></div>
-      <div><p className="text-lg font-black leading-none">{fmtNum(value, lang)}</p><p className="text-black/40 text-[11px] mt-1">{label}</p></div>
-    </div>
+  const StatCard = ({ icon: Ico, label, value, color, onClick }) => (
+    <button onClick={onClick} className="stat-card-btn group text-right border border-black/10 rounded-2xl p-4 bg-white flex items-center gap-3 hover:border-red-300 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br ${color} text-white shadow-md group-hover:scale-110 transition-transform`}><Ico size={18} /></div>
+      <div className="min-w-0 flex-1"><p className="text-lg font-black leading-none">{fmtNum(value, lang)}</p><p className="text-black/40 text-[11px] mt-1.5 truncate">{label}</p></div>
+      <ArrowUpRight size={14} className="text-black/20 group-hover:text-red-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+    </button>
   );
 
   return (
@@ -1658,11 +1819,12 @@ function AccountPage({ currentUser, setCurrentUser, content, onGoShop, wishlistI
         <div className="flex-1 min-w-0">
           {tab === "overview" && (
             <div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
-                <StatCard icon={ShoppingCart} label={ui("totalOrders", lang)} value={orders?.length ?? 0} color="bg-red-50 text-red-600" />
-                <StatCard icon={Truck} label={ui("deliveredOrders", lang)} value={deliveredCount} color="bg-green-50 text-green-700" />
-                <StatCard icon={Clock} label={ui("activeOrders", lang)} value={activeCount} color="bg-amber-50 text-amber-700" />
-                <StatCard icon={Heart} label={ui("wishlistCountLabel", lang)} value={wishlistIds.length} color="bg-pink-50 text-pink-600" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+                <StatCard icon={ShoppingCart} label={ui("totalOrders", lang)} value={orders?.length ?? 0} color="from-red-500 to-red-600" onClick={() => setTab("myOrders")} />
+                <StatCard icon={Truck} label={ui("deliveredOrders", lang)} value={deliveredCount} color="from-green-500 to-green-600" onClick={() => setTab("myOrders")} />
+                <StatCard icon={Clock} label={ui("activeOrders", lang)} value={activeCount} color="from-amber-500 to-amber-600" onClick={() => setTab("myOrders")} />
+                <StatCard icon={Award} label={ui("myPoints", lang)} value={loyalty?.points ?? 0} color="from-purple-500 to-purple-600" onClick={() => setTab("myPoints")} />
+                <StatCard icon={Heart} label={ui("wishlistCountLabel", lang)} value={wishlistIds.length} color="from-pink-500 to-pink-600" onClick={() => setTab("myWishlist")} />
               </div>
               <h3 className="font-bold mb-4">{ui("myOrders", lang)}</h3>
               {orders === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
@@ -1697,6 +1859,10 @@ function AccountPage({ currentUser, setCurrentUser, content, onGoShop, wishlistI
           )}
 
           {tab === "myWishlist" && <AccountWishlist content={content} wishlistIds={wishlistIds} onToggleWishlist={onToggleWishlist} lang={lang} />}
+
+          {tab === "myPoints" && <AccountPoints loyalty={loyalty} lang={lang} />}
+
+          {tab === "myReservations" && <AccountReservations currentUser={currentUser} lang={lang} />}
 
           {tab === "myAddresses" && <AccountAddresses lang={lang} />}
 
@@ -1770,6 +1936,166 @@ function AccountWishlist({ content, wishlistIds, onToggleWishlist, lang }) {
 
 function emptyAddressForm() {
   return { title: "", receiverName: "", phone: "", province: "", city: "", postalCode: "", address: "", isDefault: false };
+}
+
+function AccountPoints({ loyalty, lang }) {
+  if (!loyalty) return <p className="text-black/40 text-sm">{ui("loading", lang)}</p>;
+  return (
+    <div>
+      <h3 className="font-bold mb-4">{ui("myPoints", lang)}</h3>
+      <div className="rounded-2xl p-6 bg-gradient-to-br from-purple-600 via-purple-500 to-fuchsia-500 text-white mb-6 relative overflow-hidden">
+        <div className="absolute -top-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+        <div className="relative flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0"><Award size={26} /></div>
+          <div>
+            <p className="text-3xl font-black leading-none">{fmtNum(loyalty.points, lang)}</p>
+            <p className="text-white/80 text-xs mt-1.5">{lang === "fa" ? "امتیاز موجود" : "Available points"}</p>
+          </div>
+        </div>
+        {loyalty.settings?.enabled ? (
+          <p className="relative text-white/90 text-xs mt-4 bg-white/10 rounded-lg px-3 py-2">
+            {lang === "fa"
+              ? `هر امتیاز معادل ${fmtNum(loyalty.settings.redeemValueToman, lang)} تومان تخفیف است و می‌توانید هنگام خرید از آن استفاده کنید.`
+              : `Each point equals ${fmtNum(loyalty.settings.redeemValueToman, lang)} Toman and can be redeemed at checkout.`}
+          </p>
+        ) : (
+          <p className="relative text-white/70 text-xs mt-4 bg-white/10 rounded-lg px-3 py-2">
+            {lang === "fa" ? "در حال حاضر امکان استفاده از امتیاز به‌عنوان تخفیف فعال نیست؛ اما همچنان از خریدهایتان امتیاز می‌گیرید." : "Redeeming points isn't active right now, but you're still earning them with every purchase."}
+          </p>
+        )}
+      </div>
+      <h4 className="font-bold text-sm mb-3">{lang === "fa" ? "تاریخچه‌ی امتیاز" : "Points history"}</h4>
+      {loyalty.ledger.length === 0 && <p className="text-black/40 text-sm text-center py-10 border border-black/10 rounded-xl">{lang === "fa" ? "هنوز تراکنش امتیازی ثبت نشده." : "No points activity yet."}</p>}
+      <div className="space-y-2">
+        {loyalty.ledger.map((l) => (
+          <div key={l.id} className="flex items-center justify-between border border-black/10 rounded-xl px-4 py-3">
+            <div>
+              <p className="text-sm font-bold">{l.reason}</p>
+              <p className="text-black/30 text-[11px] mt-0.5">{fmtDateTime(l.date, lang)}</p>
+            </div>
+            <span className={`font-black text-sm ${l.change > 0 ? "text-green-600" : "text-red-600"}`}>{l.change > 0 ? "+" : ""}{fmtNum(l.change, lang)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AccountReservations({ currentUser, lang }) {
+  const [list, setList] = useState(null);
+  const [showNew, setShowNew] = useState(false);
+  const load = () => api.myReservations().then(({ reservations }) => setList(reservations)).catch(() => setList([]));
+  useEffect(() => { load(); }, []);
+
+  const STATUS_STYLES = { pending: "bg-amber-50 text-amber-700 border-amber-200", confirmed: "bg-blue-50 text-blue-700 border-blue-200", done: "bg-green-50 text-green-700 border-green-200", cancelled: "bg-black/5 text-black/40 border-black/10" };
+  const STATUS_LABEL = { pending: lang === "fa" ? "در انتظار تایید" : "Pending", confirmed: lang === "fa" ? "تایید شده" : "Confirmed", done: lang === "fa" ? "انجام شد" : "Done", cancelled: lang === "fa" ? "لغو شد" : "Cancelled" };
+
+  if (showNew) return <NewReservationForm currentUser={currentUser} lang={lang} onDone={() => { setShowNew(false); load(); }} onCancel={() => setShowNew(false)} />;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold">{ui("myReservations", lang)}</h3>
+        <button onClick={() => setShowNew(true)} className={btnPrimary}><Plus size={14} /> {lang === "fa" ? "رزرو نوبت جدید" : "New Reservation"}</button>
+      </div>
+      {list === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      {list && list.length === 0 && (
+        <div className="text-center py-12 border border-black/10 rounded-xl">
+          <CalendarDays className="mx-auto text-black/20 mb-3" size={28} />
+          <p className="text-black/40 text-sm mb-4">{lang === "fa" ? "هنوز نوبتی رزرو نکرده‌اید." : "You haven't booked any reservations yet."}</p>
+          <button onClick={() => setShowNew(true)} className="text-red-600 text-sm font-bold">{lang === "fa" ? "رزرو نوبت" : "Book now"}</button>
+        </div>
+      )}
+      <div className="space-y-2">
+        {list?.map((r) => (
+          <div key={r.id} className="border border-black/10 rounded-xl p-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="font-bold text-sm flex items-center gap-2"><CalendarDays size={14} className="text-red-600" /> {fmtDate(r.date, lang)} — <span dir="ltr">{r.timeSlot}</span></p>
+              {r.note && <p className="text-black/40 text-xs mt-1.5">{r.note}</p>}
+            </div>
+            <span className={`text-[10px] px-2.5 py-1 rounded-full border shrink-0 ${STATUS_STYLES[r.status]}`}>{STATUS_LABEL[r.status]}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NewReservationForm({ currentUser, lang, onDone, onCancel }) {
+  const [settings, setSettings] = useState(null);
+  const [date, setDate] = useState("");
+  const [slots, setSlots] = useState([]);
+  const [taken, setTaken] = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [name, setName] = useState(currentUser?.name || "");
+  const [phone, setPhone] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => { api.getReservationSettings().then(setSettings).catch(() => setSettings({ enabled: false, slots: [], closedWeekdays: [] })); }, []);
+  useEffect(() => {
+    if (!date) return;
+    api.getReservationAvailability(date).then((r) => { setSlots(r.slots); setTaken(r.taken); }).catch(() => {});
+  }, [date]);
+
+  const minDate = new Date().toISOString().slice(0, 10);
+  const isClosedDay = (d) => settings?.closedWeekdays?.includes(new Date(d).getDay());
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError(""); setBusy(true);
+    try {
+      await api.createReservation({ name, phone, note, date, timeSlot: selectedSlot });
+      onDone();
+    } catch (e2) { setError(e2.message); }
+    setBusy(false);
+  };
+
+  if (settings && !settings.enabled) {
+    return (
+      <div className="text-center py-16 border border-black/10 rounded-xl">
+        <p className="text-black/50 text-sm mb-4">{lang === "fa" ? "رزرو نوبت در حال حاضر فعال نیست." : "Reservations aren't open right now."}</p>
+        <button onClick={onCancel} className={btnGhost}>{lang === "fa" ? "بازگشت" : "Back"}</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-md">
+      <div className="flex items-center gap-3 mb-5">
+        <button onClick={onCancel} className="text-black/40 hover:text-black"><ChevronRight size={20} /></button>
+        <h3 className="font-bold">{lang === "fa" ? "رزرو نوبت جدید" : "New Reservation"}</h3>
+      </div>
+      {settings?.note && (tr(settings.note, lang)) && <p className="text-black/50 text-xs bg-neutral-100 rounded-lg px-3 py-2 mb-4">{tr(settings.note, lang)}</p>}
+      <form onSubmit={submit} className="space-y-3">
+        <input required placeholder={ui("fullName", lang)} className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
+        <input required placeholder={ui("mobileNumber", lang)} dir="ltr" className={inputCls} value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Field label={lang === "fa" ? "تاریخ" : "Date"}>
+          <input required type="date" min={minDate} className={inputCls} value={date} onChange={(e) => { setDate(e.target.value); setSelectedSlot(""); }} />
+        </Field>
+        {date && isClosedDay(date) && <p className="text-red-600 text-xs">{lang === "fa" ? "این روز تعطیل است، روز دیگری انتخاب کنید." : "This day is closed — please pick another day."}</p>}
+        {date && !isClosedDay(date) && (
+          <div>
+            <span className="text-xs text-black/50 mb-1.5 block">{lang === "fa" ? "بازه‌ی زمانی" : "Time slot"}</span>
+            <div className="grid grid-cols-4 gap-2">
+              {slots.map((s) => (
+                <button key={s} type="button" disabled={taken.includes(s)} onClick={() => setSelectedSlot(s)} dir="ltr"
+                  className={`text-xs py-2 rounded-lg border transition-colors disabled:opacity-30 disabled:line-through ${selectedSlot === s ? "border-red-600 bg-red-50 text-red-700 font-bold" : "border-black/15 text-black/60 hover:border-red-300"}`}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <textarea placeholder={lang === "fa" ? "توضیح (اختیاری)" : "Note (optional)"} rows={2} className={inputCls + " resize-none"} value={note} onChange={(e) => setNote(e.target.value)} />
+        {error && <p className="text-red-600 text-xs">{error}</p>}
+        <button disabled={busy || !selectedSlot} className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-colors">
+          {busy ? ui("loading", lang) : (lang === "fa" ? "ثبت رزرو" : "Book reservation")}
+        </button>
+      </form>
+    </div>
+  );
 }
 
 function AccountAddresses({ lang }) {
@@ -2191,10 +2517,22 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
   const [couponError, setCouponError] = useState("");
   const [couponBusy, setCouponBusy] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [loyalty, setLoyalty] = useState(null);
+  const [usePoints, setUsePoints] = useState(false);
+  const [pointsPreview, setPointsPreview] = useState(null);
   const set = (k, v) => setForm({ ...form, [k]: v });
 
+  useEffect(() => { api.myLoyalty().then(setLoyalty).catch(() => {}); }, []);
+
   const discount = coupon?.discount || 0;
-  const payable = Math.max(0, total - discount);
+  const afterCoupon = Math.max(0, total - discount);
+  const pointsDiscount = usePoints ? (pointsPreview?.discount || 0) : 0;
+  const payable = Math.max(0, afterCoupon - pointsDiscount);
+
+  useEffect(() => {
+    if (!usePoints || !loyalty?.settings?.enabled) { setPointsPreview(null); return; }
+    api.previewPointsRedeem(afterCoupon).then(setPointsPreview).catch(() => { setPointsPreview(null); setUsePoints(false); });
+  }, [usePoints, afterCoupon]); // eslint-disable-line
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -2212,7 +2550,7 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
     if (!agreed) return;
     setProcessing(true);
     await new Promise((r) => setTimeout(r, 1200));
-    await onSubmit({ ...form, couponCode: coupon?.code || "" });
+    await onSubmit({ ...form, couponCode: coupon?.code || "", usePoints: usePoints && pointsPreview?.pointsUsed > 0 });
     setProcessing(false);
   };
   return (
@@ -2259,8 +2597,19 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
               )}
               {couponError && <p className="text-red-600 text-xs">{couponError}</p>}
 
+              {loyalty?.settings?.enabled && loyalty.points >= (loyalty.settings.minRedeemPoints || 0) && (
+                <label className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-sm cursor-pointer">
+                  <span className="flex items-center gap-2 text-amber-800">
+                    <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} className="accent-red-600" />
+                    <Award size={15} />
+                    {lang === "fa" ? `استفاده از امتیاز (موجودی: ${fmtNum(loyalty.points, lang)})` : `Use points (balance: ${fmtNum(loyalty.points, lang)})`}
+                  </span>
+                  {usePoints && pointsPreview && <span className="font-bold text-amber-800">-{fmtPrice(pointsPreview.discount, lang)}</span>}
+                </label>
+              )}
+
               <div className="border-t border-black/10 pt-3 space-y-1.5">
-                {discount > 0 && (
+                {(discount > 0 || pointsDiscount > 0) && (
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-black/50">{lang === "fa" ? "مبلغ سفارش" : "Order total"}</span>
                     <span className="text-black/50 line-through">{fmtPrice(total, lang)}</span>
@@ -2268,8 +2617,14 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
                 )}
                 {discount > 0 && (
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-green-700">{lang === "fa" ? "تخفیف" : "Discount"}</span>
+                    <span className="text-green-700">{lang === "fa" ? "تخفیف کد" : "Coupon discount"}</span>
                     <span className="text-green-700 font-bold">-{fmtPrice(discount, lang)}</span>
+                  </div>
+                )}
+                {pointsDiscount > 0 && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-amber-700">{lang === "fa" ? "تخفیف امتیاز" : "Points discount"}</span>
+                    <span className="text-amber-700 font-bold">-{fmtPrice(pointsDiscount, lang)}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center text-sm">
@@ -2355,6 +2710,8 @@ const ALL_ADMIN_TABS = [
   { id: "hero", icon: Zap, roles: ["admin", "editor"] },
   { id: "services", icon: Wrench, roles: ["admin", "editor"] },
   { id: "products", icon: Package, roles: ["admin", "editor"] },
+  { id: "beforeAfter", icon: Sparkles, roles: ["admin", "editor"] },
+  { id: "testimonials", icon: Star, roles: ["admin", "editor"] },
   { id: "menu", icon: ListOrdered, roles: ["admin", "editor"] },
   { id: "footer", icon: Layers, roles: ["admin", "editor"] },
   { id: "about", icon: UsersIcon, roles: ["admin", "editor"] },
@@ -2362,6 +2719,8 @@ const ALL_ADMIN_TABS = [
   { id: "faq", icon: MessageCircle, roles: ["admin", "editor"] },
   { id: "orders", icon: ShoppingCart, roles: ["admin"] },
   { id: "coupons", icon: Tag, roles: ["admin"] },
+  { id: "loyalty", icon: Gift, roles: ["admin"] },
+  { id: "reservations", icon: CalendarDays, roles: ["admin"] },
   { id: "messages", icon: Mail, roles: ["admin"] },
   { id: "reviews", icon: MessageCircle, roles: ["admin"] },
   { id: "tickets", icon: LifeBuoy, roles: ["admin"] },
@@ -2378,34 +2737,40 @@ function AdminPanel({ content, update, onClose, onLogout, tab, setTab, saving, r
   useEffect(() => { if (!tabs.find((t) => t.id === tab)) setTab("dashboard"); }, []); // eslint-disable-line
   return (
     <div className="fixed inset-0 z-[60] bg-white flex flex-col" dir={lang === "fa" ? "rtl" : "ltr"}>
-      <div className="h-16 border-b border-black/10 flex items-center justify-between px-4 sm:px-6 shrink-0 bg-neutral-900 text-white">
-        <div className="flex items-center gap-3">
+      <div className="h-16 border-b border-black/10 flex items-center justify-between px-4 sm:px-6 shrink-0 bg-neutral-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 admin-header-glow pointer-events-none" />
+        <div className="relative flex items-center gap-3">
           <Logo size={32} dark name={tr(content.settings.siteName, lang)} />
           <span className="text-xs text-white/40 hidden sm:inline">{ui("adminPanel", lang)} · {tr(ROLE_LABELS[role], lang)}</span>
           {saving && <span className="text-[10px] text-red-400 flex items-center gap-1"><RotateCcw size={10} className="animate-spin" /> {ui("savingDots", lang)}</span>}
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={onClose} className="text-xs border border-white/20 hover:border-red-500 rounded-lg px-3 py-2">{ui("viewSite", lang)}</button>
-          <button onClick={onLogout} className="text-xs bg-red-600 hover:bg-red-500 rounded-lg px-3 py-2 flex items-center gap-1.5 font-bold"><LogOut size={14} /> {ui("logout", lang)}</button>
+        <div className="relative flex items-center gap-2">
+          <button onClick={onClose} className="text-xs border border-white/20 hover:border-red-500 hover:bg-white/5 transition-colors rounded-lg px-3 py-2">{ui("viewSite", lang)}</button>
+          <button onClick={onLogout} className="text-xs bg-red-600 hover:bg-red-500 hover:scale-105 transition-all rounded-lg px-3 py-2 flex items-center gap-1.5 font-bold"><LogOut size={14} /> {ui("logout", lang)}</button>
         </div>
       </div>
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-16 sm:w-56 border-l border-black/10 py-4 flex flex-col gap-1 overflow-y-auto shrink-0 bg-neutral-900">
+        <div className="w-16 sm:w-60 border-l border-black/10 py-3 px-2 flex flex-col gap-0.5 overflow-y-auto shrink-0 bg-neutral-900">
           {tabs.map((t) => {
             const Ico = t.icon;
+            const active = tab === t.id;
             return (
-              <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${tab === t.id ? "bg-red-600/15 text-red-400 border-r-2 border-red-500" : "text-white/50 hover:text-white hover:bg-white/5"}`}>
-                <Ico size={16} className="shrink-0" /> <span className="hidden sm:inline">{aui(t.id, lang)}</span>
+              <button key={t.id} onClick={() => setTab(t.id)} className={`admin-tab-btn relative flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl transition-all duration-200 ${active ? "bg-gradient-to-l from-red-600 to-red-600/80 text-white shadow-lg shadow-red-900/30" : "text-white/45 hover:text-white hover:bg-white/5"}`}>
+                <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${active ? "bg-white/20" : "bg-white/5"}`}><Ico size={15} /></span>
+                <span className="hidden sm:inline font-medium truncate">{aui(t.id, lang)}</span>
+                {active && <span className="hidden sm:block absolute left-2 w-1.5 h-1.5 rounded-full bg-white admin-tab-dot" />}
               </button>
             );
           })}
         </div>
-        <div className="flex-1 overflow-y-auto p-5 sm:p-8 bg-neutral-50">
+        <div key={tab} className="flex-1 overflow-y-auto p-5 sm:p-8 bg-neutral-50 admin-content-in">
           {tab === "dashboard" && <AdminDashboard content={content} role={role} currentUser={currentUser} lang={lang} />}
           {tab === "pages" && <AdminPages role={role} currentUser={currentUser} refreshPages={refreshPages} lang={lang} />}
           {tab === "hero" && <AdminHero content={content} update={update} lang={lang} />}
           {tab === "services" && <AdminServices content={content} update={update} lang={lang} />}
           {tab === "products" && <AdminProducts content={content} update={update} lang={lang} />}
+          {tab === "beforeAfter" && <AdminBeforeAfter content={content} update={update} lang={lang} />}
+          {tab === "testimonials" && <AdminTestimonials content={content} update={update} lang={lang} />}
           {tab === "menu" && <AdminMenu content={content} update={update} lang={lang} />}
           {tab === "footer" && <AdminFooter content={content} update={update} lang={lang} />}
           {tab === "about" && <AdminAbout content={content} update={update} lang={lang} />}
@@ -2413,6 +2778,8 @@ function AdminPanel({ content, update, onClose, onLogout, tab, setTab, saving, r
           {tab === "faq" && <AdminFAQ content={content} update={update} lang={lang} />}
           {tab === "orders" && <AdminOrders lang={lang} />}
           {tab === "coupons" && <AdminCoupons lang={lang} />}
+          {tab === "loyalty" && <AdminLoyalty lang={lang} />}
+          {tab === "reservations" && <AdminReservations lang={lang} />}
           {tab === "messages" && <AdminMessages lang={lang} />}
           {tab === "reviews" && <AdminReviews lang={lang} />}
           {tab === "tickets" && <AdminTickets lang={lang} />}
@@ -2431,8 +2798,8 @@ function AdminPanel({ content, update, onClose, onLogout, tab, setTab, saving, r
 function SectionTitle({ children, action }) {
   return <div className="flex items-center justify-between mb-6"><h2 className="text-xl font-black">{children}</h2>{action}</div>;
 }
-const inputCls = "w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-3 py-2 text-sm";
-const cardCls = "border border-black/10 rounded-xl p-4 bg-white";
+const inputCls = "w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-3 py-2 text-sm transition-colors";
+const cardCls = "border border-black/10 rounded-xl p-4 bg-white hover:border-red-200 hover:shadow-md transition-all";
 const btnPrimary = "bg-red-600 hover:bg-red-700 text-white transition-colors px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5";
 const btnGhost = "border border-black/15 hover:border-red-600 transition-colors px-3 py-2 rounded-lg text-xs flex items-center gap-1.5";
 
@@ -2457,14 +2824,36 @@ function BField({ label, value, onChange, multiline, lang }) {
   );
 }
 
+function MiniBarChart({ data, lang }) {
+  const max = Math.max(1, ...data.map((d) => d.revenue));
+  const monthName = (key) => {
+    const [y, m] = key.split("-");
+    const d = new Date(Number(y), Number(m) - 1, 1);
+    return d.toLocaleDateString(lang === "fa" ? "fa-IR" : "en-US", { month: "short" });
+  };
+  return (
+    <div className="flex items-end justify-between gap-2 sm:gap-4 h-40 px-2">
+      {data.map((d, i) => (
+        <div key={d.month} className="flex-1 flex flex-col items-center gap-2 group">
+          <span className="text-[10px] text-black/40 font-bold opacity-0 group-hover:opacity-100 transition-opacity">{fmtPrice(d.revenue, lang)}</span>
+          <div className="w-full rounded-t-lg bg-gradient-to-t from-red-600 to-red-400 chart-bar-grow transition-all group-hover:from-red-700 group-hover:to-red-500" style={{ height: `${Math.max(4, (d.revenue / max) * 100)}%`, animationDelay: `${i * 80}ms` }} />
+          <span className="text-[10px] text-black/40">{monthName(d.month)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function AdminDashboard({ content, role, currentUser, lang }) {
   const [userCount, setUserCount] = useState(null);
+  const [stats, setStats] = useState(null);
   useEffect(() => { if (role === "admin") api.listUsers().then(({ users }) => setUserCount(users.length)).catch(() => {}); }, [role]);
-  const stats = [
-    { label: aui("services", lang), value: content.services.length, icon: Wrench },
-    { label: aui("products", lang), value: content.products.length, icon: Package },
+  useEffect(() => { if (role === "admin") api.adminStatsOverview().then(setStats).catch(() => {}); }, [role]);
+  const quickStats = [
+    { label: aui("services", lang), value: content.services.length, icon: Wrench, color: "from-blue-500 to-blue-600" },
+    { label: aui("products", lang), value: content.products.length, icon: Package, color: "from-purple-500 to-purple-600" },
   ];
-  if (role === "admin") stats.push({ label: aui("users", lang), value: userCount ?? "…", icon: UsersIcon });
+  if (role === "admin") quickStats.push({ label: aui("users", lang), value: userCount ?? "…", icon: UsersIcon, color: "from-emerald-500 to-emerald-600" });
   const roleDesc = {
     admin: { fa: "دسترسی کامل به همه‌ی بخش‌ها.", en: "Full access to every section." },
     editor: { fa: "می‌توانید همه‌ی محتوای سایت را ویرایش کنید.", en: "You can edit all site content." },
@@ -2474,8 +2863,40 @@ function AdminDashboard({ content, role, currentUser, lang }) {
     <div>
       <SectionTitle>{aui("welcome", lang)}, {currentUser?.name} 👋</SectionTitle>
       <p className="text-black/50 text-sm mb-8">{aui("yourRole", lang)}: <b>{tr(ROLE_LABELS[role], lang)}</b> — {tr(roleDesc[role], lang)}</p>
+
+      {role === "admin" && stats && (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            {[
+              { label: lang === "fa" ? "درآمد کل فروشگاه" : "Total shop revenue", value: fmtPrice(stats.totalRevenue, lang), icon: TrendingUp, color: "from-red-600 to-red-500" },
+              { label: lang === "fa" ? "کل سفارشات" : "Total orders", value: fmtNum(stats.totalOrders, lang), icon: ShoppingCart, color: "from-neutral-800 to-neutral-700" },
+              { label: lang === "fa" ? "سفارش امروز" : "Today's orders", value: fmtNum(stats.todayOrders, lang), icon: Sparkles, color: "from-amber-500 to-amber-600" },
+              { label: lang === "fa" ? "تیکت‌های باز" : "Open tickets", value: fmtNum(stats.pendingTickets, lang), icon: LifeBuoy, color: "from-blue-500 to-blue-600" },
+            ].map((s) => (
+              <div key={s.label} className="admin-stat-card relative overflow-hidden rounded-2xl p-4 bg-white border border-black/10 hover:border-red-200 hover:shadow-lg transition-all">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} text-white flex items-center justify-center mb-3 shadow-lg`}><s.icon size={18} /></div>
+                <div className="text-xl font-black">{s.value}</div>
+                <div className="text-xs text-black/40 mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
+          <div className={cardCls + " mb-8"}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-sm flex items-center gap-2"><TrendingUp size={16} className="text-red-600" /> {lang === "fa" ? "درآمد فروشگاه (۶ ماه اخیر)" : "Shop revenue (last 6 months)"}</h3>
+            </div>
+            <MiniBarChart data={stats.monthly} lang={lang} />
+          </div>
+        </>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {stats.map((s) => <div key={s.label} className={cardCls}><s.icon className="text-red-600 mb-2" size={20} /><div className="text-2xl font-black">{s.value}</div><div className="text-xs text-black/40 mt-1">{s.label}</div></div>)}
+        {quickStats.map((s) => (
+          <div key={s.label} className="rounded-2xl p-4 bg-white border border-black/10 hover:border-red-200 hover:shadow-lg transition-all">
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} text-white flex items-center justify-center mb-3 shadow-lg`}><s.icon size={18} /></div>
+            <div className="text-2xl font-black">{s.value}</div>
+            <div className="text-xs text-black/40 mt-1">{s.label}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -2753,6 +3174,66 @@ function PageEditor({ page, setPage, onSave, onCancel, lang }) {
   );
 }
 
+function AdminBeforeAfter({ content, update, lang }) {
+  const list = content.beforeAfter || [];
+  const set = (l) => update(["beforeAfter"], l);
+  const addItem = () => set([...list, { id: uid("ba"), beforeImage: "", afterImage: "", title: { fa: "تعمیر جدید", en: "New Repair" }, desc: { fa: "", en: "" } }]);
+  const removeItem = (id) => set(list.filter((s) => s.id !== id));
+  const editItem = (id, key, val) => set(list.map((s) => (s.id === id ? { ...s, [key]: val } : s)));
+  return (
+    <div>
+      <SectionTitle action={<button onClick={addItem} className={btnPrimary}><Plus size={14} /> {lang === "fa" ? "افزودن نمونه" : "Add sample"}</button>}>{aui("beforeAfter", lang)}</SectionTitle>
+      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "برای هر نمونه، یک عکس قبل و یک عکس بعد از تعمیر آپلود کنید تا در صفحه‌ی اصلی به‌صورت اسلایدر تعاملی نمایش داده شود." : "Upload a before and an after photo for each repair sample to display as an interactive slider on the homepage."}</p>
+      <div className="grid sm:grid-cols-2 gap-4">
+        {list.map((s) => (
+          <div key={s.id} className={cardCls}>
+            <div className="flex justify-between items-start mb-3 gap-2">
+              <div className="flex-1"><BField label={aui("title", lang)} value={s.title} onChange={(v) => editItem(s.id, "title", v)} lang={lang} /></div>
+              <button onClick={() => removeItem(s.id)} className="mt-5 text-black/30 hover:text-red-600 shrink-0"><Trash2 size={16} /></button>
+            </div>
+            <div className="mb-3"><BField label={aui("description", lang)} value={s.desc} onChange={(v) => editItem(s.id, "desc", v)} multiline lang={lang} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <ImageUploadField label={lang === "fa" ? "عکس قبل" : "Before photo"} value={s.beforeImage} onChange={(v) => editItem(s.id, "beforeImage", v)} lang={lang} />
+              <ImageUploadField label={lang === "fa" ? "عکس بعد" : "After photo"} value={s.afterImage} onChange={(v) => editItem(s.id, "afterImage", v)} lang={lang} />
+            </div>
+          </div>
+        ))}
+        {list.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز نمونه‌ای اضافه نکرده‌اید." : "You haven't added any samples yet."}</p>}
+      </div>
+    </div>
+  );
+}
+
+function AdminTestimonials({ content, update, lang }) {
+  const list = content.testimonials || [];
+  const set = (l) => update(["testimonials"], l);
+  const addItem = () => set([...list, { id: uid("tst"), videoUrl: "", customerName: "", quote: { fa: "", en: "" }, rating: 5 }]);
+  const removeItem = (id) => set(list.filter((s) => s.id !== id));
+  const editItem = (id, key, val) => set(list.map((s) => (s.id === id ? { ...s, [key]: val } : s)));
+  return (
+    <div>
+      <SectionTitle action={<button onClick={addItem} className={btnPrimary}><Plus size={14} /> {lang === "fa" ? "افزودن نظر" : "Add testimonial"}</button>}>{aui("testimonials", lang)}</SectionTitle>
+      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "لینک ویدیوی آپارات مشتری را وارد کنید تا در صفحه‌ی اصلی نمایش داده شود." : "Add an Aparat video link from a customer to show it on the homepage."}</p>
+      <div className="grid sm:grid-cols-2 gap-4">
+        {list.map((s) => (
+          <div key={s.id} className={cardCls}>
+            <div className="flex justify-between items-start mb-3 gap-2">
+              <Field label={lang === "fa" ? "نام مشتری" : "Customer name"}><input className={inputCls} value={s.customerName} onChange={(e) => editItem(s.id, "customerName", e.target.value)} /></Field>
+              <button onClick={() => removeItem(s.id)} className="mt-5 text-black/30 hover:text-red-600 shrink-0"><Trash2 size={16} /></button>
+            </div>
+            <div className="mb-3"><BField label={lang === "fa" ? "نقل‌قول کوتاه" : "Short quote"} value={s.quote} onChange={(v) => editItem(s.id, "quote", v)} multiline lang={lang} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={lang === "fa" ? "لینک ویدیوی آپارات" : "Aparat video URL"}><input dir="ltr" className={inputCls} value={s.videoUrl} onChange={(e) => editItem(s.id, "videoUrl", e.target.value)} placeholder="https://www.aparat.com/v/..." /></Field>
+              <Field label={lang === "fa" ? "امتیاز (۱ تا ۵)" : "Rating (1-5)"}><input type="number" min={1} max={5} dir="ltr" className={inputCls} value={s.rating} onChange={(e) => editItem(s.id, "rating", Number(e.target.value))} /></Field>
+            </div>
+          </div>
+        ))}
+        {list.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز نظری اضافه نکرده‌اید." : "You haven't added any testimonials yet."}</p>}
+      </div>
+    </div>
+  );
+}
+
 function AdminMenu({ content, update, lang }) {
   const set = (list) => update(["menu"], list);
   const toggle = (id) => set(content.menu.map((m) => (m.id === id ? { ...m, visible: !m.visible } : m)));
@@ -2922,9 +3403,25 @@ function AdminOrders({ lang }) {
   const [orders, setOrders] = useState(null);
   const load = async () => { try { const { orders: list } = await api.allOrders(); setOrders(list); } catch (e) { setOrders([]); } };
   useEffect(() => { load(); }, []);
+
+  const exportCsv = () => {
+    const headers = ["ID", "Type", "Status", "Customer", "Phone", "Email", "Total", "Discount", "Coupon", "PointsUsed", "Date"];
+    const rows = (orders || []).map((o) => [
+      o.id, o.orderType, o.status, o.customer?.name || "", o.customer?.phone || "", o.customer?.email || "",
+      o.total || 0, o.discountAmount || 0, o.couponCode || "", o.pointsUsed || 0, fmtDateTime(o.date, lang),
+    ]);
+    const csv = "\uFEFF" + [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
-      <SectionTitle>{aui("orders", lang)}</SectionTitle>
+      <SectionTitle action={<button onClick={exportCsv} disabled={!orders?.length} className={btnGhost + " disabled:opacity-40"}><Download size={14} /> {lang === "fa" ? "خروجی اکسل (CSV)" : "Export Excel (CSV)"}</button>}>{aui("orders", lang)}</SectionTitle>
       {orders === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
       {orders && orders.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز سفارشی ثبت نشده است." : "No orders yet."}</p>}
       <div className="space-y-3">
@@ -3845,6 +4342,129 @@ function AdminNotificationTemplates({ lang }) {
         ))}
         {templates && templates.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "قالبی وجود ندارد." : "No templates yet."}</p>}
       </div>
+    </div>
+  );
+}
+
+function AdminLoyalty({ lang }) {
+  const [s, setS] = useState(null);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => { api.adminGetLoyaltySettings().then(setS).catch(() => setS({ enabled: false, earnPerToman: 10000, redeemValueToman: 1000, minRedeemPoints: 10, maxRedeemPercent: 30 })); }, []);
+  const set = (k, v) => setS({ ...s, [k]: v });
+  const save = async () => { try { await api.adminUpdateLoyaltySettings(s); setSaved(true); setTimeout(() => setSaved(false), 1800); } catch (e) { alert(e.message); } };
+  if (!s) return <p className="text-black/40 text-sm">{ui("loading", lang)}</p>;
+  return (
+    <div className="max-w-xl">
+      <SectionTitle action={<button onClick={save} className={btnPrimary}>{saved ? <><Check size={14} /> {lang === "fa" ? "ذخیره شد" : "Saved"}</> : aui("save", lang)}</button>}>{aui("loyalty", lang)}</SectionTitle>
+
+      <div className={cardCls + " flex items-center justify-between gap-3 mb-6"}>
+        <div>
+          <p className="font-bold text-sm flex items-center gap-2"><Gift size={16} className="text-red-600" /> {lang === "fa" ? "جشنواره‌ی استفاده از امتیاز" : "Points redemption campaign"}</p>
+          <p className="text-black/40 text-xs mt-1 max-w-sm">{lang === "fa" ? "وقتی فعال باشد، مشتریان می‌توانند هنگام خرید، امتیازشان را به تخفیف تبدیل کنند. امتیازگیری از خریدها همیشه فعال است؛ این کلید فقط «مصرف» امتیاز را کنترل می‌کند." : "When enabled, customers can redeem their points as a discount at checkout. Earning points from purchases is always on — this switch only controls redemption."}</p>
+        </div>
+        <button onClick={() => set("enabled", !s.enabled)} className={`shrink-0 w-14 h-8 rounded-full transition-colors relative ${s.enabled ? "bg-red-600" : "bg-black/15"}`}>
+          <span className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-all ${s.enabled ? "left-1" : "left-7"}`} />
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <Field label={lang === "fa" ? "به ازای هر چند تومان خرید، ۱ امتیاز داده شود" : "Award 1 point per this many Toman spent"}>
+          <input type="number" min={100} dir="ltr" className={inputCls} value={s.earnPerToman} onChange={(e) => set("earnPerToman", Number(e.target.value))} />
+        </Field>
+        <Field label={lang === "fa" ? "ارزش هر امتیاز هنگام مصرف (تومان)" : "Value of 1 point when redeemed (Toman)"}>
+          <input type="number" min={0} dir="ltr" className={inputCls} value={s.redeemValueToman} onChange={(e) => set("redeemValueToman", Number(e.target.value))} />
+        </Field>
+        <Field label={lang === "fa" ? "حداقل امتیاز لازم برای استفاده" : "Minimum points required to redeem"}>
+          <input type="number" min={0} dir="ltr" className={inputCls} value={s.minRedeemPoints} onChange={(e) => set("minRedeemPoints", Number(e.target.value))} />
+        </Field>
+        <Field label={lang === "fa" ? "حداکثر درصد قابل پرداخت سفارش با امتیاز" : "Max % of order payable with points"}>
+          <input type="number" min={1} max={100} dir="ltr" className={inputCls} value={s.maxRedeemPercent} onChange={(e) => set("maxRedeemPercent", Number(e.target.value))} />
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+function AdminReservations({ lang }) {
+  const [sub, setSub] = useState("list");
+  const [list, setList] = useState(null);
+  const [settings, setSettings] = useState(null);
+  const [newSlot, setNewSlot] = useState("");
+
+  const load = () => api.adminListReservations().then(({ reservations }) => setList(reservations)).catch(() => setList([]));
+  useEffect(() => { load(); api.adminGetReservationSettings().then(setSettings).catch(() => setSettings({ enabled: true, slots: [], closedWeekdays: [], noteFa: "", noteEn: "" })); }, []);
+
+  const setStatus = async (id, status) => { try { await api.adminSetReservationStatus(id, status); await load(); } catch (e) { alert(e.message); } };
+  const saveSettings = async () => { try { await api.adminUpdateReservationSettings(settings); alert(lang === "fa" ? "ذخیره شد" : "Saved"); } catch (e) { alert(e.message); } };
+  const addSlot = () => { if (!newSlot.trim()) return; setSettings({ ...settings, slots: [...settings.slots, newSlot.trim()] }); setNewSlot(""); };
+  const removeSlot = (s) => setSettings({ ...settings, slots: settings.slots.filter((x) => x !== s) });
+  const WEEKDAYS = lang === "fa" ? ["یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const toggleWeekday = (i) => setSettings({ ...settings, closedWeekdays: settings.closedWeekdays.includes(i) ? settings.closedWeekdays.filter((d) => d !== i) : [...settings.closedWeekdays, i] });
+
+  const STATUS_STYLES = { pending: "bg-amber-50 text-amber-700 border-amber-200", confirmed: "bg-blue-50 text-blue-700 border-blue-200", done: "bg-green-50 text-green-700 border-green-200", cancelled: "bg-black/5 text-black/40 border-black/10" };
+  const STATUS_LABEL = { pending: lang === "fa" ? "در انتظار" : "Pending", confirmed: lang === "fa" ? "تایید شده" : "Confirmed", done: lang === "fa" ? "انجام شد" : "Done", cancelled: lang === "fa" ? "لغو شد" : "Cancelled" };
+
+  return (
+    <div className="max-w-3xl">
+      <SectionTitle>{aui("reservations", lang)}</SectionTitle>
+      <div className="flex bg-black/5 rounded-lg p-1 mb-6 w-fit">
+        <button onClick={() => setSub("list")} className={`text-xs px-4 py-2 rounded-md transition-colors ${sub === "list" ? "bg-white shadow font-bold" : "text-black/50"}`}>{lang === "fa" ? "لیست رزروها" : "Bookings"}</button>
+        <button onClick={() => setSub("settings")} className={`text-xs px-4 py-2 rounded-md transition-colors ${sub === "settings" ? "bg-white shadow font-bold" : "text-black/50"}`}>{lang === "fa" ? "تنظیمات" : "Settings"}</button>
+      </div>
+
+      {sub === "list" && (
+        <div className="space-y-2">
+          {list === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+          {list?.map((r) => (
+            <div key={r.id} className={cardCls + " flex items-center justify-between gap-3 flex-wrap"}>
+              <div>
+                <p className="font-bold text-sm flex items-center gap-2">{r.name} <span className={`text-[10px] px-2 py-0.5 rounded-full border ${STATUS_STYLES[r.status]}`}>{STATUS_LABEL[r.status]}</span></p>
+                <p className="text-black/40 text-xs mt-1" dir="ltr">{r.phone} · {fmtDate(r.date, lang)} · {r.timeSlot}</p>
+                {r.note && <p className="text-black/40 text-xs mt-1">{r.note}</p>}
+              </div>
+              <select value={r.status} onChange={(e) => setStatus(r.id, e.target.value)} className={inputCls + " w-auto"}>
+                <option value="pending">{STATUS_LABEL.pending}</option>
+                <option value="confirmed">{STATUS_LABEL.confirmed}</option>
+                <option value="done">{STATUS_LABEL.done}</option>
+                <option value="cancelled">{STATUS_LABEL.cancelled}</option>
+              </select>
+            </div>
+          ))}
+          {list && list.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز رزروی ثبت نشده." : "No bookings yet."}</p>}
+        </div>
+      )}
+
+      {sub === "settings" && settings && (
+        <div className="space-y-5">
+          <div className={cardCls + " flex items-center justify-between gap-3"}>
+            <p className="font-bold text-sm">{lang === "fa" ? "رزرو نوبت فعال باشد" : "Enable reservations"}</p>
+            <button onClick={() => setSettings({ ...settings, enabled: !settings.enabled })} className={`w-14 h-8 rounded-full transition-colors relative ${settings.enabled ? "bg-red-600" : "bg-black/15"}`}>
+              <span className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-all ${settings.enabled ? "left-1" : "left-7"}`} />
+            </button>
+          </div>
+          <div>
+            <span className="text-xs text-black/50 mb-2 block">{lang === "fa" ? "روزهای تعطیل" : "Closed weekdays"}</span>
+            <div className="flex flex-wrap gap-2">
+              {WEEKDAYS.map((d, i) => (
+                <button key={i} type="button" onClick={() => toggleWeekday(i)} className={`text-xs px-3 py-1.5 rounded-lg border ${settings.closedWeekdays.includes(i) ? "border-red-600 bg-red-50 text-red-700 font-bold" : "border-black/15 text-black/50"}`}>{d}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="text-xs text-black/50 mb-2 block">{lang === "fa" ? "بازه‌های زمانی موجود" : "Available time slots"}</span>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {settings.slots.map((s) => (
+                <span key={s} className="flex items-center gap-1.5 text-xs bg-black/5 rounded-lg px-2.5 py-1.5" dir="ltr">{s}<button onClick={() => removeSlot(s)} className="text-black/30 hover:text-red-600"><X size={12} /></button></span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input dir="ltr" placeholder="14:00" value={newSlot} onChange={(e) => setNewSlot(e.target.value)} className={inputCls + " max-w-[120px]"} />
+              <button onClick={addSlot} className={btnGhost}><Plus size={14} /></button>
+            </div>
+          </div>
+          <button onClick={saveSettings} className={btnPrimary}>{aui("save", lang)}</button>
+        </div>
+      )}
     </div>
   );
 }
