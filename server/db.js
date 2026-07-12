@@ -276,6 +276,19 @@ if (!contentRow) {
     new Date().toISOString()
   );
   console.log("[seed] محتوای اولیه‌ی سایت ذخیره شد");
+} else {
+  // پاک‌سازی لینک نمونه‌ی ویترا استودیو که به‌اشتباه در محتوای اولیه ست شده بود
+  const existingRow = db.prepare("SELECT data FROM site_content WHERE id = 1").get();
+  try {
+    const existingData = JSON.parse(existingRow.data);
+    if (existingData?.settings?.designerUrl === "https://vitra-studio.onrender.com/index.html") {
+      existingData.settings.designerUrl = "";
+      db.prepare("UPDATE site_content SET data = ?, updated_at = ? WHERE id = 1").run(
+        JSON.stringify(existingData), new Date().toISOString()
+      );
+      console.log("[migrate] لینک نمونه‌ی فوتر (Vitra Studio) پاک شد؛ از پنل مدیریت لینک درست را ثبت کنید");
+    }
+  } catch (e) { /* داده‌ی موجود قابل پارس نبود، از migration صرف‌نظر شد */ }
 }
 
 const now0 = new Date().toISOString();
