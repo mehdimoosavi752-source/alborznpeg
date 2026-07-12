@@ -368,7 +368,7 @@ function HeroPoster({ stats, lang }) {
     <div className="relative mx-auto w-full max-w-lg aspect-[4/3] select-none hero-poster-shell">
       <div className="absolute inset-0 bg-red-600 rounded-[3rem] blur-3xl scale-90 opacity-30 hero-poster-aura" />
       <div className="absolute inset-0 overflow-hidden rounded-[2rem] border border-white/15 bg-neutral-950 shadow-2xl">
-        <img src="/assets/hero-data-recovery-v2.png" alt={lang === "fa" ? "بازیابی اطلاعات هارد و SSD" : "HDD and SSD data recovery"} className="w-full h-full object-cover hero-poster-image" style={{ transform: `scale(1.12) translateY(${parallax}px)` }} />
+        <img src="/assets/hero-data-recovery-v2.png" alt={lang === "fa" ? "بازیابی اطلاعات هارد و SSD" : "HDD and SSD data recovery"} fetchpriority="high" className="w-full h-full object-cover hero-poster-image" style={{ transform: `scale(1.12) translateY(${parallax}px)` }} />
         <div className="absolute inset-0 bg-gradient-to-tr from-black/60 via-transparent to-red-950/20" />
         <div className="hero-scanline absolute inset-x-0 h-px bg-red-400/80 shadow-[0_0_18px_3px_rgba(239,68,68,.55)]" />
         <div className="hero-orbit absolute w-28 h-28 rounded-full border border-red-400/50 top-10 right-10" />
@@ -526,7 +526,7 @@ function SitePopup({ activePage, lang }) {
         <div className="absolute -bottom-16 -left-16 w-52 h-52 bg-red-900/15 rounded-full blur-3xl blob pointer-events-none" style={{ animationDelay: "2s" }} />
         {popup.imageUrl ? (
           <div className="relative w-full h-40 overflow-hidden">
-            <img src={resolveImageUrl(popup.imageUrl)} alt="" className="w-full h-full object-cover" />
+            <img src={resolveImageUrl(popup.imageUrl)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/10 to-transparent" />
           </div>
         ) : (
@@ -603,6 +603,68 @@ export default function NovinPolytechnic() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshPages]);
+
+  // سئو: آدرس canonical/og واقعی را (چون دامنه در زمان build مشخص نیست) در مرورگر تنظیم می‌کنیم
+  useEffect(() => {
+    const origin = window.location.origin + "/";
+    const setMeta = (selector, attr, value) => {
+      let el = document.querySelector(selector);
+      if (!el) return;
+      el.setAttribute(attr, value);
+    };
+    setMeta('link[rel="canonical"]', "href", origin);
+    setMeta('meta[property="og:url"]', "content", origin);
+    if (!document.querySelector('meta[property="og:url"]')) {
+      const m = document.createElement("meta"); m.setAttribute("property", "og:url"); m.setAttribute("content", origin);
+      document.head.appendChild(m);
+    }
+    ["og:image", "twitter:image"].forEach((prop) => {
+      const el = document.querySelector(`meta[property="${prop}"], meta[name="${prop}"]`);
+      if (el && el.getAttribute("content")?.startsWith("/")) el.setAttribute("content", window.location.origin + el.getAttribute("content"));
+    });
+  }, []);
+
+  // سئو: داده‌ساخت‌یافته FAQPage از سوالات متداول واقعی سایت (به AI و گوگل کمک می‌کند پاسخ‌ها را مستقیم نشان دهند)
+  useEffect(() => {
+    if (!content?.faq?.length) return;
+    const id = "faq-jsonld";
+    document.getElementById(id)?.remove();
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.id = id;
+    script.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: content.faq.map((f) => ({
+        "@type": "Question",
+        name: tr(f.question, "fa"),
+        acceptedAnswer: { "@type": "Answer", text: tr(f.answer, "fa") },
+      })),
+    });
+    document.head.appendChild(script);
+  }, [content?.faq]);
+
+  // سئو: عنوان و توضیح صفحه بر اساس مسیر فعلی به‌روزرسانی می‌شود
+  useEffect(() => {
+    if (!content) return;
+    const siteName = tr(content.settings.siteName, lang);
+    const TITLES = {
+      "": { fa: `${siteName} | تعمیر کامپیوتر، پلی‌استیشن و فروش ویدئو پروژکتور`, en: `${siteName} | Computer, PlayStation Repair & Projector Shop` },
+      services: { fa: `خدمات تعمیر | ${siteName}`, en: `Repair Services | ${siteName}` },
+      shop: { fa: `فروشگاه ویدئو پروژکتور | ${siteName}`, en: `Video Projector Shop | ${siteName}` },
+      articles: { fa: `مقالات | ${siteName}`, en: `Articles | ${siteName}` },
+      faq: { fa: `سوالات متداول | ${siteName}`, en: `FAQ | ${siteName}` },
+      about: { fa: `درباره ما | ${siteName}`, en: `About Us | ${siteName}` },
+      contact: { fa: `تماس با ما | ${siteName}`, en: `Contact Us | ${siteName}` },
+      tracking: { fa: `پیگیری سفارش | ${siteName}`, en: `Track Order | ${siteName}` },
+    };
+    const key = TITLES[route[0]] ? route[0] : "";
+    document.title = tr(TITLES[key], lang);
+    const descEl = document.querySelector('meta[name="description"]');
+    if (descEl && key === "") descEl.setAttribute("content", tr(content.settings.tagline, lang));
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === "fa" ? "rtl" : "ltr";
+  }, [route[0], lang, content]);
 
   const persist = useCallback(async (next) => {
     setContent(next);
@@ -1232,10 +1294,10 @@ function BeforeAfterCard({ item, lang }) {
         onTouchEnd={() => { dragging.current = false; }}
         onTouchMove={(e) => onMove(e.touches[0].clientX)}
       >
-        <img src={resolveImageUrl(item.afterImage)} alt="" draggable={false} className="absolute inset-0 w-full h-full object-cover" />
+        <img src={resolveImageUrl(item.afterImage)} alt="" draggable={false} className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
         <span className="absolute top-2 left-2 text-[10px] bg-black/60 text-white px-2 py-0.5 rounded-full z-10">{lang === "fa" ? "بعد" : "After"}</span>
         <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - pct}% 0 0)` }}>
-          <img src={resolveImageUrl(item.beforeImage)} alt="" draggable={false} className="absolute inset-0 w-full h-full object-cover" />
+          <img src={resolveImageUrl(item.beforeImage)} alt="" draggable={false} className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
           <span className="absolute top-2 right-2 text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full">{lang === "fa" ? "قبل" : "Before"}</span>
         </div>
         <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg pointer-events-none" style={{ left: `${pct}%` }}>
@@ -1358,7 +1420,7 @@ function PageHeader({ eyebrow, title, subtitle, image, variant, lang }) {
       <div className="absolute -top-10 -right-10 w-72 h-72 bg-red-100 rounded-full blur-3xl blob" />
       <div className="relative max-w-4xl mx-auto text-center">
         {displayImage ? (
-          <div className="w-28 h-20 mx-auto mb-4 rounded-xl overflow-hidden"><img src={resolveImageUrl(displayImage)} alt="" className="w-full h-full object-cover" /></div>
+          <div className="w-28 h-20 mx-auto mb-4 rounded-xl overflow-hidden"><img src={resolveImageUrl(displayImage)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" /></div>
         ) : variant ? (
           <div className="mb-4"><SectionIllustration variant={variant} /></div>
         ) : null}
@@ -1495,7 +1557,7 @@ function ShopPage({ content, addToCart, lang, wishlistIds = [], onToggleWishlist
       <section className="relative pt-36 pb-10 px-4 sm:px-6 overflow-hidden border-b border-black/10 bg-black">
         <div className="relative max-w-7xl mx-auto text-center">
           {content.pageHeaders?.shop?.image || SECTION_IMAGES.shop ? (
-            <div className="w-32 h-24 mx-auto mb-4 rounded-xl overflow-hidden"><img src={resolveImageUrl(content.pageHeaders?.shop?.image || SECTION_IMAGES.shop)} alt="" className="w-full h-full object-cover" /></div>
+            <div className="w-32 h-24 mx-auto mb-4 rounded-xl overflow-hidden"><img src={resolveImageUrl(content.pageHeaders?.shop?.image || SECTION_IMAGES.shop)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" /></div>
           ) : (
             <div className="mb-4 opacity-90"><SectionIllustration variant="shop" /></div>
           )}
@@ -2352,7 +2414,7 @@ function BlockRenderer({ block, lang }) {
     case "image": return (
       block.imageUrl ? (
         <div className="mb-6">
-          <img src={resolveImageUrl(block.imageUrl)} alt={tr(block.content, lang)} className="w-full h-auto rounded-2xl" />
+          <img src={resolveImageUrl(block.imageUrl)} alt={tr(block.content, lang)} className="w-full h-auto rounded-2xl" loading="lazy" decoding="async" />
           {tr(block.content, lang) && <p className="text-black/40 text-xs mt-2">{tr(block.content, lang)}</p>}
         </div>
       ) : (
@@ -2951,7 +3013,7 @@ function ImageUploadField({ label, value, onChange, lang }) {
       {label && <span className="text-xs text-black/50 mb-1.5 block">{label}</span>}
       {value ? (
         <div className="relative w-full h-28 rounded-lg overflow-hidden border border-black/10 mb-2">
-          <img src={resolveImageUrl(value)} alt="" className="w-full h-full object-cover" />
+          <img src={resolveImageUrl(value)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           <button type="button" onClick={() => onChange("")} className="absolute top-1.5 left-1.5 bg-black/70 text-white rounded-full p-1"><X size={12} /></button>
         </div>
       ) : null}
@@ -4070,7 +4132,7 @@ function AdminPopups({ lang }) {
         {popups?.map((p) => (
           <div key={p.id} className={cardCls + " flex items-center justify-between gap-3"}>
             <div className="flex items-center gap-3 min-w-0">
-              {p.imageUrl && <img src={resolveImageUrl(p.imageUrl)} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0 border border-black/10" />}
+              {p.imageUrl && <img src={resolveImageUrl(p.imageUrl)} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0 border border-black/10" loading="lazy" decoding="async" />}
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-bold text-sm">{p.label}</p>

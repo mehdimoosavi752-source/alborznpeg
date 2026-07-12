@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -18,6 +19,7 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 // Migration for traceable orders on existing databases.
 try { db.exec("ALTER TABLE orders ADD COLUMN tracking_code TEXT"); } catch (e) { /* column already exists */ }
 
+app.use(compression());
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
 
@@ -1179,13 +1181,86 @@ app.delete("/api/admin/popups/:id", authenticate, requireEditor, (req, res) => {
   res.json({ ok: true });
 });
 
+/* ============================== سئو: sitemap.xml ============================== */
+
+app.get("/sitemap.xml", (req, res) => {
+  const base = `${req.protocol}://${req.get("host")}`;
+  const pages = db.prepare("SELECT slug, updated_at FROM pages WHERE status = 'published'").all();
+  const staticRoutes = ["", "services", "shop", "articles", "faq", "about", "contact", "tracking"];
+  const urls = [
+    ...staticRoutes.map((r) => `  <url><loc>${base}/${r ? "#/" + r : ""}</loc><changefreq>weekly</changefreq><priority>${r ? "0.7" : "1.0"}</priority></url>`),
+    ...pages.map((p) => `  <url><loc>${base}/#/page/${p.slug}</loc><lastmod>${(p.updated_at || "").slice(0, 10)}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`),
+  ];
+  res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`);
+});
+
+/* ============================== رندر ساده برای ربات‌های جستجو/هوش مصنوعی ============================== */
+// این اپ یک SPA است؛ خیلی از خزنده‌های هوش مصنوعی (برخلاف گوگل) جاوااسکریپت را اجرا نمی‌کنند.
+// برای این‌که این ربات‌ها محتوای واقعی سایت را ببینند، یک نسخه‌ی HTML ساده و کامل از اطلاعات کلیدی کسب‌وکار
+// (خدمات، محصولات، سوالات متداول، اطلاعات تماس) فقط به User-Agent های شناخته‌شده‌ی ربات نمایش داده می‌شود؛
+// کاربران عادی همان اپ کامل React را دریافت می‌کنند.
+const BOT_UA_REGEX = /googlebot|bingbot|yandex|duckduckbot|baiduspider|gptbot|chatgpt-user|oai-searchbot|claudebot|claude-web|anthropic-ai|perplexitybot|ccbot|bytespider|applebot|facebookexternalhit|linkedinbot|slackbot|twitterbot|whatsapp/i;
+
+function escapeHtml(s) {
+  return String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+app.get(/^(?!\/api|\/uploads).*/, (req, res, next) => {
+  const ua = req.headers["user-agent"] || "";
+  if (!BOT_UA_REGEX.test(ua)) return next();
+  try {
+    const row = db.prepare("SELECT data FROM site_content WHERE id = 1").get();
+    const c = JSON.parse(row.data);
+    const base = `${req.protocol}://${req.get("host")}`;
+    const s = c.settings || {};
+    const servicesHtml = (c.services || []).map((sv) => `<li><h3>${escapeHtml(sv.title?.fa)}</h3><p>${escapeHtml(sv.desc?.fa)}</p>${sv.priceRange?.fa ? `<p><strong>${escapeHtml(sv.priceRange.fa)}</strong></p>` : ""}</li>`).join("\n");
+    const productsHtml = (c.products || []).map((p) => `<li><h3>${escapeHtml(p.name?.fa)} (${escapeHtml(p.brand)})</h3><p>${escapeHtml(p.desc?.fa)}</p><p>قیمت: ${Number(p.price || 0).toLocaleString("fa-IR")} تومان</p></li>`).join("\n");
+    const faqHtml = (c.faq || []).map((f) => `<li><h3>${escapeHtml(f.question?.fa)}</h3><p>${escapeHtml(f.answer?.fa)}</p></li>`).join("\n");
+    const articles = db.prepare("SELECT title, slug FROM pages WHERE status = 'published' AND is_article = 1").all();
+    const articlesHtml = articles.map((a) => `<li><a href="${base}/#/page/${a.slug}">${escapeHtml(a.title)}</a></li>`).join("\n");
+
+    const html = `<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>${escapeHtml(tr_fa(s.siteName) || "نوین پلی‌تکنیک البرز")} | تعمیر کامپیوتر، پلی‌استیشن و فروش ویدئو پروژکتور</title>
+<meta name="description" content="${escapeHtml(tr_fa(s.tagline) || "تعمیر تخصصی کامپیوتر، لپ‌تاپ و پلی‌استیشن، بازیابی اطلاعات و فروشگاه اورجینال ویدئو پروژکتور در کرج.")}" />
+<link rel="canonical" href="${base}/" />
+</head>
+<body>
+<h1>${escapeHtml(tr_fa(s.siteName) || "نوین پلی‌تکنیک البرز")}</h1>
+<p>${escapeHtml(tr_fa(s.tagline) || "تعمیر تخصصی کامپیوتر، لپ‌تاپ، پلی‌استیشن و فروش اورجینال ویدئو پروژکتور در کرج")}</p>
+<section><h2>خدمات</h2><ul>${servicesHtml}</ul></section>
+<section><h2>محصولات فروشگاه (ویدئو پروژکتور)</h2><ul>${productsHtml}</ul></section>
+<section><h2>سوالات متداول</h2><ul>${faqHtml}</ul></section>
+${articles.length ? `<section><h2>مقالات</h2><ul>${articlesHtml}</ul></section>` : ""}
+<section><h2>تماس با ما</h2><p>تلفن: ${escapeHtml(s.phone || "02632536821")}${s.mobile ? ` — موبایل: ${escapeHtml(s.mobile)}` : ""}</p><p>آدرس: ${escapeHtml(tr_fa(s.address) || "")}</p></section>
+<p><a href="${base}/">مشاهده‌ی نسخه‌ی کامل و تعاملی سایت</a></p>
+</body>
+</html>`;
+    res.set("Cache-Control", "public, max-age=1800");
+    return res.type("html").send(html);
+  } catch (e) {
+    return next();
+  }
+});
+
+function tr_fa(v) { return typeof v === "object" && v ? v.fa : v; }
+
 /* ============================== سرو کردن فرانت‌اند ساخته‌شده (تک‌سرویسی) ============================== */
 // اگر پوشه‌ی client/dist وجود داشته باشد (یعنی فرانت‌اند build شده)، همین سرور آن را هم سرو می‌کند.
 // این یعنی فقط یک سرویس روی Render لازم است، نه دو سرویس جدا.
 
 const clientDist = path.join(__dirname, "../client/dist");
-app.use(express.static(clientDist));
+app.use(express.static(clientDist, {
+  maxAge: "1y",
+  immutable: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith("index.html")) res.setHeader("Cache-Control", "no-cache");
+  },
+}));
 app.get(/^(?!\/api).*/, (req, res, next) => {
+  res.set("Cache-Control", "no-cache");
   res.sendFile(path.join(clientDist, "index.html"), (err) => {
     if (err) next();
   });

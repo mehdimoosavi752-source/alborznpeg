@@ -1,10 +1,28 @@
 User-agent: *
 Allow: /
 
-# Public pages and structured data are intentionally accessible to search engines and AI crawlers.
+# صفحات عمومی و داده‌های ساخت‌یافته عمداً برای موتورهای جستجو و ربات‌های هوش مصنوعی در دسترس هستند.
 User-agent: GPTBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: OAI-SearchBot
 Allow: /
 User-agent: Google-Extended
 Allow: /
 User-agent: PerplexityBot
 Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: Claude-Web
+Allow: /
+User-agent: anthropic-ai
+Allow: /
+User-agent: CCBot
+Allow: /
+User-agent: Applebot
+Allow: /
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: /sitemap.xml
