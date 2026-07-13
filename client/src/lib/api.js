@@ -167,4 +167,25 @@ export const api = {
   // آمار
   adminStatsOverview: () => request("/api/admin/stats/overview"),
   publicStats: () => request("/api/stats/public"),
+
+  // پشتیبان‌گیری
+  adminListBackups: () => request("/api/admin/backups"),
+  adminRunBackupNow: () => request("/api/admin/backups/run-now", { method: "POST" }),
+  adminDownloadBackup: async (name) => {
+    const res = await fetch(`${API_URL}/api/admin/backups/${encodeURIComponent(name)}/download`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    if (!res.ok) throw new Error("دانلود ناموفق بود");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  // پایش خطا
+  reportClientError: (payload) => request("/api/client-error", { method: "POST", body: JSON.stringify(payload) }),
+  adminListErrorLogs: () => request("/api/admin/error-logs"),
+  adminClearErrorLogs: () => request("/api/admin/error-logs", { method: "DELETE" }),
 };

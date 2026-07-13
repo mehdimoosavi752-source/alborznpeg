@@ -239,6 +239,16 @@ db.exec(`
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS error_logs (
+    id TEXT PRIMARY KEY,
+    source TEXT NOT NULL DEFAULT 'server',  -- server | client
+    message TEXT NOT NULL DEFAULT '',
+    stack TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL DEFAULT '',
+    user_agent TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+  );
 `);
 
 function uid(prefix = "id") {

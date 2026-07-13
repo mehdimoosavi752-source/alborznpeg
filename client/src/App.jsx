@@ -8,7 +8,7 @@ import {
   SlidersHorizontal, BadgeCheck, Truck, Mail, ChevronRight, Users as UsersIcon,
   Eye, EyeOff, Image as ImageIcon, Type, AlignLeft, MousePointerClick, Globe, LifeBuoy, Star, HardDrive, Play, Megaphone,
   Heart, Pencil, Home as HomeIcon, KeyRound, ChevronsRight, Tag, MessageSquareText,
-  Gift, CalendarDays, TrendingUp, Download, Award, Sparkles, ArrowUpRight,
+  Gift, CalendarDays, TrendingUp, Download, Award, Sparkles, ArrowUpRight, AlertTriangle,
 } from "lucide-react";
 import { api, resolveImageUrl } from "./lib/api.js";
 
@@ -214,6 +214,7 @@ const ADMIN_UI = {
   notifTemplates: { fa: "قالب پیام‌ها", en: "Message Templates" },
   loyalty: { fa: "باشگاه مشتریان", en: "Loyalty Club" },
   reservations: { fa: "رزرو نوبت", en: "Reservations" },
+  system: { fa: "پشتیبان‌گیری و خطاها", en: "Backups & Errors" },
   beforeAfter: { fa: "گالری قبل و بعد", en: "Before & After" },
   testimonials: { fa: "نظرات ویدیویی", en: "Video Testimonials" },
   users: { fa: "کاربران", en: "Users" },
@@ -397,22 +398,34 @@ function HeroPoster({ stats, lang }) {
   );
 }
 
-/* ============================== روتینگ ساده با هش ============================== */
+/* ============================== روتینگ با آدرس واقعی (History API) برای سئوی درست ============================== */
 
-function parseHash() {
-  const h = window.location.hash.replace(/^#\/?/, "");
-  return h.split("/").filter(Boolean);
+function parsePath() {
+  // سازگاری با لینک‌های قدیمی مبتنی بر هش (#/...) — در صورت وجود، به آدرس تمیز جدید تبدیل می‌شوند
+  if (window.location.hash.startsWith("#/")) {
+    const legacy = window.location.hash.replace(/^#\/?/, "");
+    window.history.replaceState({}, "", "/" + legacy + window.location.search);
+  }
+  const p = window.location.pathname.replace(/^\/+/, "");
+  return p.split("/").filter(Boolean);
 }
 function navigate(path) {
-  window.location.hash = path;
+  const clean = "/" + String(path).replace(/^\/+/, "");
+  if (clean !== window.location.pathname) {
+    window.history.pushState({}, "", clean);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 function useHashRoute() {
-  const [route, setRoute] = useState(parseHash());
+  const [route, setRoute] = useState(parsePath());
   useEffect(() => {
-    const onHash = () => setRoute(parseHash());
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+    const onPop = () => setRoute(parsePath());
+    // برخی لینک‌های قدیمی (مثلاً دکمه‌های پاپ‌آپ) ممکن است هنوز به سبک #/ ساخته شده باشند
+    const onHashChange = () => setRoute(parsePath());
+    window.addEventListener("popstate", onPop);
+    window.addEventListener("hashchange", onHashChange);
+    return () => { window.removeEventListener("popstate", onPop); window.removeEventListener("hashchange", onHashChange); };
   }, []);
   return route;
 }
@@ -604,25 +617,26 @@ export default function NovinPolytechnic() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshPages]);
 
-  // سئو: آدرس canonical/og واقعی را (چون دامنه در زمان build مشخص نیست) در مرورگر تنظیم می‌کنیم
+  // سئو: آدرس canonical/og واقعی صفحه‌ی فعلی (نه فقط ریشه‌ی سایت) در مرورگر تنظیم می‌شود
   useEffect(() => {
-    const origin = window.location.origin + "/";
+    const url = window.location.origin + window.location.pathname;
     const setMeta = (selector, attr, value) => {
       let el = document.querySelector(selector);
       if (!el) return;
       el.setAttribute(attr, value);
     };
-    setMeta('link[rel="canonical"]', "href", origin);
-    setMeta('meta[property="og:url"]', "content", origin);
+    setMeta('link[rel="canonical"]', "href", url);
     if (!document.querySelector('meta[property="og:url"]')) {
-      const m = document.createElement("meta"); m.setAttribute("property", "og:url"); m.setAttribute("content", origin);
+      const m = document.createElement("meta"); m.setAttribute("property", "og:url"); m.setAttribute("content", url);
       document.head.appendChild(m);
+    } else {
+      setMeta('meta[property="og:url"]', "content", url);
     }
     ["og:image", "twitter:image"].forEach((prop) => {
       const el = document.querySelector(`meta[property="${prop}"], meta[name="${prop}"]`);
       if (el && el.getAttribute("content")?.startsWith("/")) el.setAttribute("content", window.location.origin + el.getAttribute("content"));
     });
-  }, []);
+  }, [route.join("/")]); // eslint-disable-line
 
   // سئو: داده‌ساخت‌یافته FAQPage از سوالات متداول واقعی سایت (به AI و گوگل کمک می‌کند پاسخ‌ها را مستقیم نشان دهند)
   useEffect(() => {
@@ -644,6 +658,34 @@ export default function NovinPolytechnic() {
     document.head.appendChild(script);
   }, [content?.faq]);
 
+  // سئو: داده‌ساخت‌یافته Product برای صفحه‌ی هر محصول و Article برای هر مقاله
+  useEffect(() => {
+    const id = "page-jsonld";
+    document.getElementById(id)?.remove();
+    if (!content) return;
+    let data = null;
+    if (route[0] === "product" && route[1]) {
+      const p = content.products.find((x) => x.id === route[1]);
+      if (p) {
+        data = {
+          "@context": "https://schema.org", "@type": "Product", name: tr(p.name, "fa"), description: tr(p.desc, "fa"),
+          brand: p.brand || undefined, image: p.imageUrl ? resolveImageUrl(p.imageUrl) : undefined,
+          offers: { "@type": "Offer", price: p.price, priceCurrency: "IRR", availability: p.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" },
+        };
+      }
+    } else if (route[0] === "page" && route[1]) {
+      const pg = pages.find((x) => x.id === route[1] || x.slug === route[1]);
+      if (pg?.isArticle) {
+        data = { "@context": "https://schema.org", "@type": "Article", headline: tr(pg.title, "fa"), author: { "@type": "Person", name: pg.authorName || "" }, datePublished: pg.createdAt };
+      }
+    }
+    if (!data) return;
+    const script = document.createElement("script");
+    script.type = "application/ld+json"; script.id = id;
+    script.textContent = JSON.stringify(data);
+    document.head.appendChild(script);
+  }, [route.join("/"), content]); // eslint-disable-line
+
   // سئو: عنوان و توضیح صفحه بر اساس مسیر فعلی به‌روزرسانی می‌شود
   useEffect(() => {
     if (!content) return;
@@ -658,13 +700,26 @@ export default function NovinPolytechnic() {
       contact: { fa: `تماس با ما | ${siteName}`, en: `Contact Us | ${siteName}` },
       tracking: { fa: `پیگیری سفارش | ${siteName}`, en: `Track Order | ${siteName}` },
     };
-    const key = TITLES[route[0]] ? route[0] : "";
-    document.title = tr(TITLES[key], lang);
+    let pageTitle = null;
+    let pageDesc = null;
+    if (route[0] === "product" && route[1]) {
+      const p = content.products.find((x) => x.id === route[1]);
+      if (p) { pageTitle = `${tr(p.name, lang)} — ${siteName}`; pageDesc = tr(p.desc, lang); }
+    } else if (route[0] === "page" && route[1]) {
+      const pg = pages.find((x) => x.id === route[1] || x.slug === route[1]);
+      if (pg) pageTitle = `${tr(pg.title, lang)} — ${siteName}`;
+    }
+    if (!pageTitle) {
+      const key = TITLES[route[0]] ? route[0] : "";
+      pageTitle = tr(TITLES[key], lang);
+      if (key === "") pageDesc = tr(content.settings.tagline, lang);
+    }
+    document.title = pageTitle;
     const descEl = document.querySelector('meta[name="description"]');
-    if (descEl && key === "") descEl.setAttribute("content", tr(content.settings.tagline, lang));
+    if (descEl && pageDesc) descEl.setAttribute("content", pageDesc);
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === "fa" ? "rtl" : "ltr";
-  }, [route[0], lang, content]);
+  }, [route.join("/"), lang, content]); // eslint-disable-line
 
   const persist = useCallback(async (next) => {
     setContent(next);
@@ -869,6 +924,8 @@ function GlobalStyles() {
       @keyframes orbitSpin { to { transform: rotate(360deg); } }
       .hero-orbit { animation: orbitSpin 14s linear infinite; }
       .hero-wide-image { animation: heroWideDrift 14s ease-in-out infinite alternate; transform: scale(1.06); }
+      @keyframes hero3dTilt { 0%,100% { transform: rotateY(0deg) rotateX(0deg) translateZ(0); } 25% { transform: rotateY(5deg) rotateX(-2.5deg) translateZ(10px); } 50% { transform: rotateY(-4deg) rotateX(2deg) translateZ(0); } 75% { transform: rotateY(3deg) rotateX(3deg) translateZ(6px); } }
+      .hero-3d-tilt { transform-style: preserve-3d; animation: hero3dTilt 11s ease-in-out infinite; box-shadow: 0 30px 60px -20px rgba(0,0,0,.6); }
       @keyframes heroWideDrift { from { transform: scale(1.06) translate3d(0,0,0); } to { transform: scale(1.13) translate3d(2%, -1%, 0); } }
       @keyframes heroChip { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-18px) rotate(4deg); } }
       .hero-wide-chip { animation: heroChip 4.5s ease-in-out infinite; }
@@ -1121,8 +1178,8 @@ function HomePage({ content, navigate, lang }) {
   const h = content.hero;
   return (
     <>
-      <section className="relative pt-40 pb-24 px-4 sm:px-6 overflow-hidden bg-[#0b0b0c] text-white">
-        <div key={`poster-${lang}`} className="absolute inset-y-0 left-0 w-full lg:w-[68%] overflow-hidden hero-wide-visual">
+      <section className="relative pt-40 pb-24 px-4 sm:px-6 overflow-hidden bg-[#0b0b0c] text-white" style={{ perspective: "1600px" }}>
+        <div key={`poster-${lang}`} className="absolute inset-y-0 left-0 w-full lg:w-[68%] overflow-hidden hero-wide-visual hero-3d-tilt">
           <img src="/assets/hero-data-recovery-v2.png" alt="" className="w-full h-full object-cover object-right hero-wide-image poster-scan-reveal" />
           <div className="absolute inset-0 poster-scan-stripes pointer-events-none" />
           <div className="poster-scanline-once absolute inset-x-0 h-[2px] bg-red-400 shadow-[0_0_20px_4px_rgba(239,68,68,.65)] pointer-events-none" />
@@ -1195,39 +1252,6 @@ function HomePage({ content, navigate, lang }) {
       </section>
 
       <LiveRepairCounter baseCount={content.settings.successfulRepairsCount} lang={lang} />
-
-      {content.beforeAfter?.length > 0 && (
-        <section className="py-20 px-4 sm:px-6 bg-neutral-50">
-          <div className="max-w-6xl mx-auto">
-            <Reveal className="mb-10 text-center">
-              <span className="text-red-600 text-xs sm:text-sm tracking-[0.25em] font-extrabold">{lang === "fa" ? "نمونه کار" : "PORTFOLIO"}</span>
-              <h2 className="text-2xl sm:text-3xl font-black mt-2">{lang === "fa" ? "قبل و بعد از تعمیر" : "Before & After Repair"}</h2>
-              <p className="text-black/40 text-sm mt-2">{lang === "fa" ? "خط وسط تصویر را بکشید تا تفاوت را ببینید" : "Drag the middle line to reveal the difference"}</p>
-            </Reveal>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {content.beforeAfter.map((item, idx) => (
-                <Reveal key={item.id} delay={idx * 80}><BeforeAfterCard item={item} lang={lang} /></Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {content.testimonials?.length > 0 && (
-        <section className="py-20 px-4 sm:px-6">
-          <div className="max-w-6xl mx-auto">
-            <Reveal className="mb-10 text-center">
-              <span className="text-red-600 text-xs sm:text-sm tracking-[0.25em] font-extrabold">{lang === "fa" ? "نظرات مشتریان" : "TESTIMONIALS"}</span>
-              <h2 className="text-2xl sm:text-3xl font-black mt-2">{lang === "fa" ? "چه کسی بهتر از خود مشتری‌ها می‌گه؟" : "Hear it from our customers"}</h2>
-            </Reveal>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {content.testimonials.map((t, idx) => (
-                <Reveal key={t.id} delay={idx * 80}><TestimonialCard item={t} lang={lang} /></Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
     </>
   );
 }
@@ -1447,6 +1471,24 @@ function ServicesPage({ content, lang, onRequestService }) {
           {content.services.map((s, idx) => <Reveal key={s.id} delay={idx * 70}><ServiceCard s={s} fallbackImage={SERVICE_IMAGES[idx % SERVICE_IMAGES.length]} lang={lang} /></Reveal>)}
         </div>
       </section>
+
+      {content.beforeAfter?.length > 0 && (
+        <section className="py-20 px-4 sm:px-6 bg-neutral-50">
+          <div className="max-w-6xl mx-auto">
+            <Reveal className="mb-10 text-center">
+              <span className="text-red-600 text-xs sm:text-sm tracking-[0.25em] font-extrabold">{lang === "fa" ? "نمونه کار" : "PORTFOLIO"}</span>
+              <h2 className="text-2xl sm:text-3xl font-black mt-2">{lang === "fa" ? "قبل و بعد از تعمیر" : "Before & After Repair"}</h2>
+              <p className="text-black/40 text-sm mt-2">{lang === "fa" ? "خط وسط تصویر را بکشید تا تفاوت را ببینید" : "Drag the middle line to reveal the difference"}</p>
+            </Reveal>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {content.beforeAfter.map((item, idx) => (
+                <Reveal key={item.id} delay={idx * 80}><BeforeAfterCard item={item} lang={lang} /></Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <TrustBar lang={lang} variant="services" />
       {showRequest && <ServiceRequestModal onClose={() => setShowRequest(false)} onSubmit={onRequestService} lang={lang} />}
     </div>
@@ -1608,6 +1650,22 @@ function ShopPage({ content, addToCart, lang, wishlistIds = [], onToggleWishlist
           )}
         </div>
       </section>
+
+      {content.testimonials?.length > 0 && (
+        <section className="py-20 px-4 sm:px-6 bg-neutral-50">
+          <div className="max-w-6xl mx-auto">
+            <Reveal className="mb-10 text-center">
+              <span className="text-red-600 text-xs sm:text-sm tracking-[0.25em] font-extrabold">{lang === "fa" ? "نظرات مشتریان" : "TESTIMONIALS"}</span>
+              <h2 className="text-2xl sm:text-3xl font-black mt-2">{lang === "fa" ? "چه کسی بهتر از خود مشتری‌ها می‌گه؟" : "Hear it from our customers"}</h2>
+            </Reveal>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {content.testimonials.map((t, idx) => (
+                <Reveal key={t.id} delay={idx * 80}><TestimonialCard item={t} lang={lang} /></Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -1799,7 +1857,8 @@ function TrackingPage({ lang }) {
     e.preventDefault(); setError(""); setResult(null);
     try { const data = await api.trackOrder(code); setResult(data.order); } catch (err) { setError(lang === "fa" ? "کد رهگیری معتبر نیست." : "Tracking code was not found."); }
   };
-  return <section className="pt-36 pb-24 px-4 sm:px-6 min-h-[60vh] bg-neutral-50"><div className="max-w-xl mx-auto bg-white border border-black/10 rounded-3xl p-6 sm:p-9 shadow-sm"><div className="text-center mb-7"><Package className="text-red-600 mx-auto mb-3" size={32} /><h1 className="text-2xl font-black">{lang === "fa" ? "پیگیری سفارش و خدمات" : "Order & Service Tracking"}</h1><p className="text-sm text-black/45 mt-2">{lang === "fa" ? "کد رهگیری را وارد کنید." : "Enter your tracking code."}</p></div><form onSubmit={track} className="flex gap-2"><input required dir="ltr" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="NP-..." className="flex-1 border border-black/15 focus:border-red-600 outline-none rounded-xl px-4 py-3 text-sm"/><button className="bg-red-600 text-white px-5 rounded-xl font-bold">{lang === "fa" ? "پیگیری" : "Track"}</button></form>{error && <p className="text-red-600 text-xs mt-4">{error}</p>}{result && <div className="mt-6 rounded-2xl bg-neutral-50 border border-black/10 p-5 space-y-2 text-sm"><p><span className="text-black/45">{lang === "fa" ? "کد رهگیری: " : "Code: "}</span><b dir="ltr">{result.trackingCode}</b></p><p><span className="text-black/45">{lang === "fa" ? "نوع: " : "Type: "}</span>{result.orderType === "service" ? (lang === "fa" ? "خدمات" : "Service") : (lang === "fa" ? "خرید" : "Shop")}</p><p><span className="text-black/45">{lang === "fa" ? "وضعیت: " : "Status: "}</span><b className="text-red-600">{result.status}</b></p></div>}</div></section>;
+  const statusLabel = result ? tr(STATUS_LABELS[result.status] || { fa: result.status, en: result.status }, lang) : "";
+  return <section className="pt-36 pb-24 px-4 sm:px-6 min-h-[60vh] bg-neutral-50"><div className="max-w-xl mx-auto bg-white border border-black/10 rounded-3xl p-6 sm:p-9 shadow-sm"><div className="text-center mb-7"><Package className="text-red-600 mx-auto mb-3" size={32} /><h1 className="text-2xl font-black">{lang === "fa" ? "پیگیری سفارش و خدمات" : "Order & Service Tracking"}</h1><p className="text-sm text-black/45 mt-2">{lang === "fa" ? "کد رهگیری را وارد کنید." : "Enter your tracking code."}</p></div><form onSubmit={track} className="flex gap-2"><input required dir="ltr" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="NP-..." className="flex-1 border border-black/15 focus:border-red-600 outline-none rounded-xl px-4 py-3 text-sm"/><button className="bg-red-600 text-white px-5 rounded-xl font-bold">{lang === "fa" ? "پیگیری" : "Track"}</button></form>{error && <p className="text-red-600 text-xs mt-4">{error}</p>}{result && <div className="mt-6 rounded-2xl bg-neutral-50 border border-black/10 p-5 space-y-2 text-sm"><p><span className="text-black/45">{lang === "fa" ? "کد رهگیری: " : "Code: "}</span><b dir="ltr">{result.trackingCode}</b></p><p><span className="text-black/45">{lang === "fa" ? "نوع: " : "Type: "}</span>{result.orderType === "service" ? (lang === "fa" ? "خدمات" : "Service") : (lang === "fa" ? "خرید" : "Shop")}</p><p><span className="text-black/45">{lang === "fa" ? "وضعیت: " : "Status: "}</span><b className="text-red-600">{statusLabel}</b></p></div>}</div></section>;
 }
 
 /* ============================== حساب کاربری ============================== */
@@ -2699,7 +2758,7 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
                 <input required type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="accent-red-600 mt-0.5 shrink-0" />
                 <span className="text-black/60 leading-relaxed">
                   {lang === "fa" ? "" : "I have read and agree to the "}
-                  <a href="#/page/rules" target="_blank" rel="noreferrer" className="text-red-600 font-bold hover:underline">{lang === "fa" ? "قوانین و شرایط" : "Terms & Conditions"}</a>
+                  <a href="/page/rules" target="_blank" rel="noreferrer" className="text-red-600 font-bold hover:underline">{lang === "fa" ? "قوانین و شرایط" : "Terms & Conditions"}</a>
                   {lang === "fa" ? " فروشگاه را مطالعه کرده‌ام و می‌پذیرم." : "."}
                 </span>
               </label>
@@ -2791,6 +2850,7 @@ const ALL_ADMIN_TABS = [
   { id: "notifications", icon: Send, roles: ["admin"] },
   { id: "notifTemplates", icon: MessageSquareText, roles: ["admin"] },
   { id: "popups", icon: Megaphone, roles: ["admin", "editor"] },
+  { id: "system", icon: HardDrive, roles: ["admin"] },
   { id: "settings", icon: Settings, roles: ["admin"] },
 ];
 
@@ -2826,7 +2886,7 @@ function AdminPanel({ content, update, onClose, onLogout, tab, setTab, saving, r
           })}
         </div>
         <div key={tab} className="flex-1 overflow-y-auto p-5 sm:p-8 bg-neutral-50 admin-content-in">
-          {tab === "dashboard" && <AdminDashboard content={content} role={role} currentUser={currentUser} lang={lang} />}
+          {tab === "dashboard" && <AdminDashboard content={content} role={role} currentUser={currentUser} setTab={setTab} lang={lang} />}
           {tab === "pages" && <AdminPages role={role} currentUser={currentUser} refreshPages={refreshPages} lang={lang} />}
           {tab === "hero" && <AdminHero content={content} update={update} lang={lang} />}
           {tab === "services" && <AdminServices content={content} update={update} lang={lang} />}
@@ -2850,6 +2910,7 @@ function AdminPanel({ content, update, onClose, onLogout, tab, setTab, saving, r
           {tab === "notifications" && <AdminNotifications lang={lang} />}
           {tab === "notifTemplates" && <AdminNotificationTemplates lang={lang} />}
           {tab === "popups" && <AdminPopups lang={lang} />}
+          {tab === "system" && <AdminSystem lang={lang} />}
           {tab === "settings" && <AdminSettings content={content} update={update} lang={lang} />}
         </div>
       </div>
@@ -2906,21 +2967,32 @@ function MiniBarChart({ data, lang }) {
   );
 }
 
-function AdminDashboard({ content, role, currentUser, lang }) {
+function AdminDashboard({ content, role, currentUser, setTab, lang }) {
   const [userCount, setUserCount] = useState(null);
   const [stats, setStats] = useState(null);
   useEffect(() => { if (role === "admin") api.listUsers().then(({ users }) => setUserCount(users.length)).catch(() => {}); }, [role]);
   useEffect(() => { if (role === "admin") api.adminStatsOverview().then(setStats).catch(() => {}); }, [role]);
   const quickStats = [
-    { label: aui("services", lang), value: content.services.length, icon: Wrench, color: "from-blue-500 to-blue-600" },
-    { label: aui("products", lang), value: content.products.length, icon: Package, color: "from-purple-500 to-purple-600" },
+    { label: aui("services", lang), value: content.services.length, icon: Wrench, color: "from-blue-500 to-blue-600", onClick: () => setTab("services") },
+    { label: aui("products", lang), value: content.products.length, icon: Package, color: "from-purple-500 to-purple-600", onClick: () => setTab("products") },
   ];
-  if (role === "admin") quickStats.push({ label: aui("users", lang), value: userCount ?? "…", icon: UsersIcon, color: "from-emerald-500 to-emerald-600" });
+  if (role === "admin") quickStats.push({ label: aui("users", lang), value: userCount ?? "…", icon: UsersIcon, color: "from-emerald-500 to-emerald-600", onClick: () => setTab("users") });
   const roleDesc = {
     admin: { fa: "دسترسی کامل به همه‌ی بخش‌ها.", en: "Full access to every section." },
     editor: { fa: "می‌توانید همه‌ی محتوای سایت را ویرایش کنید.", en: "You can edit all site content." },
     author: { fa: "می‌توانید صفحات جدید بسازید و فقط صفحات خودتان را ویرایش کنید.", en: "You can create new pages and edit only your own pages." },
   };
+  const StatBtn = ({ label, value, icon: Ico, color, onClick, hint }) => (
+    <button onClick={onClick} className="admin-stat-card group text-right relative overflow-hidden rounded-2xl p-4 bg-white border border-black/10 hover:border-red-200 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+      <div className="flex items-center justify-between mb-3">
+        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}><Ico size={18} /></div>
+        <ArrowUpRight size={14} className="text-black/15 group-hover:text-red-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+      </div>
+      <div className="text-xl font-black">{value}</div>
+      <div className="text-xs text-black/40 mt-1">{label}</div>
+      {hint && <div className="text-[10px] text-red-500 font-bold mt-1">{hint}</div>}
+    </button>
+  );
   return (
     <div>
       <SectionTitle>{aui("welcome", lang)}, {currentUser?.name} 👋</SectionTitle>
@@ -2928,19 +3000,17 @@ function AdminDashboard({ content, role, currentUser, lang }) {
 
       {role === "admin" && stats && (
         <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+            <StatBtn label={lang === "fa" ? "درآمد کل فروشگاه" : "Total shop revenue"} value={fmtPrice(stats.totalRevenue, lang)} icon={TrendingUp} color="from-red-600 to-red-500" onClick={() => setTab("orders")} />
+            <StatBtn label={lang === "fa" ? "کل سفارشات" : "Total orders"} value={fmtNum(stats.totalOrders, lang)} icon={ShoppingCart} color="from-neutral-800 to-neutral-700" onClick={() => setTab("orders")} hint={lang === "fa" ? `${fmtNum(stats.deliveredOrders, lang)} تحویل‌شده` : `${fmtNum(stats.deliveredOrders, lang)} delivered`} />
+            <StatBtn label={lang === "fa" ? "سفارش امروز" : "Today's orders"} value={fmtNum(stats.todayOrders, lang)} icon={Sparkles} color="from-amber-500 to-amber-600" onClick={() => setTab("orders")} />
+            <StatBtn label={lang === "fa" ? "تیکت‌های باز" : "Open tickets"} value={fmtNum(stats.pendingTickets, lang)} icon={LifeBuoy} color="from-blue-500 to-blue-600" onClick={() => setTab("tickets")} />
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            {[
-              { label: lang === "fa" ? "درآمد کل فروشگاه" : "Total shop revenue", value: fmtPrice(stats.totalRevenue, lang), icon: TrendingUp, color: "from-red-600 to-red-500" },
-              { label: lang === "fa" ? "کل سفارشات" : "Total orders", value: fmtNum(stats.totalOrders, lang), icon: ShoppingCart, color: "from-neutral-800 to-neutral-700" },
-              { label: lang === "fa" ? "سفارش امروز" : "Today's orders", value: fmtNum(stats.todayOrders, lang), icon: Sparkles, color: "from-amber-500 to-amber-600" },
-              { label: lang === "fa" ? "تیکت‌های باز" : "Open tickets", value: fmtNum(stats.pendingTickets, lang), icon: LifeBuoy, color: "from-blue-500 to-blue-600" },
-            ].map((s) => (
-              <div key={s.label} className="admin-stat-card relative overflow-hidden rounded-2xl p-4 bg-white border border-black/10 hover:border-red-200 hover:shadow-lg transition-all">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} text-white flex items-center justify-center mb-3 shadow-lg`}><s.icon size={18} /></div>
-                <div className="text-xl font-black">{s.value}</div>
-                <div className="text-xs text-black/40 mt-1">{s.label}</div>
-              </div>
-            ))}
+            <StatBtn label={lang === "fa" ? "کدهای تخفیف فعال" : "Active coupons"} value={fmtNum(stats.activeCoupons, lang)} icon={Tag} color="from-pink-500 to-pink-600" onClick={() => setTab("coupons")} />
+            <StatBtn label={lang === "fa" ? "رزروهای در انتظار" : "Pending reservations"} value={fmtNum(stats.pendingReservations, lang)} icon={CalendarDays} color="from-cyan-500 to-cyan-600" onClick={() => setTab("reservations")} hint={lang === "fa" ? `${fmtNum(stats.upcomingReservations, lang)} پیش‌رو` : `${fmtNum(stats.upcomingReservations, lang)} upcoming`} />
+            <StatBtn label={lang === "fa" ? "پیام‌های خوانده‌نشده" : "Unread messages"} value={fmtNum(stats.newMessages, lang)} icon={Mail} color="from-indigo-500 to-indigo-600" onClick={() => setTab("messages")} />
+            <StatBtn label={lang === "fa" ? "باشگاه مشتریان" : "Loyalty club"} value={lang === "fa" ? "مدیریت" : "Manage"} icon={Gift} color="from-fuchsia-500 to-fuchsia-600" onClick={() => setTab("loyalty")} />
           </div>
           <div className={cardCls + " mb-8"}>
             <div className="flex items-center justify-between mb-4">
@@ -2952,13 +3022,7 @@ function AdminDashboard({ content, role, currentUser, lang }) {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {quickStats.map((s) => (
-          <div key={s.label} className="rounded-2xl p-4 bg-white border border-black/10 hover:border-red-200 hover:shadow-lg transition-all">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} text-white flex items-center justify-center mb-3 shadow-lg`}><s.icon size={18} /></div>
-            <div className="text-2xl font-black">{s.value}</div>
-            <div className="text-xs text-black/40 mt-1">{s.label}</div>
-          </div>
-        ))}
+        {quickStats.map((s) => <StatBtn key={s.label} {...s} />)}
       </div>
     </div>
   );
@@ -3245,7 +3309,7 @@ function AdminBeforeAfter({ content, update, lang }) {
   return (
     <div>
       <SectionTitle action={<button onClick={addItem} className={btnPrimary}><Plus size={14} /> {lang === "fa" ? "افزودن نمونه" : "Add sample"}</button>}>{aui("beforeAfter", lang)}</SectionTitle>
-      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "برای هر نمونه، یک عکس قبل و یک عکس بعد از تعمیر آپلود کنید تا در صفحه‌ی اصلی به‌صورت اسلایدر تعاملی نمایش داده شود." : "Upload a before and an after photo for each repair sample to display as an interactive slider on the homepage."}</p>
+      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "برای هر نمونه، یک عکس قبل و یک عکس بعد از تعمیر آپلود کنید تا در پایین صفحه‌ی «خدمات» به‌صورت اسلایدر تعاملی نمایش داده شود." : "Upload a before and an after photo for each repair sample to display as an interactive slider at the bottom of the Services page."}</p>
       <div className="grid sm:grid-cols-2 gap-4">
         {list.map((s) => (
           <div key={s.id} className={cardCls}>
@@ -3275,7 +3339,7 @@ function AdminTestimonials({ content, update, lang }) {
   return (
     <div>
       <SectionTitle action={<button onClick={addItem} className={btnPrimary}><Plus size={14} /> {lang === "fa" ? "افزودن نظر" : "Add testimonial"}</button>}>{aui("testimonials", lang)}</SectionTitle>
-      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "لینک ویدیوی آپارات مشتری را وارد کنید تا در صفحه‌ی اصلی نمایش داده شود." : "Add an Aparat video link from a customer to show it on the homepage."}</p>
+      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "لینک ویدیوی آپارات مشتری را وارد کنید تا در پایین صفحه‌ی «فروشگاه» نمایش داده شود." : "Add an Aparat video link from a customer to show it at the bottom of the Shop page."}</p>
       <div className="grid sm:grid-cols-2 gap-4">
         {list.map((s) => (
           <div key={s.id} className={cardCls}>
@@ -4525,6 +4589,79 @@ function AdminReservations({ lang }) {
             </div>
           </div>
           <button onClick={saveSettings} className={btnPrimary}>{aui("save", lang)}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminSystem({ lang }) {
+  const [sub, setSub] = useState("backups");
+  const [backups, setBackups] = useState(null);
+  const [errors, setErrors] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const loadBackups = () => api.adminListBackups().then(({ backups: list }) => setBackups(list)).catch(() => setBackups([]));
+  const loadErrors = () => api.adminListErrorLogs().then(({ errors: list }) => setErrors(list)).catch(() => setErrors([]));
+  useEffect(() => { loadBackups(); loadErrors(); }, []);
+
+  const runBackupNow = async () => { setBusy(true); try { await api.adminRunBackupNow(); await loadBackups(); } catch (e) { alert(e.message); } setBusy(false); };
+  const download = async (name) => { try { await api.adminDownloadBackup(name); } catch (e) { alert(e.message); } };
+  const clearErrors = async () => {
+    if (!confirm(lang === "fa" ? "همه‌ی گزارش‌های خطا پاک شوند؟" : "Clear all error logs?")) return;
+    try { await api.adminClearErrorLogs(); await loadErrors(); } catch (e) { alert(e.message); }
+  };
+
+  return (
+    <div className="max-w-3xl">
+      <SectionTitle>{aui("system", lang)}</SectionTitle>
+      <div className="flex bg-black/5 rounded-lg p-1 mb-6 w-fit">
+        <button onClick={() => setSub("backups")} className={`text-xs px-4 py-2 rounded-md transition-colors ${sub === "backups" ? "bg-white shadow font-bold" : "text-black/50"}`}>{lang === "fa" ? "پشتیبان‌گیری" : "Backups"}</button>
+        <button onClick={() => setSub("errors")} className={`text-xs px-4 py-2 rounded-md transition-colors ${sub === "errors" ? "bg-white shadow font-bold" : "text-black/50"}`}>{lang === "fa" ? "گزارش خطاها" : "Error Logs"} {errors?.length > 0 && <span className="mr-1 bg-red-600 text-white rounded-full px-1.5">{errors.length}</span>}</button>
+      </div>
+
+      {sub === "backups" && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-black/40 text-xs max-w-sm">{lang === "fa" ? "هر ۲۴ ساعت خودکار یک نسخه‌ی پشتیبان از دیتابیس گرفته می‌شود و ۱۴ نسخه‌ی آخر نگه داشته می‌شود." : "A backup is taken automatically every 24 hours; the last 14 are kept."}</p>
+            <button onClick={runBackupNow} disabled={busy} className={btnPrimary}>{busy ? "…" : (lang === "fa" ? "پشتیبان‌گیری الان" : "Backup now")}</button>
+          </div>
+          {backups === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+          {backups && backups.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز نسخه‌ی پشتیبانی وجود ندارد." : "No backups yet."}</p>}
+          <div className="space-y-2">
+            {backups?.map((b) => (
+              <div key={b.name} className={cardCls + " flex items-center justify-between"}>
+                <div><p className="text-sm font-bold" dir="ltr">{b.name}</p><p className="text-black/40 text-xs mt-1">{fmtDateTime(b.createdAt, lang)} · {b.sizeKb} KB</p></div>
+                <button onClick={() => download(b.name)} className={btnGhost}><Download size={14} /> {lang === "fa" ? "دانلود" : "Download"}</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {sub === "errors" && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-black/40 text-xs max-w-sm">{lang === "fa" ? "خطاهای غیرمنتظره‌ی سمت سرور و سمت مرورگر کاربران اینجا ثبت می‌شوند." : "Unexpected server and browser errors are logged here."}</p>
+            {errors?.length > 0 && <button onClick={clearErrors} className={btnGhost}><Trash2 size={14} /> {lang === "fa" ? "پاک کردن همه" : "Clear all"}</button>}
+          </div>
+          {errors === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+          {errors && errors.length === 0 && <p className="text-black/40 text-sm flex items-center gap-2"><Check size={16} className="text-green-600" /> {lang === "fa" ? "هیچ خطایی ثبت نشده — همه‌چیز سالمه." : "No errors logged — everything looks healthy."}</p>}
+          <div className="space-y-2">
+            {errors?.map((e) => (
+              <details key={e.id} className={cardCls}>
+                <summary className="cursor-pointer flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-sm font-bold text-red-600"><AlertTriangle size={14} /> {e.message?.slice(0, 100) || (lang === "fa" ? "خطای نامشخص" : "Unknown error")}</span>
+                  <span className="text-black/30 text-[10px] shrink-0">{fmtDateTime(e.createdAt, lang)}</span>
+                </summary>
+                <div className="mt-2 text-xs text-black/50 space-y-1">
+                  <p><b>{lang === "fa" ? "منبع:" : "Source:"}</b> {e.source}</p>
+                  {e.url && <p><b>URL:</b> <span dir="ltr">{e.url}</span></p>}
+                  {e.stack && <pre className="bg-neutral-900 text-neutral-200 rounded-lg p-3 overflow-x-auto text-[10px] mt-2" dir="ltr">{e.stack}</pre>}
+                </div>
+              </details>
+            ))}
+          </div>
         </div>
       )}
     </div>

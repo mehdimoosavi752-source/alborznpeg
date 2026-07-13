@@ -1,11 +1,20 @@
 services:
+  # ---------------------------------------------------------------------------
+  # سرویس اصلی (پروداکشن) — سایت زنده
+  # ---------------------------------------------------------------------------
   - type: web
     name: novin-polytechnic-alborz
     runtime: node
     plan: free
+    branch: main
     buildCommand: npm run build
     startCommand: npm start
     healthCheckPath: /api/health
+    disk:
+      # دیسک دائمی؛ بدون این، دیتابیس و عکس‌های آپلودی با هر دیپلوی پاک می‌شوند
+      name: novin-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: 20
@@ -17,3 +26,45 @@ services:
         value: admin
       - key: ADMIN_PASSWORD
         sync: false
+      - key: DB_PATH
+        value: /data/data.sqlite
+      - key: UPLOADS_DIR
+        value: /data/uploads
+      - key: BACKUPS_DIR
+        value: /data/backups
+
+  # ---------------------------------------------------------------------------
+  # سرویس تست (Staging) — برای امتحان تغییرات قبل از انتشار روی سایت اصلی
+  # اگر نمی‌خواهید از محیط تست جدا استفاده کنید، این بخش را از فایل حذف کنید.
+  # برای فعال‌سازی: یک شاخه‌ی جدید به نام staging در گیت‌هاب بسازید و تغییرات را
+  # اول آنجا پوش کنید، تست کنید، بعد به main مرج کنید.
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: novin-polytechnic-alborz-staging
+    runtime: node
+    plan: free
+    branch: staging
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: novin-data-staging
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DB_PATH
+        value: /data/data.sqlite
+      - key: UPLOADS_DIR
+        value: /data/uploads
+      - key: BACKUPS_DIR
+        value: /data/backups

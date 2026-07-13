@@ -8,6 +8,8 @@ import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
 import multer from "multer";
 import nodemailer from "nodemailer";
+import sharp from "sharp";
+import rateLimit from "express-rate-limit";
 import { db, uid } from "./db.js";
 import { signToken, authenticate, optionalAuthenticate, requireAdmin, requireEditor, requireAuthor } from "./auth.js";
 
@@ -23,18 +25,24 @@ app.use(compression());
 app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
 
+// جلوگیری از حدس رمز عبور با درخواست‌های پیاپی (brute-force)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "تعداد تلاش‌های ورود بیش از حد مجاز بود؛ چند دقیقه دیگر دوباره امتحان کنید." },
+});
+
 /* ============================== آپلود تصویر ============================== */
 
-const uploadsDir = path.join(__dirname, "uploads");
+const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-app.use("/uploads", express.static(uploadsDir));
+app.use("/uploads", express.static(uploadsDir, { maxAge: "30d" }));
 
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadsDir),
-    filename: (req, file, cb) => cb(null, `${uid("img")}${path.extname(file.originalname).slice(0, 10)}`),
-  }),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith("image/")) return cb(new Error("فقط فایل تصویر مجاز است"));
     cb(null, true);
@@ -42,10 +50,27 @@ const upload = multer({
 });
 
 app.post("/api/admin/upload", authenticate, requireEditor, (req, res) => {
-  upload.single("image")(req, res, (err) => {
+  upload.single("image")(req, res, async (err) => {
     if (err) return res.status(400).json({ error: err.message || "آپلود ناموفق بود" });
     if (!req.file) return res.status(400).json({ error: "فایلی ارسال نشد" });
-    res.json({ url: `/uploads/${req.file.filename}` });
+    try {
+      // بهینه‌سازی خودکار: تغییر اندازه (حداکثر عرض ۱۹۲۰px) و تبدیل به WebP برای کاهش چشمگیر حجم
+      const isAnimated = req.file.mimetype === "image/gif";
+      const filename = `${uid("img")}.${isAnimated ? "gif" : "webp"}`;
+      const outPath = path.join(uploadsDir, filename);
+      if (isAnimated) {
+        fs.writeFileSync(outPath, req.file.buffer);
+      } else {
+        await sharp(req.file.buffer, { animated: false })
+          .rotate()
+          .resize({ width: 1920, height: 1920, fit: "inside", withoutEnlargement: true })
+          .webp({ quality: 82 })
+          .toFile(outPath);
+      }
+      res.json({ url: `/uploads/${filename}` });
+    } catch (e) {
+      res.status(400).json({ error: "پردازش تصویر ناموفق بود: " + e.message });
+    }
   });
 });
 
@@ -56,7 +81,7 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 /* ============================== احراز هویت ============================== */
 
-app.post("/api/auth/register", (req, res) => {
+app.post("/api/auth/register", authLimiter, (req, res) => {
   const { username, password, name } = req.body || {};
   if (!username || !password || !name) return res.status(400).json({ error: "همه فیلدها را پر کنید" });
   if (password.length < 6) return res.status(400).json({ error: "رمز عبور باید حداقل ۶ کاراکتر باشد" });
@@ -76,7 +101,7 @@ app.post("/api/auth/register", (req, res) => {
   res.json({ token, user: toPublicUser(user) });
 });
 
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", authLimiter, (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) return res.status(400).json({ error: "نام کاربری و رمز عبور را وارد کنید" });
 
@@ -560,7 +585,10 @@ app.get("/api/admin/stats/overview", authenticate, requireAdmin, (req, res) => {
   const todayOrders = db.prepare("SELECT COUNT(*) as c FROM orders WHERE created_at >= ?").get(todayStart.toISOString()).c || 0;
   const upcomingReservations = db.prepare("SELECT COUNT(*) as c FROM reservations WHERE res_date >= date('now') AND status != 'cancelled'").get().c || 0;
   const deliveredOrders = db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'delivered'").get().c || 0;
-  res.json({ monthly, totalRevenue, totalOrders, pendingTickets, todayOrders, upcomingReservations, deliveredOrders });
+  const activeCoupons = db.prepare("SELECT COUNT(*) as c FROM coupons WHERE enabled = 1 AND (end_date = '' OR end_date >= ?)").get(new Date().toISOString()).c || 0;
+  const newMessages = db.prepare("SELECT COUNT(*) as c FROM messages WHERE status = 'new'").get().c || 0;
+  const pendingReservations = db.prepare("SELECT COUNT(*) as c FROM reservations WHERE status = 'pending'").get().c || 0;
+  res.json({ monthly, totalRevenue, totalOrders, pendingTickets, todayOrders, upcomingReservations, deliveredOrders, activeCoupons, newMessages, pendingReservations });
 });
 
 app.get("/api/stats/public", (req, res) => {
@@ -1187,9 +1215,12 @@ app.get("/sitemap.xml", (req, res) => {
   const base = `${req.protocol}://${req.get("host")}`;
   const pages = db.prepare("SELECT slug, updated_at FROM pages WHERE status = 'published'").all();
   const staticRoutes = ["", "services", "shop", "articles", "faq", "about", "contact", "tracking"];
+  let products = [];
+  try { products = JSON.parse(db.prepare("SELECT data FROM site_content WHERE id = 1").get().data).products || []; } catch (e) { /* ignore */ }
   const urls = [
-    ...staticRoutes.map((r) => `  <url><loc>${base}/${r ? "#/" + r : ""}</loc><changefreq>weekly</changefreq><priority>${r ? "0.7" : "1.0"}</priority></url>`),
-    ...pages.map((p) => `  <url><loc>${base}/#/page/${p.slug}</loc><lastmod>${(p.updated_at || "").slice(0, 10)}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`),
+    ...staticRoutes.map((r) => `  <url><loc>${base}/${r}</loc><changefreq>weekly</changefreq><priority>${r ? "0.7" : "1.0"}</priority></url>`),
+    ...pages.map((p) => `  <url><loc>${base}/page/${p.slug}</loc><lastmod>${(p.updated_at || "").slice(0, 10)}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`),
+    ...products.map((p) => `  <url><loc>${base}/product/${p.id}</loc><changefreq>weekly</changefreq><priority>0.65</priority></url>`),
   ];
   res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`);
 });
@@ -1213,39 +1244,181 @@ app.get(/^(?!\/api|\/uploads).*/, (req, res, next) => {
     const c = JSON.parse(row.data);
     const base = `${req.protocol}://${req.get("host")}`;
     const s = c.settings || {};
-    const servicesHtml = (c.services || []).map((sv) => `<li><h3>${escapeHtml(sv.title?.fa)}</h3><p>${escapeHtml(sv.desc?.fa)}</p>${sv.priceRange?.fa ? `<p><strong>${escapeHtml(sv.priceRange.fa)}</strong></p>` : ""}</li>`).join("\n");
-    const productsHtml = (c.products || []).map((p) => `<li><h3>${escapeHtml(p.name?.fa)} (${escapeHtml(p.brand)})</h3><p>${escapeHtml(p.desc?.fa)}</p><p>قیمت: ${Number(p.price || 0).toLocaleString("fa-IR")} تومان</p></li>`).join("\n");
-    const faqHtml = (c.faq || []).map((f) => `<li><h3>${escapeHtml(f.question?.fa)}</h3><p>${escapeHtml(f.answer?.fa)}</p></li>`).join("\n");
-    const articles = db.prepare("SELECT title, slug FROM pages WHERE status = 'published' AND is_article = 1").all();
-    const articlesHtml = articles.map((a) => `<li><a href="${base}/#/page/${a.slug}">${escapeHtml(a.title)}</a></li>`).join("\n");
+    const siteName = escapeHtml(tr_fa(s.siteName) || "نوین پلی‌تکنیک البرز");
+    const segs = req.path.replace(/^\/+|\/+$/g, "").split("/").filter(Boolean);
+    const seg0 = segs[0] || "";
 
-    const html = `<!doctype html>
+    const wrap = (title, description, canonicalPath, bodyHtml) => {
+      res.set("Cache-Control", "public, max-age=1800");
+      res.type("html").send(`<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<title>${escapeHtml(tr_fa(s.siteName) || "نوین پلی‌تکنیک البرز")} | تعمیر کامپیوتر، پلی‌استیشن و فروش ویدئو پروژکتور</title>
-<meta name="description" content="${escapeHtml(tr_fa(s.tagline) || "تعمیر تخصصی کامپیوتر، لپ‌تاپ و پلی‌استیشن، بازیابی اطلاعات و فروشگاه اورجینال ویدئو پروژکتور در کرج.")}" />
-<link rel="canonical" href="${base}/" />
+<title>${escapeHtml(title)}</title>
+<meta name="description" content="${escapeHtml(description)}" />
+<link rel="canonical" href="${base}${canonicalPath}" />
 </head>
 <body>
-<h1>${escapeHtml(tr_fa(s.siteName) || "نوین پلی‌تکنیک البرز")}</h1>
+${bodyHtml}
+<p><a href="${base}/">${lang_view_full()}</a></p>
+</body>
+</html>`);
+    };
+    function lang_view_full() { return "مشاهده‌ی نسخه‌ی کامل و تعاملی سایت"; }
+
+    if (seg0 === "product" && segs[1]) {
+      const p = (c.products || []).find((x) => x.id === segs[1]);
+      if (!p) return next();
+      const title = `${escapeHtml(tr_fa(p.name))} — ${siteName}`;
+      const desc = escapeHtml(tr_fa(p.desc) || "").slice(0, 160);
+      const body = `<h1>${escapeHtml(tr_fa(p.name))}</h1><p>برند: ${escapeHtml(p.brand || "")}</p><p>${escapeHtml(tr_fa(p.desc) || "")}</p><p><strong>قیمت: ${Number(p.price || 0).toLocaleString("fa-IR")} تومان</strong></p>`;
+      return wrap(title, desc, `/product/${p.id}`, body);
+    }
+
+    if (seg0 === "page" && segs[1]) {
+      const page = db.prepare("SELECT * FROM pages WHERE slug = ? AND status = 'published'").get(segs[1]);
+      if (!page) return next();
+      const pageTitle = tr_fa(parseTitle(page.title)) || page.title;
+      let blocksText = "";
+      try {
+        const blocks = JSON.parse(page.blocks || "[]");
+        blocksText = blocks.filter((b) => b.type === "text" || b.type === "heading").map((b) => `<p>${escapeHtml(tr_fa(b.content))}</p>`).join("\n");
+      } catch (e) { /* ignore */ }
+      const title = `${escapeHtml(pageTitle)} — ${siteName}`;
+      const body = `<h1>${escapeHtml(pageTitle)}</h1>${blocksText}`;
+      return wrap(title, pageTitle, `/page/${page.slug}`, body);
+    }
+
+    if (seg0 === "services") {
+      const html = (c.services || []).map((sv) => `<li><h2>${escapeHtml(sv.title?.fa)}</h2><p>${escapeHtml(sv.desc?.fa)}</p>${sv.priceRange?.fa ? `<p><strong>${escapeHtml(sv.priceRange.fa)}</strong></p>` : ""}</li>`).join("\n");
+      return wrap(`خدمات تعمیر — ${siteName}`, "تعمیر تخصصی کامپیوتر، لپ‌تاپ، پلی‌استیشن و بازیابی اطلاعات.", "/services", `<h1>خدمات ما</h1><ul>${html}</ul>`);
+    }
+
+    if (seg0 === "shop") {
+      const html = (c.products || []).map((p) => `<li><a href="${base}/product/${p.id}"><h2>${escapeHtml(p.name?.fa)}</h2></a><p>${escapeHtml(p.desc?.fa)}</p><p>قیمت: ${Number(p.price || 0).toLocaleString("fa-IR")} تومان</p></li>`).join("\n");
+      return wrap(`فروشگاه ویدئو پروژکتور — ${siteName}`, "فروش اورجینال انواع ویدئو پروژکتور با گارانتی.", "/shop", `<h1>فروشگاه</h1><ul>${html}</ul>`);
+    }
+
+    if (seg0 === "faq") {
+      const html = (c.faq || []).map((f) => `<li><h2>${escapeHtml(f.question?.fa)}</h2><p>${escapeHtml(f.answer?.fa)}</p></li>`).join("\n");
+      return wrap(`سوالات متداول — ${siteName}`, "پاسخ به پرتکرارترین سوالات مشتریان.", "/faq", `<h1>سوالات متداول</h1><ul>${html}</ul>`);
+    }
+
+    if (seg0 === "articles") {
+      const articles = db.prepare("SELECT title, slug FROM pages WHERE status = 'published' AND is_article = 1").all();
+      const html = articles.map((a) => `<li><a href="${base}/page/${a.slug}">${escapeHtml(tr_fa(parseTitle(a.title)))}</a></li>`).join("\n");
+      return wrap(`مقالات — ${siteName}`, "مقالات آموزشی درباره‌ی تعمیر و نگهداری کامپیوتر و سخت‌افزار.", "/articles", `<h1>مقالات</h1><ul>${html}</ul>`);
+    }
+
+    if (seg0 === "contact") {
+      const body = `<h1>تماس با ما</h1><p>تلفن: ${escapeHtml(s.phone || "02632536821")}${s.mobile ? ` — موبایل: ${escapeHtml(s.mobile)}` : ""}</p><p>آدرس: ${escapeHtml(tr_fa(s.address) || "")}</p>`;
+      return wrap(`تماس با ما — ${siteName}`, "اطلاعات تماس و آدرس نوین پلی‌تکنیک البرز.", "/contact", body);
+    }
+
+    // صفحه‌ی اصلی و سایر مسیرهای ناشناخته: خلاصه‌ی کامل کسب‌وکار
+    const servicesHtml = (c.services || []).map((sv) => `<li><h3>${escapeHtml(sv.title?.fa)}</h3><p>${escapeHtml(sv.desc?.fa)}</p></li>`).join("\n");
+    const productsHtml = (c.products || []).map((p) => `<li><h3>${escapeHtml(p.name?.fa)} (${escapeHtml(p.brand)})</h3><p>${escapeHtml(p.desc?.fa)}</p><p>قیمت: ${Number(p.price || 0).toLocaleString("fa-IR")} تومان</p></li>`).join("\n");
+    const faqHtml = (c.faq || []).map((f) => `<li><h3>${escapeHtml(f.question?.fa)}</h3><p>${escapeHtml(f.answer?.fa)}</p></li>`).join("\n");
+    const articles = db.prepare("SELECT title, slug FROM pages WHERE status = 'published' AND is_article = 1").all();
+    const articlesHtml = articles.map((a) => `<li><a href="${base}/page/${a.slug}">${escapeHtml(tr_fa(parseTitle(a.title)))}</a></li>`).join("\n");
+    const body = `<h1>${siteName}</h1>
 <p>${escapeHtml(tr_fa(s.tagline) || "تعمیر تخصصی کامپیوتر، لپ‌تاپ، پلی‌استیشن و فروش اورجینال ویدئو پروژکتور در کرج")}</p>
 <section><h2>خدمات</h2><ul>${servicesHtml}</ul></section>
 <section><h2>محصولات فروشگاه (ویدئو پروژکتور)</h2><ul>${productsHtml}</ul></section>
 <section><h2>سوالات متداول</h2><ul>${faqHtml}</ul></section>
 ${articles.length ? `<section><h2>مقالات</h2><ul>${articlesHtml}</ul></section>` : ""}
-<section><h2>تماس با ما</h2><p>تلفن: ${escapeHtml(s.phone || "02632536821")}${s.mobile ? ` — موبایل: ${escapeHtml(s.mobile)}` : ""}</p><p>آدرس: ${escapeHtml(tr_fa(s.address) || "")}</p></section>
-<p><a href="${base}/">مشاهده‌ی نسخه‌ی کامل و تعاملی سایت</a></p>
-</body>
-</html>`;
-    res.set("Cache-Control", "public, max-age=1800");
-    return res.type("html").send(html);
+<section><h2>تماس با ما</h2><p>تلفن: ${escapeHtml(s.phone || "02632536821")}${s.mobile ? ` — موبایل: ${escapeHtml(s.mobile)}` : ""}</p><p>آدرس: ${escapeHtml(tr_fa(s.address) || "")}</p></section>`;
+    return wrap(`${siteName} | تعمیر کامپیوتر، پلی‌استیشن و فروش ویدئو پروژکتور`, tr_fa(s.tagline) || "تعمیر تخصصی کامپیوتر، لپ‌تاپ و پلی‌استیشن، بازیابی اطلاعات و فروشگاه اورجینال ویدئو پروژکتور در کرج.", "/", body);
   } catch (e) {
     return next();
   }
 });
 
 function tr_fa(v) { return typeof v === "object" && v ? v.fa : v; }
+
+/* ============================== پشتیبان‌گیری خودکار از دیتابیس ============================== */
+// هر ۲۴ ساعت یک نسخه‌ی پشتیبان از فایل دیتابیس گرفته می‌شود و ۱۴ نسخه‌ی آخر نگه داشته می‌شود.
+// این جایگزین دیسک دائمی نیست؛ اگر روی Render دیسک دائمی وصل نکرده باشید، این پوشه هم با هر دیپلوی پاک می‌شود—
+// پس بهتر است هم دیسک دائمی وصل باشد و هم این پشتیبان‌ها به‌عنوان لایه‌ی حفاظتی دوم وجود داشته باشند.
+const backupsDir = process.env.BACKUPS_DIR || path.join(path.dirname(process.env.DB_PATH || "./data.sqlite"), "backups");
+if (!fs.existsSync(backupsDir)) fs.mkdirSync(backupsDir, { recursive: true });
+const DB_FILE_PATH = process.env.DB_PATH || "./data.sqlite";
+
+function runBackup() {
+  try {
+    if (!fs.existsSync(DB_FILE_PATH)) return;
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const dest = path.join(backupsDir, `backup-${stamp}.sqlite`);
+    fs.copyFileSync(DB_FILE_PATH, dest);
+    const files = fs.readdirSync(backupsDir).filter((f) => f.startsWith("backup-")).sort();
+    while (files.length > 14) fs.unlinkSync(path.join(backupsDir, files.shift()));
+    console.log(`[backup] نسخه‌ی پشتیبان ذخیره شد: ${dest}`);
+  } catch (e) {
+    console.error("[backup] خطا در پشتیبان‌گیری:", e.message);
+  }
+}
+setTimeout(runBackup, 60 * 1000); // ۱ دقیقه بعد از بالا آمدن سرور
+setInterval(runBackup, 24 * 60 * 60 * 1000); // هر ۲۴ ساعت
+
+app.get("/api/admin/backups", authenticate, requireAdmin, (req, res) => {
+  const files = fs.existsSync(backupsDir)
+    ? fs.readdirSync(backupsDir).filter((f) => f.startsWith("backup-")).sort().reverse().map((f) => {
+        const stat = fs.statSync(path.join(backupsDir, f));
+        return { name: f, sizeKb: Math.round(stat.size / 1024), createdAt: stat.mtime.toISOString() };
+      })
+    : [];
+  res.json({ backups: files });
+});
+
+app.get("/api/admin/backups/:name/download", authenticate, requireAdmin, (req, res) => {
+  const safeName = path.basename(req.params.name);
+  const filePath = path.join(backupsDir, safeName);
+  if (!safeName.startsWith("backup-") || !fs.existsSync(filePath)) return res.status(404).json({ error: "فایل پیدا نشد" });
+  res.download(filePath);
+});
+
+app.post("/api/admin/backups/run-now", authenticate, requireAdmin, (req, res) => {
+  runBackup();
+  res.json({ ok: true });
+});
+
+/* ============================== پایش خطا (جایگزین سبک Sentry) ============================== */
+// خطاهای سمت سرور و سمت کاربر (مرورگر) در دیتابیس ذخیره می‌شوند تا در پنل مدیریت قابل مشاهده باشند،
+// بدون نیاز به ثبت‌نام در یک سرویس ثالث.
+
+function logError(source, message, stack, url, userAgent) {
+  try {
+    db.prepare("INSERT INTO error_logs (id, source, message, stack, url, user_agent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)").run(
+      uid("err"), source, String(message || "").slice(0, 2000), String(stack || "").slice(0, 4000), String(url || "").slice(0, 500), String(userAgent || "").slice(0, 300), new Date().toISOString()
+    );
+    const count = db.prepare("SELECT COUNT(*) as c FROM error_logs").get().c;
+    if (count > 500) {
+      const excess = db.prepare("SELECT id FROM error_logs ORDER BY created_at ASC LIMIT ?").all(count - 500);
+      const del = db.prepare("DELETE FROM error_logs WHERE id = ?");
+      excess.forEach((r) => del.run(r.id));
+    }
+  } catch (e) { /* اگر خود لاگ کردن خطا بدهد، نادیده گرفته می‌شود */ }
+}
+
+process.on("uncaughtException", (err) => { console.error("[uncaughtException]", err); logError("server", err.message, err.stack, "", ""); });
+process.on("unhandledRejection", (err) => { console.error("[unhandledRejection]", err); logError("server", err?.message || String(err), err?.stack || "", "", ""); });
+
+const clientErrorLimiter = rateLimit({ windowMs: 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false });
+app.post("/api/client-error", clientErrorLimiter, (req, res) => {
+  const { message, stack, url } = req.body || {};
+  logError("client", message, stack, url, req.headers["user-agent"] || "");
+  res.json({ ok: true });
+});
+
+app.get("/api/admin/error-logs", authenticate, requireAdmin, (req, res) => {
+  const rows = db.prepare("SELECT * FROM error_logs ORDER BY created_at DESC LIMIT 200").all();
+  res.json({ errors: rows.map((r) => ({ id: r.id, source: r.source, message: r.message, stack: r.stack, url: r.url, userAgent: r.user_agent, createdAt: r.created_at })) });
+});
+
+app.delete("/api/admin/error-logs", authenticate, requireAdmin, (req, res) => {
+  db.prepare("DELETE FROM error_logs").run();
+  res.json({ ok: true });
+});
 
 /* ============================== سرو کردن فرانت‌اند ساخته‌شده (تک‌سرویسی) ============================== */
 // اگر پوشه‌ی client/dist وجود داشته باشد (یعنی فرانت‌اند build شده)، همین سرور آن را هم سرو می‌کند.
@@ -1264,6 +1437,14 @@ app.get(/^(?!\/api).*/, (req, res, next) => {
   res.sendFile(path.join(clientDist, "index.html"), (err) => {
     if (err) next();
   });
+});
+
+// هندلر سراسری خطا؛ اگر مسیری خطای غیرمنتظره بدهد، اینجا گرفته و ثبت می‌شود
+app.use((err, req, res, next) => {
+  console.error("[express error]", err);
+  logError("server", err.message, err.stack, req.originalUrl, req.headers["user-agent"] || "");
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: "خطای غیرمنتظره‌ای رخ داد" });
 });
 
 app.listen(PORT, () => {
