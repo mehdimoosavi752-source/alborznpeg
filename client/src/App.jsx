@@ -976,6 +976,18 @@ function GlobalStyles() {
       .hero-text-shadow { text-shadow: 0 2px 14px rgba(0,0,0,.9), 0 1px 3px rgba(0,0,0,.95); }
       @keyframes skeletonPulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
       .skeleton-pulse { animation: skeletonPulse 1.4s ease-in-out infinite; }
+      @keyframes authModalIn { 0% { opacity:0; transform: translateY(24px) scale(.94); } 100% { opacity:1; transform: translateY(0) scale(1); } }
+      .auth-modal-in { animation: authModalIn .45s cubic-bezier(.22,.9,.3,1) both; }
+      @keyframes authIconRing { 0% { transform: scale(1); opacity:.8; } 100% { transform: scale(1.5); opacity:0; } }
+      .auth-icon-ring { animation: authIconRing 2s ease-out infinite; }
+      @keyframes authBtnShine { 0%,15% { transform: translateX(-120%) skewX(-15deg); opacity:0; } 25% { opacity:.5; } 45%,100% { transform: translateX(220%) skewX(-15deg); opacity:0; } }
+      .auth-btn-shine { background: linear-gradient(100deg, transparent, rgba(255,255,255,.5) 45%, transparent 65%); animation: authBtnShine 3.2s ease-in-out infinite; }
+      @keyframes cartDrawerIn { 0% { opacity:0; transform: scale(.97) translateY(8px); } 100% { opacity:1; transform: scale(1) translateY(0); } }
+      .cart-drawer-in { animation: cartDrawerIn .3s cubic-bezier(.22,.9,.3,1) both; }
+      @keyframes cartItemIn { 0% { opacity:0; transform: translateX(12px); } 100% { opacity:1; transform: translateX(0); } }
+      .cart-item-in { animation: cartItemIn .35s ease-out both; }
+      @keyframes checkoutSuccessPop { 0% { transform: scale(0); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+      .checkout-success-pop { animation: checkoutSuccessPop .5s cubic-bezier(.22,1.2,.36,1) both; }
       @keyframes adminHeaderGlow { 0%,100% { opacity:.5; transform: translateX(-10%); } 50% { opacity:1; transform: translateX(10%); } }
       .admin-header-glow { background: radial-gradient(400px 60px at 30% 0%, rgba(220,38,38,.35), transparent 70%); animation: adminHeaderGlow 6s ease-in-out infinite; }
       .admin-tab-btn:hover { transform: translateX(-2px); }
@@ -2806,34 +2818,45 @@ function Footer({ content, goToUrl, lang }) {
 function CartDrawer({ cart, total, onClose, onChangeQty, onRemove, onCheckout, lang }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm h-full bg-white border-l border-black/10 flex flex-col">
-        <div className="flex items-center justify-between p-5 border-b border-black/10">
-          <h3 className="font-bold flex items-center gap-2"><ShoppingCart size={18} className="text-red-600" /> {ui("cart", lang)}</h3>
-          <button onClick={onClose}><X size={20} /></button>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="cart-drawer-in relative w-full max-w-sm h-full bg-white flex flex-col shadow-2xl">
+        <div className="relative shrink-0 bg-gradient-to-br from-neutral-950 via-neutral-900 to-red-950 px-5 py-5 overflow-hidden">
+          <div className="absolute -top-6 -left-8 w-32 h-32 bg-red-600/25 rounded-full blur-3xl blob" />
+          <div className="relative flex items-center justify-between">
+            <h3 className="font-black text-white flex items-center gap-2.5">
+              <span className="w-9 h-9 rounded-xl bg-red-600 flex items-center justify-center shrink-0"><ShoppingCart size={16} className="text-white" /></span>
+              {ui("cart", lang)} {cart.length > 0 && <span className="text-white/40 text-xs font-normal">({fmtNum(cart.length, lang)})</span>}
+            </h3>
+            <button onClick={onClose} className="text-white/50 hover:text-white transition-colors"><X size={20} /></button>
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto p-5 space-y-3">
           {cart.length === 0 && <EmptyState icon={ShoppingCart} title={ui("cartEmpty", lang)} desc={lang === "fa" ? "چند محصول خوب منتظرتونه." : "There are some great products waiting for you."} actionLabel={lang === "fa" ? "رفتن به فروشگاه" : "Go to shop"} onAction={() => { onClose(); navigate("shop"); }} />}
-          {cart.map((item) => (
-            <div key={item.id} className="flex items-center gap-3 border-b border-black/10 pb-4">
-              <PatternBox pattern={item.pattern} className="w-14 h-14 rounded-lg flex items-center justify-center shrink-0"><IconBadge name={item.icon} size={22} className="text-white" /></PatternBox>
+          {cart.map((item, idx) => (
+            <div key={item.id} className="cart-item-in flex items-center gap-3 bg-neutral-50 hover:bg-neutral-100 transition-colors rounded-2xl p-3" style={{ animationDelay: `${idx * 60}ms` }}>
+              <PatternBox pattern={item.pattern} className="w-16 h-16 rounded-xl flex items-center justify-center shrink-0"><IconBadge name={item.icon} size={24} className="text-white" /></PatternBox>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold truncate">{tr(item.name, lang)}</p>
-                <p className="text-red-600 text-xs font-bold mt-1">{fmtPrice(item.price, lang)}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <button onClick={() => onChangeQty(item.id, -1)} className="w-6 h-6 rounded bg-black/5 hover:bg-black/10">-</button>
-                  <span className="text-xs w-4 text-center">{fmtNum(item.qty, lang)}</span>
-                  <button onClick={() => onChangeQty(item.id, 1)} className="w-6 h-6 rounded bg-black/5 hover:bg-black/10">+</button>
-                  <button onClick={() => onRemove(item.id)} className="mr-auto text-black/30 hover:text-red-600"><Trash2 size={14} /></button>
+                <p className="text-red-600 text-xs font-black mt-1">{fmtPrice(item.price, lang)}</p>
+                <div className="flex items-center gap-2 mt-2.5">
+                  <div className="flex items-center bg-white border border-black/10 rounded-full overflow-hidden">
+                    <button onClick={() => onChangeQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center hover:bg-black/5 transition-colors font-bold text-black/60">−</button>
+                    <span className="text-xs w-6 text-center font-bold">{fmtNum(item.qty, lang)}</span>
+                    <button onClick={() => onChangeQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center hover:bg-black/5 transition-colors font-bold text-black/60">+</button>
+                  </div>
+                  <button onClick={() => onRemove(item.id)} className="mr-auto text-black/25 hover:text-red-600 transition-colors"><Trash2 size={15} /></button>
                 </div>
               </div>
             </div>
           ))}
         </div>
         {cart.length > 0 && (
-          <div className="p-5 border-t border-black/10">
-            <div className="flex justify-between mb-4 text-sm"><span className="text-black/60">{ui("total", lang)}</span><span className="font-black text-red-600">{fmtPrice(total, lang)}</span></div>
-            <button onClick={onCheckout} className="w-full bg-red-600 hover:bg-red-700 text-white transition-colors py-3 rounded-xl font-bold flex items-center justify-center gap-2"><CreditCard size={16} /> {ui("checkout", lang)}</button>
+          <div className="p-5 border-t border-black/10 bg-white shrink-0">
+            <div className="flex justify-between items-center mb-4"><span className="text-black/50 text-sm">{ui("total", lang)}</span><span className="font-black text-red-600 text-xl">{fmtPrice(total, lang)}</span></div>
+            <button onClick={onCheckout} className="glow-pulse relative overflow-hidden w-full bg-gradient-to-l from-red-600 to-red-700 hover:-translate-y-0.5 text-white transition-all py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-600/25">
+              <span className="auth-btn-shine absolute inset-0 pointer-events-none" />
+              <CreditCard size={16} className="relative" /> <span className="relative">{ui("checkout", lang)}</span>
+            </button>
           </div>
         )}
       </div>
@@ -2891,44 +2914,63 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
     await onSubmit({ ...form, couponCode: coupon?.code || "", usePoints: usePoints && pointsPreview?.pointsUsed > 0, invoice: wantInvoice ? { requested: true, companyName, economicId, nationalId } : { requested: false } });
     setProcessing(false);
   };
+  const checkoutInputCls = "w-full bg-neutral-50 border border-black/10 focus:border-red-500 focus:bg-white focus:ring-4 focus:ring-red-500/10 outline-none rounded-xl px-4 py-2.5 text-sm transition-all";
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white border border-black/10 rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
-        <button onClick={onClose} className="absolute top-4 left-4 text-black/40 hover:text-black"><X size={18} /></button>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
+      <div className="auth-modal-in relative w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[92vh] flex flex-col">
         {orderDone ? (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-4"><Check className="text-red-600" size={28} /></div>
-            <h3 className="text-xl font-black mb-2">{ui("orderPlaced", lang)}</h3>
-            <p className="text-black/50 text-sm">{ui("orderPlacedDesc", lang)}</p>
-            <button onClick={onClose} className="mt-6 bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-bold">{ui("gotIt", lang)}</button>
+          <div className="text-center py-14 px-6">
+            <div className="relative w-24 h-24 mx-auto mb-6">
+              <span className="absolute inset-0 rounded-full border-2 border-green-400/60 auth-icon-ring" />
+              <span className="absolute inset-0 rounded-full border-2 border-green-300/40 auth-icon-ring" style={{ animationDelay: ".6s" }} />
+              <div className="checkout-success-pop w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-xl shadow-green-600/30">
+                <Check className="text-white" size={40} strokeWidth={3} />
+              </div>
+            </div>
+            <h3 className="text-2xl font-black mb-2">{ui("orderPlaced", lang)}</h3>
+            <p className="text-black/50 text-sm max-w-xs mx-auto">{ui("orderPlacedDesc", lang)}</p>
+            <button onClick={onClose} className="mt-8 bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold transition-colors">{ui("gotIt", lang)}</button>
           </div>
         ) : (
           <>
-            <h3 className="font-bold text-lg mb-1 flex items-center gap-2"><CreditCard size={18} className="text-red-600" /> {ui("finalizeOrder", lang)}</h3>
-            <p className="text-black/40 text-xs mb-5">{ui("enterShippingInfo", lang)}</p>
-            <form onSubmit={submit} className="space-y-3">
-              <input required placeholder={ui("fullName", lang)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.name} onChange={(e) => set("name", e.target.value)} />
+            <div className="relative shrink-0 bg-gradient-to-br from-neutral-950 via-neutral-900 to-red-950 px-6 pt-7 pb-6 overflow-hidden">
+              <div className="absolute -top-8 -right-10 w-40 h-40 bg-red-600/25 rounded-full blur-3xl blob" />
+              <button onClick={onClose} className="absolute top-4 left-4 text-white/50 hover:text-white transition-colors z-10"><X size={18} /></button>
+              <div className="relative flex items-center gap-3">
+                <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shrink-0 shadow-lg shadow-red-900/50"><CreditCard size={20} className="text-white" /></span>
+                <div>
+                  <h3 className="font-black text-lg text-white">{ui("finalizeOrder", lang)}</h3>
+                  <p className="text-white/40 text-xs mt-0.5">{ui("enterShippingInfo", lang)}</p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={submit} className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
+              <input required placeholder={ui("fullName", lang)} className={checkoutInputCls} value={form.name} onChange={(e) => set("name", e.target.value)} />
               <div className="grid grid-cols-2 gap-3">
-                <input required placeholder={ui("mobileNumber", lang)} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
-                <input type="email" placeholder={lang === "fa" ? "ایمیل (اختیاری)" : "Email (optional)"} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.email} onChange={(e) => set("email", e.target.value)} />
+                <input required placeholder={ui("mobileNumber", lang)} dir="ltr" className={checkoutInputCls} value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+                <input type="email" placeholder={lang === "fa" ? "ایمیل (اختیاری)" : "Email (optional)"} dir="ltr" className={checkoutInputCls} value={form.email} onChange={(e) => set("email", e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <input required placeholder={lang === "fa" ? "استان" : "Province"} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.province} onChange={(e) => set("province", e.target.value)} />
-                <input required placeholder={lang === "fa" ? "شهر" : "City"} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.city} onChange={(e) => set("city", e.target.value)} />
+                <input required placeholder={lang === "fa" ? "استان" : "Province"} className={checkoutInputCls} value={form.province} onChange={(e) => set("province", e.target.value)} />
+                <input required placeholder={lang === "fa" ? "شهر" : "City"} className={checkoutInputCls} value={form.city} onChange={(e) => set("city", e.target.value)} />
               </div>
-              <input required placeholder={lang === "fa" ? "کد پستی" : "Postal Code"} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} />
-              <textarea required placeholder={ui("exactAddress", lang)} rows={3} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm resize-none" value={form.address} onChange={(e) => set("address", e.target.value)} />
+              <input required placeholder={lang === "fa" ? "کد پستی" : "Postal Code"} dir="ltr" className={checkoutInputCls} value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} />
+              <textarea required placeholder={ui("exactAddress", lang)} rows={3} className={checkoutInputCls + " resize-none"} value={form.address} onChange={(e) => set("address", e.target.value)} />
 
               {coupon ? (
-                <div className="flex items-center justify-between gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5 text-sm">
+                <div className="flex items-center justify-between gap-2 bg-green-50 border border-green-200 rounded-xl px-3.5 py-3 text-sm">
                   <span className="flex items-center gap-1.5 text-green-700 font-bold"><BadgeCheck size={15} /> <span dir="ltr">{coupon.code}</span> {lang === "fa" ? "اعمال شد" : "applied"}</span>
                   <button type="button" onClick={removeCoupon} className="text-green-700/60 hover:text-red-600"><X size={15} /></button>
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <input placeholder={lang === "fa" ? "کد تخفیف (اختیاری)" : "Coupon code (optional)"} dir="ltr" className="flex-1 bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm uppercase" value={couponCode} onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }} />
-                  <button type="button" disabled={couponBusy || !couponCode.trim()} onClick={applyCoupon} className="shrink-0 border border-black/15 hover:border-red-600 disabled:opacity-50 transition-colors px-4 rounded-lg text-sm font-bold">
+                  <div className="relative flex-1">
+                    <Tag size={15} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-black/25 pointer-events-none" />
+                    <input placeholder={lang === "fa" ? "کد تخفیف (اختیاری)" : "Coupon code (optional)"} dir="ltr" className={checkoutInputCls + " pr-10 uppercase"} value={couponCode} onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }} />
+                  </div>
+                  <button type="button" disabled={couponBusy || !couponCode.trim()} onClick={applyCoupon} className="shrink-0 border border-black/15 hover:border-red-600 hover:text-red-600 disabled:opacity-50 transition-colors px-4 rounded-xl text-sm font-bold">
                     {couponBusy ? "..." : (lang === "fa" ? "اعمال" : "Apply")}
                   </button>
                 </div>
@@ -2936,7 +2978,7 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
               {couponError && <p className="text-red-600 text-xs">{couponError}</p>}
 
               {loyalty?.settings?.enabled && loyalty.points >= (loyalty.settings.minRedeemPoints || 0) && (
-                <label className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-sm cursor-pointer">
+                <label className={`flex items-center justify-between gap-2 border rounded-xl px-3.5 py-3 text-sm cursor-pointer transition-colors ${usePoints ? "bg-amber-50 border-amber-300" : "bg-neutral-50 border-black/10"}`}>
                   <span className="flex items-center gap-2 text-amber-800">
                     <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} className="accent-red-600" />
                     <Award size={15} />
@@ -2946,7 +2988,7 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
                 </label>
               )}
 
-              <div className="border-t border-black/10 pt-3 space-y-1.5">
+              <div className="bg-neutral-50 rounded-xl p-4 space-y-1.5">
                 {(discount > 0 || pointsDiscount > 0) && (
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-black/50">{lang === "fa" ? "مبلغ سفارش" : "Order total"}</span>
@@ -2965,9 +3007,9 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
                     <span className="text-amber-700 font-bold">-{fmtPrice(pointsDiscount, lang)}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-black/60">{ui("payableAmount", lang)}</span>
-                  <span className="font-black text-red-600">{fmtPrice(payable, lang)}</span>
+                <div className="flex justify-between items-center pt-1.5 border-t border-black/10 mt-1.5">
+                  <span className="text-black/60 font-bold text-sm">{ui("payableAmount", lang)}</span>
+                  <span className="font-black text-red-600 text-lg">{fmtPrice(payable, lang)}</span>
                 </div>
               </div>
 
@@ -2977,11 +3019,11 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
                   <span className="flex items-center gap-1.5"><FileText size={14} className="text-black/40" /> {lang === "fa" ? "نیاز به فاکتور رسمی دارم (سازمانی/شرکتی)" : "I need an official company invoice"}</span>
                 </label>
                 {wantInvoice && (
-                  <div className="mt-2 space-y-2 bg-neutral-50 rounded-lg p-3">
-                    <input required placeholder={lang === "fa" ? "نام شرکت / سازمان" : "Company / organization name"} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-3 py-2 text-sm" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+                  <div className="mt-2 space-y-2 bg-neutral-50 rounded-xl p-3">
+                    <input required placeholder={lang === "fa" ? "نام شرکت / سازمان" : "Company / organization name"} className={checkoutInputCls} value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
                     <div className="grid grid-cols-2 gap-2">
-                      <input placeholder={lang === "fa" ? "شناسه اقتصادی" : "Economic ID"} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-3 py-2 text-sm" value={economicId} onChange={(e) => setEconomicId(e.target.value)} />
-                      <input placeholder={lang === "fa" ? "شناسه ملی" : "National ID"} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-3 py-2 text-sm" value={nationalId} onChange={(e) => setNationalId(e.target.value)} />
+                      <input placeholder={lang === "fa" ? "شناسه اقتصادی" : "Economic ID"} dir="ltr" className={checkoutInputCls} value={economicId} onChange={(e) => setEconomicId(e.target.value)} />
+                      <input placeholder={lang === "fa" ? "شناسه ملی" : "National ID"} dir="ltr" className={checkoutInputCls} value={nationalId} onChange={(e) => setNationalId(e.target.value)} />
                     </div>
                   </div>
                 )}
@@ -2996,8 +3038,9 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
                 </span>
               </label>
 
-              <button disabled={processing || !agreed} className="w-full bg-red-600 hover:bg-red-700 text-white disabled:opacity-60 transition-colors py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                {processing ? ui("connectingToGateway", lang) : paymentStatus?.enabled ? `${ui("payWith", lang)} ${paymentStatus.provider}` : ui("payOnline", lang)}
+              <button disabled={processing || !agreed} className="auth-submit-btn relative overflow-hidden w-full bg-gradient-to-l from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white disabled:opacity-60 transition-all py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-600/25 hover:shadow-red-600/40 hover:-translate-y-0.5">
+                <span className="auth-btn-shine absolute inset-0 pointer-events-none" />
+                <span className="relative">{processing ? ui("connectingToGateway", lang) : paymentStatus?.enabled ? `${ui("payWith", lang)} ${paymentStatus.provider}` : ui("payOnline", lang)}</span>
               </button>
               <p className="text-black/30 text-[11px] text-center leading-relaxed pt-1">
                 {paymentStatus?.enabled ? ui("gatewayRealNote", lang) : ui("gatewaySimNote", lang)}
@@ -3100,75 +3143,93 @@ function AuthModal({ onClose, onLogin, onRegister, lang }) {
     if (err) setError(err); else setError("");
   };
 
-  const fieldInputCls = "w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm";
+  const fieldInputCls = "w-full bg-neutral-50 border border-black/10 focus:border-red-500 focus:bg-white focus:ring-4 focus:ring-red-500/10 outline-none rounded-xl pr-11 pl-4 py-3 text-sm transition-all";
+  const IconField = ({ icon: Ico, error, ...props }) => (
+    <div>
+      <div className="relative">
+        <Ico size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-black/30 pointer-events-none" />
+        <input {...props} className={fieldInputCls + (error ? " border-red-500" : "")} />
+      </div>
+      {error && <p className="text-red-600 text-[11px] mt-1 pr-1">{error}</p>}
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-white border border-black/10 rounded-2xl p-6 max-h-[92vh] overflow-y-auto">
-        <button onClick={onClose} className="absolute top-4 left-4 text-black/40 hover:text-black"><X size={18} /></button>
-        <div className="text-center mb-6">
-          <div className="w-14 h-14 rounded-full bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-3">
-            {mode === "login" ? <Lock className="text-red-600" size={22} /> : <UserPlus className="text-red-600" size={22} />}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
+      <div className="auth-modal-in relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[92vh] flex flex-col">
+        <div className="relative shrink-0 bg-gradient-to-br from-neutral-950 via-neutral-900 to-red-950 pt-8 pb-14 px-6 overflow-hidden">
+          <div className="absolute -top-8 -right-10 w-40 h-40 bg-red-600/30 rounded-full blur-3xl blob" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-red-500/20 rounded-full blur-3xl blob" style={{ animationDelay: "3s" }} />
+          <button onClick={onClose} className="absolute top-4 left-4 text-white/50 hover:text-white transition-colors z-10"><X size={18} /></button>
+          <div className="relative text-center">
+            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-red-900/50">
+              <span className="absolute inset-0 rounded-2xl border-2 border-red-400/60 auth-icon-ring" />
+              <span className="absolute inset-0 rounded-2xl border-2 border-red-300/40 auth-icon-ring" style={{ animationDelay: ".7s" }} />
+              {mode === "login" ? <Lock className="text-white relative" size={24} /> : <UserPlus className="text-white relative" size={24} />}
+            </div>
+            <h3 className="font-black text-lg text-white">{mode === "login" ? ui("signInToAccount", lang) : ui("registerNewUser", lang)}</h3>
+            <p className="text-white/40 text-xs mt-1">{lang === "fa" ? "نوین پلی‌تکنیک البرز" : "Novin Polytechnic Alborz"}</p>
           </div>
-          <h3 className="font-bold text-lg">{mode === "login" ? ui("signInToAccount", lang) : ui("registerNewUser", lang)}</h3>
         </div>
-        <div className="flex bg-black/5 rounded-lg p-1 mb-5">
-          <button onClick={() => { setMode("login"); setError(""); setFieldErrors({}); }} className={`flex-1 text-xs py-2 rounded-md transition-colors ${mode === "login" ? "bg-red-600 text-white font-bold" : "text-black/50"}`}>{ui("signIn", lang)}</button>
-          <button onClick={() => { setMode("register"); setError(""); setFieldErrors({}); }} className={`flex-1 text-xs py-2 rounded-md transition-colors ${mode === "register" ? "bg-red-600 text-white font-bold" : "text-black/50"}`}>{ui("createAccount", lang)}</button>
+
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
+          <div className="relative flex bg-black/5 rounded-xl p-1 -mt-7 mb-5 shadow-lg shrink-0">
+            <div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-red-600 rounded-lg shadow-md transition-transform duration-300 ease-out ${mode === "register" ? "translate-x-[calc(-100%-8px)]" : "translate-x-0"}`} style={{ right: 4 }} />
+            <button onClick={() => { setMode("login"); setError(""); setFieldErrors({}); }} className={`relative z-10 flex-1 text-xs py-2.5 rounded-lg transition-colors font-bold ${mode === "login" ? "text-white" : "text-black/50"}`}>{ui("signIn", lang)}</button>
+            <button onClick={() => { setMode("register"); setError(""); setFieldErrors({}); }} className={`relative z-10 flex-1 text-xs py-2.5 rounded-lg transition-colors font-bold ${mode === "register" ? "text-white" : "text-black/50"}`}>{ui("createAccount", lang)}</button>
+          </div>
+
+          <form onSubmit={submit} className="space-y-3">
+            {/* هانی‌پات: برای کاربر واقعی نامرئی است (ربات‌ها معمولاً همه‌ی فیلدها را پر می‌کنند) */}
+            <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} className="absolute opacity-0 pointer-events-none -z-10 w-0 h-0" aria-hidden="true" />
+            {mode === "register" && <IconField icon={User} required placeholder={ui("fullName", lang)} value={name} onChange={(e) => setName(e.target.value)} />}
+            <IconField icon={User} required placeholder={ui("username", lang)} value={username} onChange={(e) => setUsername(e.target.value)} />
+            <IconField icon={Lock} required type="password" placeholder={ui("password", lang)} value={password} onChange={(e) => setPassword(e.target.value)} />
+
+            {mode === "register" && (
+              <>
+                <IconField icon={Phone} required dir="ltr" placeholder={lang === "fa" ? "شماره موبایل (0912xxxxxxx)" : "Mobile number"} value={phone} onChange={(e) => setPhone(e.target.value)} error={fieldErrors.phone} />
+                <IconField icon={Mail} required dir="ltr" type="email" placeholder={lang === "fa" ? "ایمیل" : "Email"} value={email} onChange={(e) => setEmail(e.target.value)} error={fieldErrors.email} />
+
+                {signupFields.map((f) => (
+                  <div key={f.key}>
+                    {f.type === "select" ? (
+                      <select className={fieldInputCls.replace("pr-11", "pr-4")} value={customValues[f.key] || ""} onChange={(e) => setCustomValues({ ...customValues, [f.key]: e.target.value })}>
+                        <option value="">{tr(f.label, lang)}</option>
+                        {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : f.type === "textarea" ? (
+                      <textarea rows={2} placeholder={tr(f.label, lang)} className={fieldInputCls.replace("pr-11", "pr-4") + " resize-none"} value={customValues[f.key] || ""} onChange={(e) => setCustomValues({ ...customValues, [f.key]: e.target.value })} />
+                    ) : (
+                      <input type={f.type} placeholder={tr(f.label, lang)} className={fieldInputCls.replace("pr-11", "pr-4")} value={customValues[f.key] || ""} onChange={(e) => setCustomValues({ ...customValues, [f.key]: e.target.value })} />
+                    )}
+                    {fieldErrors[f.key] && <p className="text-red-600 text-[11px] mt-1">{fieldErrors[f.key]}</p>}
+                  </div>
+                ))}
+
+                <label className={`flex items-center gap-2.5 border rounded-xl px-3.5 py-3 cursor-pointer transition-colors ${notRobot ? "bg-green-50 border-green-300" : "bg-neutral-50 border-black/10"}`}>
+                  <input type="checkbox" checked={notRobot} onChange={(e) => setNotRobot(e.target.checked)} className="accent-red-600 w-4 h-4" />
+                  <span className="text-sm font-bold flex items-center gap-1.5"><ShieldCheck size={15} className={notRobot ? "text-green-600" : "text-black/30"} /> {lang === "fa" ? "من ربات نیستم" : "I'm not a robot"}</span>
+                </label>
+                {fieldErrors.notRobot && <p className="text-red-600 text-[11px] -mt-2">{fieldErrors.notRobot}</p>}
+
+                {captchaCfg?.enabled && (
+                  <div>
+                    <TurnstileWidget siteKey={captchaCfg.siteKey} onToken={setCaptchaToken} lang={lang} />
+                    {fieldErrors.captcha && <p className="text-red-600 text-[11px] mt-1 text-center">{fieldErrors.captcha}</p>}
+                  </div>
+                )}
+              </>
+            )}
+
+            {error && <p className="text-red-600 text-xs text-center bg-red-50 border border-red-200 rounded-lg py-2">{error}</p>}
+            <button disabled={busy} className="auth-submit-btn relative overflow-hidden w-full bg-gradient-to-l from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white disabled:opacity-60 transition-all py-3 rounded-xl font-bold shadow-lg shadow-red-600/25 hover:shadow-red-600/40 hover:-translate-y-0.5">
+              <span className="auth-btn-shine absolute inset-0 pointer-events-none" />
+              <span className="relative">{busy ? ui("checking", lang) : mode === "login" ? ui("signIn", lang) : ui("createAccount", lang)}</span>
+            </button>
+          </form>
         </div>
-        <form onSubmit={submit} className="space-y-3">
-          {/* هانی‌پات: برای کاربر واقعی نامرئی است (ربات‌ها معمولاً همه‌ی فیلدها را پر می‌کنند) */}
-          <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} className="absolute opacity-0 pointer-events-none -z-10 w-0 h-0" aria-hidden="true" />
-          {mode === "register" && <input required placeholder={ui("fullName", lang)} value={name} onChange={(e) => setName(e.target.value)} className={fieldInputCls} />}
-          <input required placeholder={ui("username", lang)} value={username} onChange={(e) => setUsername(e.target.value)} className={fieldInputCls} />
-          <input required type="password" placeholder={ui("password", lang)} value={password} onChange={(e) => setPassword(e.target.value)} className={fieldInputCls} />
-
-          {mode === "register" && (
-            <>
-              <div>
-                <input required dir="ltr" placeholder={lang === "fa" ? "شماره موبایل (0912xxxxxxx)" : "Mobile number"} value={phone} onChange={(e) => setPhone(e.target.value)} className={fieldInputCls + (fieldErrors.phone ? " border-red-500" : "")} />
-                {fieldErrors.phone && <p className="text-red-600 text-[11px] mt-1">{fieldErrors.phone}</p>}
-              </div>
-              <div>
-                <input required dir="ltr" type="email" placeholder={lang === "fa" ? "ایمیل" : "Email"} value={email} onChange={(e) => setEmail(e.target.value)} className={fieldInputCls + (fieldErrors.email ? " border-red-500" : "")} />
-                {fieldErrors.email && <p className="text-red-600 text-[11px] mt-1">{fieldErrors.email}</p>}
-              </div>
-
-              {signupFields.map((f) => (
-                <div key={f.key}>
-                  {f.type === "select" ? (
-                    <select className={fieldInputCls} value={customValues[f.key] || ""} onChange={(e) => setCustomValues({ ...customValues, [f.key]: e.target.value })}>
-                      <option value="">{tr(f.label, lang)}</option>
-                      {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
-                    </select>
-                  ) : f.type === "textarea" ? (
-                    <textarea rows={2} placeholder={tr(f.label, lang)} className={fieldInputCls + " resize-none"} value={customValues[f.key] || ""} onChange={(e) => setCustomValues({ ...customValues, [f.key]: e.target.value })} />
-                  ) : (
-                    <input type={f.type} placeholder={tr(f.label, lang)} className={fieldInputCls} value={customValues[f.key] || ""} onChange={(e) => setCustomValues({ ...customValues, [f.key]: e.target.value })} />
-                  )}
-                  {fieldErrors[f.key] && <p className="text-red-600 text-[11px] mt-1">{fieldErrors[f.key]}</p>}
-                </div>
-              ))}
-
-              <label className="flex items-center gap-2.5 bg-neutral-50 border border-black/10 rounded-lg px-3.5 py-3 cursor-pointer">
-                <input type="checkbox" checked={notRobot} onChange={(e) => setNotRobot(e.target.checked)} className="accent-red-600 w-4 h-4" />
-                <span className="text-sm font-bold flex items-center gap-1.5"><ShieldCheck size={15} className="text-green-600" /> {lang === "fa" ? "من ربات نیستم" : "I'm not a robot"}</span>
-              </label>
-              {fieldErrors.notRobot && <p className="text-red-600 text-[11px] -mt-2">{fieldErrors.notRobot}</p>}
-
-              {captchaCfg?.enabled && (
-                <div>
-                  <TurnstileWidget siteKey={captchaCfg.siteKey} onToken={setCaptchaToken} lang={lang} />
-                  {fieldErrors.captcha && <p className="text-red-600 text-[11px] mt-1 text-center">{fieldErrors.captcha}</p>}
-                </div>
-              )}
-            </>
-          )}
-
-          {error && <p className="text-red-600 text-xs text-center">{error}</p>}
-          <button disabled={busy} className="w-full bg-red-600 hover:bg-red-700 text-white disabled:opacity-60 transition-colors py-2.5 rounded-xl font-bold">{busy ? ui("checking", lang) : mode === "login" ? ui("signIn", lang) : ui("createAccount", lang)}</button>
-        </form>
       </div>
     </div>
   );
