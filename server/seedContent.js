@@ -95,7 +95,7 @@ export const DEFAULT_CONTENT = {
       desc: { fa: "نرخ رفرش بالاش رو حس می‌کنید وقتی فیلم اکشن یا بازی روی پرده‌ی بزرگ می‌بینید — تصویر شل نمی‌شه. قیمتش هم نسبت به کیفیتی که می‌ده منصفانه‌ست.", en: "You feel that high refresh rate during action movies or games on the big screen — nothing looks smeared. Fair price for what you get." },
     },
     {
-      id: uid("prj"), brand: "Panasonic", technology: "3LCD Laser", resolution: "WUXGA", lumens: 5000, price: 68000000, stock: 2, icon: "Cpu", pattern: "grid", image: "/assets/projector-product.png",
+      id: uid("prj"), brand: "Panasonic", technology: "3LCD Laser", resolution: "WUXGA", lumens: 5000, price: 68000000, stock: 2, icon: "Cpu", pattern: "grid", image: "/assets/projector-showcase.svg",
       name: { fa: "پاناسونیک PT-VMZ50", en: "Panasonic PT-VMZ50" },
       category: { fa: "اداری و تجاری", en: "Business & Conference" },
       desc: { fa: "برای اتاق کنفرانس یا سالن همایش که نور محیط زیاده، منبع نوری لیزریش یعنی سال‌ها بدون نگرانی تعویض لامپ کار می‌کنه.", en: "For a conference room or event hall with a lot of ambient light, the laser light source means years of use without worrying about lamp replacement." },
@@ -113,7 +113,7 @@ export const DEFAULT_CONTENT = {
       desc: { fa: "اگه بودجه محدوده و می‌خواید اولین تجربه‌تون از سینمای خانگی رو شروع کنید، این مدل بیشترین کیفیت رو به ازای قیمتش می‌ده.", en: "If your budget is tight and this is your first home-cinema setup, this model gives you the most quality per toman." },
     },
     {
-      id: uid("prj"), brand: "XGIMI", technology: "LED + Battery", resolution: "Full HD 1080p", lumens: 900, price: 32500000, stock: 5, icon: "Layers", pattern: "wave", image: "/assets/projector-product.png",
+      id: uid("prj"), brand: "XGIMI", technology: "LED + Battery", resolution: "Full HD 1080p", lumens: 900, price: 32500000, stock: 5, icon: "Layers", pattern: "wave", image: "/assets/projector-showcase.svg",
       name: { fa: "ایکس‌جیمی Halo+", en: "XGIMI Halo+" },
       category: { fa: "قابل‌حمل", en: "Portable" },
       desc: { fa: "باتری داخلیش رو حداقل ۲ ساعت پخش می‌کنه بدون برق — عالی برای سینمای حیاط یا کمپینگ که پریز برق دم دست نیست.", en: "The built-in battery streams for at least 2 hours without a wall outlet — perfect for a backyard movie night or camping trip." },

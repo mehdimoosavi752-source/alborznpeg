@@ -292,6 +292,46 @@ function Reveal({ children, className = "", delay = 0 }) {
     </div>
   );
 }
+
+function Skeleton({ className = "" }) {
+  return <div className={`skeleton-pulse bg-black/[0.06] rounded-lg ${className}`} />;
+}
+
+function ProductCardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-black/10 overflow-hidden">
+      <Skeleton className="h-40 w-full rounded-none" />
+      <div className="p-4 space-y-2">
+        <Skeleton className="h-3 w-1/3" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+    </div>
+  );
+}
+
+function ListRowSkeleton() {
+  return (
+    <div className="border border-black/10 rounded-xl p-4 flex items-center gap-3">
+      <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+      <div className="flex-1 space-y-2"><Skeleton className="h-3 w-1/3" /><Skeleton className="h-3 w-2/3" /></div>
+    </div>
+  );
+}
+
+function EmptyState({ icon: Ico = Package, title, desc, actionLabel, onAction }) {
+  return (
+    <div className="text-center py-16 px-4">
+      <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4"><Ico size={26} className="text-black/25" /></div>
+      <p className="font-bold text-black/60 mb-1.5">{title}</p>
+      {desc && <p className="text-black/35 text-sm max-w-xs mx-auto mb-5">{desc}</p>}
+      {actionLabel && onAction && (
+        <button onClick={onAction} className="bg-red-600 hover:bg-red-700 text-white transition-colors px-5 py-2.5 rounded-xl text-sm font-bold">{actionLabel}</button>
+      )}
+    </div>
+  );
+}
+
 function PatternBox({ pattern, image, className = "", strong = false, children }) {
   const overlay = strong
     ? "bg-gradient-to-t from-black/90 via-black/45 to-black/5"
@@ -934,6 +974,8 @@ function GlobalStyles() {
       .hero-wide-chip-delay { animation-delay: -1.7s; }
       .hero-wide-chip-slow { animation-duration: 6.4s; animation-delay: -3s; }
       .hero-text-shadow { text-shadow: 0 2px 14px rgba(0,0,0,.9), 0 1px 3px rgba(0,0,0,.95); }
+      @keyframes skeletonPulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+      .skeleton-pulse { animation: skeletonPulse 1.4s ease-in-out infinite; }
       @keyframes adminHeaderGlow { 0%,100% { opacity:.5; transform: translateX(-10%); } 50% { opacity:1; transform: translateX(10%); } }
       .admin-header-glow { background: radial-gradient(400px 60px at 30% 0%, rgba(220,38,38,.35), transparent 70%); animation: adminHeaderGlow 6s ease-in-out infinite; }
       .admin-tab-btn:hover { transform: translateX(-2px); }
@@ -1051,24 +1093,29 @@ function Header({ content, visibleMenu, goTo, activePage, mobileMenuOpen, setMob
 
 /* ============================== صفحه خانه ============================== */
 
-function TrustBar({ lang, variant = "general" }) {
+function TrustBar({ lang, variant = "general", content }) {
+  const returnDays = content?.settings?.returnPolicyDays;
+  const successRate = content?.settings?.repairSuccessRate;
+  const returnLabel = returnDays ? { fa: `${fmtNum(returnDays, lang)} روز مهلت بازگشت`, en: `${fmtNum(returnDays, lang)}-Day Return Policy` } : ui2("trustReturn");
   const items = variant === "services" ? [
-    { icon: BadgeCheck, key: "trustAuthenticity" },
-    { icon: ShieldCheck, key: "trustDiagnosis" },
-    { icon: Truck, key: "trustShipping" },
-    { icon: RotateCcw, key: "trustReturn" },
+    { icon: BadgeCheck, label: ui2("trustAuthenticity") },
+    { icon: ShieldCheck, label: ui2("trustDiagnosis") },
+    successRate ? { icon: Award, label: { fa: `${fmtNum(successRate, lang)}٪ نرخ موفقیت`, en: `${fmtNum(successRate, lang)}% Success Rate` } } : { icon: Truck, label: ui2("trustShipping") },
+    { icon: FileText, label: { fa: "فاکتور رسمی در صورت نیاز", en: "Official Invoice Available" } },
   ] : [
-    { icon: BadgeCheck, key: "trustAuthenticity" },
-    { icon: Truck, key: "trustShipping" },
-    { icon: RotateCcw, key: "trustReturn" },
+    { icon: BadgeCheck, label: ui2("trustAuthenticity") },
+    { icon: Truck, label: ui2("trustShipping") },
+    { icon: RotateCcw, label: returnLabel },
+    { icon: FileText, label: { fa: "فاکتور رسمی در صورت نیاز", en: "Official Invoice Available" } },
   ];
+  function ui2(key) { return UI[key]; }
   return (
     <div className="border-y border-black/10 bg-neutral-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
         {items.map((it, i) => (
           <div key={i} className="flex items-center gap-2.5 text-black/80 text-sm sm:text-base font-medium">
             <it.icon size={18} className="shrink-0 text-red-600" />
-            <span>{ui(it.key, lang)}</span>
+            <span>{tr(it.label, lang)}</span>
           </div>
         ))}
       </div>
@@ -1222,7 +1269,7 @@ function HomePage({ content, navigate, lang }) {
 
       <TechGalleryCarousel content={content} lang={lang} />
       <BrandMarquee content={content} lang={lang} />
-      <TrustBar lang={lang} />
+      <TrustBar lang={lang} content={content} />
       <LiveStatusFeed content={content} lang={lang} />
 
       <section className="py-24 px-4 sm:px-6 bg-neutral-50 border-t border-black/5">
@@ -1503,7 +1550,7 @@ function ServicesPage({ content, lang, onRequestService }) {
         </section>
       )}
 
-      <TrustBar lang={lang} variant="services" />
+      <TrustBar lang={lang} variant="services" content={content} />
       {showRequest && <ServiceRequestModal onClose={() => setShowRequest(false)} onSubmit={onRequestService} lang={lang} />}
     </div>
   );
@@ -1552,6 +1599,8 @@ function ServiceDetailPage({ content, slug, lang, onRequestService }) {
           </div>
         </section>
       )}
+
+      <TrustBar lang={lang} variant="services" content={content} />
 
       {others.length > 0 && (
         <section className="py-16 px-4 sm:px-6 bg-neutral-50">
@@ -1620,7 +1669,7 @@ function ProductCard({ p, onAdd, dark, lang, isWishlisted, onToggleWishlist, com
       <button onClick={() => navigate(`product/${p.id}`)} className="text-right">
         <PatternBox pattern={p.pattern} image={productImage(p)} className="h-40 flex items-center justify-center">
           <IconBadge name={p.icon} className="text-white group-hover:scale-110 transition-transform duration-300" size={52} />
-          <span className="absolute top-3 right-3 text-[10px] bg-black/70 border border-red-500/50 rounded-full px-2 py-1 text-red-400">{tr(p.category, lang)}</span>
+          <span className="absolute top-3 right-3 text-[10px] bg-black/70 border border-amber-400/50 rounded-full px-2 py-1 text-amber-300 font-bold">{tr(p.category, lang)}</span>
         </PatternBox>
       </button>
       {onToggleWishlist && (
@@ -1742,7 +1791,7 @@ function ShopPage({ content, addToCart, lang, wishlistIds = [], onToggleWishlist
         </div>
       </section>
 
-      <TrustBar lang={lang} />
+      <TrustBar lang={lang} content={content} />
 
       {content.settings.shopVideoUrl && <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-10"><AparatPlayer url={content.settings.shopVideoUrl} title={lang === "fa" ? "ویدیوی فروشگاه" : "Shop video"} /></section>}
 
@@ -1771,7 +1820,7 @@ function ShopPage({ content, addToCart, lang, wishlistIds = [], onToggleWishlist
         <div>
           <p className="text-black/40 text-xs mb-4">{fmtNum(filtered.length, lang)} {ui("productsFound", lang)}</p>
           {filtered.length === 0 ? (
-            <div className="text-center py-20 text-black/40 text-sm">{ui("noProductsFound", lang)}</div>
+            <EmptyState icon={Search} title={ui("noProductsFound", lang)} desc={lang === "fa" ? "فیلترها یا عبارت جستجو رو تغییر بدید." : "Try different filters or search terms."} actionLabel={lang === "fa" ? "پاک کردن فیلترها" : "Clear filters"} onAction={() => { setActiveCat("همه"); setActiveBrands([]); setQ(""); }} />
           ) : (
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {filtered.map((p, idx) => <Reveal key={p.id} delay={Math.min(idx, 6) * 60}><ProductCard p={p} onAdd={() => addToCart(p)} lang={lang} isWishlisted={wishlistIds.includes(p.id)} onToggleWishlist={onToggleWishlist} compareChecked={compareIds.includes(p.id)} onToggleCompare={toggleCompare} /></Reveal>)}
@@ -1891,6 +1940,7 @@ function ProductDetailPage({ content, id, addToCart, lang, currentUser, onNeedAu
           </div>
         )}
       </div>
+      <div className="mt-16"><TrustBar lang={lang} content={content} /></div>
     </div>
   );
 }
@@ -1916,7 +1966,7 @@ function ProductReviews({ productId, lang, currentUser, onNeedAuth }) {
   return (
     <div className="mt-16 border-t border-black/10 pt-10">
       <h3 className="font-bold text-lg mb-6">{lang === "fa" ? "نظرات خریداران" : "Customer Reviews"}</h3>
-      {reviews === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      {reviews === null && <div className="space-y-3 mb-6">{[1, 2].map((i) => <ListRowSkeleton key={i} />)}</div>}
       {reviews && reviews.length === 0 && <p className="text-black/40 text-sm mb-6">{lang === "fa" ? "هنوز نظری برای این محصول ثبت نشده." : "No reviews for this product yet."}</p>}
       <div className="space-y-4 mb-8">
         {reviews?.map((r) => (
@@ -2117,12 +2167,9 @@ function AccountPage({ currentUser, setCurrentUser, content, onGoShop, wishlistI
                 <StatCard icon={Heart} label={ui("wishlistCountLabel", lang)} value={wishlistIds.length} color="from-pink-500 to-pink-600" onClick={() => setTab("myWishlist")} />
               </div>
               <h3 className="font-bold mb-4">{ui("myOrders", lang)}</h3>
-              {orders === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+              {orders === null && <div className="space-y-3 mb-10">{[1, 2].map((i) => <ListRowSkeleton key={i} />)}</div>}
               {orders && orders.length === 0 && (
-                <div className="text-center py-12 border border-black/10 rounded-xl mb-10">
-                  <p className="text-black/40 text-sm mb-4">{ui("noOrdersYet", lang)}</p>
-                  <button onClick={onGoShop} className="text-red-600 text-sm">{ui("goToShop", lang)}</button>
-                </div>
+                <EmptyState icon={ShoppingCart} title={ui("noOrdersYet", lang)} actionLabel={ui("goToShop", lang)} onAction={onGoShop} />
               )}
               <div className="space-y-3 mb-10">
                 {orders?.slice(0, 3).map((o) => <OrderRowCard key={o.id} o={o} lang={lang} />)}
@@ -2137,12 +2184,9 @@ function AccountPage({ currentUser, setCurrentUser, content, onGoShop, wishlistI
           {tab === "myOrders" && (
             <div>
               <h3 className="font-bold mb-4">{ui("myOrders", lang)}</h3>
-              {orders === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+              {orders === null && <div className="space-y-3">{[1, 2, 3].map((i) => <ListRowSkeleton key={i} />)}</div>}
               {orders && orders.length === 0 && (
-                <div className="text-center py-12 border border-black/10 rounded-xl">
-                  <p className="text-black/40 text-sm mb-4">{ui("noOrdersYet", lang)}</p>
-                  <button onClick={onGoShop} className="text-red-600 text-sm">{ui("goToShop", lang)}</button>
-                </div>
+                <EmptyState icon={ShoppingCart} title={ui("noOrdersYet", lang)} actionLabel={ui("goToShop", lang)} onAction={onGoShop} />
               )}
               <div className="space-y-3">{orders?.map((o) => <OrderRowCard key={o.id} o={o} lang={lang} />)}</div>
             </div>
@@ -2207,7 +2251,7 @@ function AccountWishlist({ content, wishlistIds, onToggleWishlist, lang }) {
   return (
     <div>
       <h3 className="font-bold mb-4">{ui("myWishlist", lang)}</h3>
-      {products.length === 0 && <p className="text-black/40 text-sm text-center py-12 border border-black/10 rounded-xl">{ui("noWishlistYet", lang)}</p>}
+      {products.length === 0 && <EmptyState icon={Heart} title={ui("noWishlistYet", lang)} desc={lang === "fa" ? "محصولات مورد علاقه‌تون رو اینجا ذخیره کنید." : "Save the products you like here."} actionLabel={lang === "fa" ? "رفتن به فروشگاه" : "Go to shop"} onAction={() => navigate("shop")} />}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {products.map((p) => (
           <div key={p.id} className="border border-black/10 rounded-xl p-3 flex flex-col">
@@ -2769,7 +2813,7 @@ function CartDrawer({ cart, total, onClose, onChangeQty, onRemove, onCheckout, l
           <button onClick={onClose}><X size={20} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {cart.length === 0 && <p className="text-black/40 text-sm text-center mt-10">{ui("cartEmpty", lang)}</p>}
+          {cart.length === 0 && <EmptyState icon={ShoppingCart} title={ui("cartEmpty", lang)} desc={lang === "fa" ? "چند محصول خوب منتظرتونه." : "There are some great products waiting for you."} actionLabel={lang === "fa" ? "رفتن به فروشگاه" : "Go to shop"} onAction={() => { onClose(); navigate("shop"); }} />}
           {cart.map((item) => (
             <div key={item.id} className="flex items-center gap-3 border-b border-black/10 pb-4">
               <PatternBox pattern={item.pattern} className="w-14 h-14 rounded-lg flex items-center justify-center shrink-0"><IconBadge name={item.icon} size={22} className="text-white" /></PatternBox>
