@@ -74,17 +74,59 @@ app.post("/api/admin/upload", authenticate, requireEditor, (req, res) => {
   });
 });
 
-const toPublicUser = (u) => ({ id: u.id, username: u.username, name: u.name, role: u.role, phone: u.phone || "", email: u.email || "", createdAt: u.created_at });
+const toPublicUser = (u) => ({
+  id: u.id, username: u.username, name: u.name, role: u.role, phone: u.phone || "", email: u.email || "", createdAt: u.created_at,
+  customFields: (() => { try { return JSON.parse(u.custom_fields || "{}"); } catch (e) { return {}; } })(),
+});
+
+const IRAN_MOBILE_RE = /^(?:\+98|0098|98|0)?9\d{9}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function verifyCaptcha(token, remoteIp) {
+  const cfg = db.prepare("SELECT * FROM captcha_settings WHERE id = 1").get();
+  if (!cfg.enabled) return { ok: true };
+  if (!cfg.secret_key) return { ok: true }; // اگر کلید تنظیم نشده، بلاک نمی‌کنیم تا سایت از کار نیفتد
+  if (!token) return { ok: false, error: "لطفاً تأیید کنید که ربات نیستید" };
+  try {
+    const params = new URLSearchParams({ secret: cfg.secret_key, response: token });
+    if (remoteIp) params.set("remoteip", remoteIp);
+    const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST", body: params });
+    const data = await r.json();
+    if (!data.success) return { ok: false, error: "تأیید ربات نبودن ناموفق بود، دوباره تلاش کنید" };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: "خطا در بررسی کپچا" };
+  }
+}
 
 /* ============================== سلامت سرور ============================== */
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 /* ============================== احراز هویت ============================== */
 
-app.post("/api/auth/register", authLimiter, (req, res) => {
-  const { username, password, name } = req.body || {};
+app.post("/api/auth/register", authLimiter, async (req, res) => {
+  const { username, password, name, phone, email, customFields, captchaToken, website } = req.body || {};
+  // هانی‌پات: فیلد مخفی "website" که فقط ربات‌ها پر می‌کنند (برای کاربر واقعی نامرئی است)
+  if (website) return res.status(400).json({ error: "درخواست نامعتبر" });
   if (!username || !password || !name) return res.status(400).json({ error: "همه فیلدها را پر کنید" });
   if (password.length < 6) return res.status(400).json({ error: "رمز عبور باید حداقل ۶ کاراکتر باشد" });
+  if (!phone || !IRAN_MOBILE_RE.test(String(phone).replace(/\s/g, ""))) {
+    return res.status(400).json({ error: "شماره موبایل معتبر نیست (مثال: 0912xxxxxxx)" });
+  }
+  if (!email || !EMAIL_RE.test(String(email).trim())) {
+    return res.status(400).json({ error: "ایمیل معتبر نیست" });
+  }
+
+  const captchaResult = await verifyCaptcha(captchaToken, req.ip);
+  if (!captchaResult.ok) return res.status(400).json({ error: captchaResult.error });
+
+  const fieldDefs = db.prepare("SELECT * FROM user_field_defs WHERE show_at_signup = 1").all();
+  const cf = customFields && typeof customFields === "object" ? customFields : {};
+  for (const f of fieldDefs) {
+    if (f.required && !String(cf[f.key] ?? "").trim()) {
+      return res.status(400).json({ error: `${f.label_fa} را پر کنید` });
+    }
+  }
 
   const exists = db.prepare("SELECT id FROM users WHERE username = ?").get(username);
   if (exists) return res.status(409).json({ error: "این نام کاربری قبلاً ثبت شده است" });
@@ -93,12 +135,12 @@ app.post("/api/auth/register", authLimiter, (req, res) => {
   const hash = bcrypt.hashSync(password, 10);
   const createdAt = new Date().toISOString();
   db.prepare(
-    "INSERT INTO users (id, username, password_hash, name, role, created_at) VALUES (?, ?, ?, ?, 'subscriber', ?)"
-  ).run(id, username, hash, name, createdAt);
+    "INSERT INTO users (id, username, password_hash, name, role, phone, email, custom_fields, created_at) VALUES (?, ?, ?, ?, 'subscriber', ?, ?, ?, ?)"
+  ).run(id, username, hash, name, String(phone).replace(/\s/g, ""), String(email).trim(), JSON.stringify(cf), createdAt);
 
   const user = { id, username, name, role: "subscriber", created_at: createdAt };
   const token = signToken(user);
-  res.json({ token, user: toPublicUser(user) });
+  res.json({ token, user: toPublicUser({ ...user, phone, email, custom_fields: JSON.stringify(cf) }) });
 });
 
 app.post("/api/auth/login", authLimiter, (req, res) => {
@@ -222,9 +264,27 @@ app.delete("/api/wishlist/:productId", authenticate, (req, res) => {
 
 /* ============================== محتوای سایت ============================== */
 
+function slugify(str) {
+  return String(str || "").toLowerCase().trim().replace(/[^a-z0-9\u0600-\u06FF]+/g, "-").replace(/^-+|-+$/g, "") || uid("s");
+}
+
+function normalizeContent(content) {
+  content.products = (content.products || []).map((p) => ({ ...p, externalComparisons: p.externalComparisons || [] }));
+  content.services = (content.services || []).map((s) => ({
+    ...s,
+    slug: s.slug || slugify(s.title?.en || s.title?.fa || s.id),
+    estimatedTime: s.estimatedTime || { fa: "", en: "" },
+  }));
+  content.settings = {
+    repairSuccessRate: 95, returnPolicyDays: 7, serviceAreas: [], successfulRepairsCount: 0,
+    ...content.settings,
+  };
+  return content;
+}
+
 app.get("/api/content", (req, res) => {
   const row = db.prepare("SELECT data FROM site_content WHERE id = 1").get();
-  res.json(JSON.parse(row.data));
+  res.json(normalizeContent(JSON.parse(row.data)));
 });
 
 app.put("/api/content", authenticate, requireEditor, (req, res) => {
@@ -344,12 +404,107 @@ app.get("/api/users", authenticate, requireAdmin, (req, res) => {
 app.patch("/api/users/:id", authenticate, requireAdmin, (req, res) => {
   const target = db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
   if (!target) return res.status(404).json({ error: "کاربر یافت نشد" });
-  const { role, name, phone, email } = req.body || {};
+  const { role, name, phone, email, customFields } = req.body || {};
   if (role !== undefined && !["subscriber", "author", "editor", "admin"].includes(role)) {
     return res.status(400).json({ error: "نقش نامعتبر" });
   }
-  db.prepare("UPDATE users SET role = ?, name = ?, phone = ?, email = ? WHERE id = ?").run(
-    role ?? target.role, name !== undefined ? name : target.name, phone !== undefined ? phone : target.phone, email !== undefined ? email : target.email, target.id
+  if (phone && !IRAN_MOBILE_RE.test(String(phone).replace(/\s/g, ""))) return res.status(400).json({ error: "شماره موبایل معتبر نیست" });
+  if (email && !EMAIL_RE.test(String(email).trim())) return res.status(400).json({ error: "ایمیل معتبر نیست" });
+  let mergedFields = target.custom_fields;
+  if (customFields && typeof customFields === "object") {
+    let existing = {};
+    try { existing = JSON.parse(target.custom_fields || "{}"); } catch (e) { /* ignore */ }
+    mergedFields = JSON.stringify({ ...existing, ...customFields });
+  }
+  db.prepare("UPDATE users SET role = ?, name = ?, phone = ?, email = ?, custom_fields = ? WHERE id = ?").run(
+    role ?? target.role, name !== undefined ? name : target.name, phone !== undefined ? phone : target.phone, email !== undefined ? email : target.email, mergedFields, target.id
+  );
+  res.json({ ok: true });
+});
+
+// بازیابی/تعیین رمز عبور کاربر توسط مدیر از پنل — اگر رمز جدید ارسال نشود، یک رمز تصادفی امن ساخته می‌شود
+app.post("/api/admin/users/:id/reset-password", authenticate, requireAdmin, (req, res) => {
+  const target = db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
+  if (!target) return res.status(404).json({ error: "کاربر یافت نشد" });
+  let { newPassword } = req.body || {};
+  if (newPassword && newPassword.length < 6) return res.status(400).json({ error: "رمز عبور باید حداقل ۶ کاراکتر باشد" });
+  const generated = !newPassword;
+  if (generated) {
+    newPassword = Math.random().toString(36).slice(-5) + Math.floor(Math.random() * 900 + 100);
+  }
+  const hash = bcrypt.hashSync(newPassword, 10);
+  db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hash, target.id);
+  res.json({ ok: true, newPassword, generated });
+});
+
+/* ============================== خانه‌های سفارشی اطلاعات کاربر ============================== */
+
+function rowToFieldDef(f) {
+  return {
+    id: f.id, key: f.key, label: { fa: f.label_fa, en: f.label_en }, type: f.type,
+    options: JSON.parse(f.options || "[]"), required: !!f.required, showAtSignup: !!f.show_at_signup, order: f.sort_order,
+  };
+}
+
+app.get("/api/user-fields/signup", (req, res) => {
+  const rows = db.prepare("SELECT * FROM user_field_defs WHERE show_at_signup = 1 ORDER BY sort_order ASC").all();
+  res.json({ fields: rows.map(rowToFieldDef) });
+});
+
+app.get("/api/admin/user-fields", authenticate, requireAdmin, (req, res) => {
+  const rows = db.prepare("SELECT * FROM user_field_defs ORDER BY sort_order ASC").all();
+  res.json({ fields: rows.map(rowToFieldDef) });
+});
+
+app.post("/api/admin/user-fields", authenticate, requireAdmin, (req, res) => {
+  const b = req.body || {};
+  const key = String(b.key || "").trim().replace(/\s+/g, "_").toLowerCase();
+  if (!key || !b.labelFa) return res.status(400).json({ error: "کلید و عنوان فارسی الزامی است" });
+  const exists = db.prepare("SELECT id FROM user_field_defs WHERE key = ?").get(key);
+  if (exists) return res.status(400).json({ error: "خانه‌ای با این کلید قبلاً وجود دارد" });
+  const id = uid("ufd");
+  db.prepare(
+    `INSERT INTO user_field_defs (id, key, label_fa, label_en, type, options, required, show_at_signup, sort_order, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, key, b.labelFa, b.labelEn || b.labelFa, b.type || "text", JSON.stringify(b.options || []), b.required ? 1 : 0, b.showAtSignup ? 1 : 0, Number(b.order) || 99, new Date().toISOString());
+  res.json({ ok: true, id });
+});
+
+app.put("/api/admin/user-fields/:id", authenticate, requireAdmin, (req, res) => {
+  const f = db.prepare("SELECT * FROM user_field_defs WHERE id = ?").get(req.params.id);
+  if (!f) return res.status(404).json({ error: "پیدا نشد" });
+  const b = req.body || {};
+  db.prepare(
+    `UPDATE user_field_defs SET label_fa=?, label_en=?, type=?, options=?, required=?, show_at_signup=?, sort_order=? WHERE id=?`
+  ).run(
+    b.labelFa ?? f.label_fa, b.labelEn ?? f.label_en, b.type ?? f.type, JSON.stringify(b.options ?? JSON.parse(f.options || "[]")),
+    b.required === undefined ? f.required : (b.required ? 1 : 0), b.showAtSignup === undefined ? f.show_at_signup : (b.showAtSignup ? 1 : 0),
+    b.order === undefined ? f.sort_order : Number(b.order), f.id
+  );
+  res.json({ ok: true });
+});
+
+app.delete("/api/admin/user-fields/:id", authenticate, requireAdmin, (req, res) => {
+  db.prepare("DELETE FROM user_field_defs WHERE id = ?").run(req.params.id);
+  res.json({ ok: true });
+});
+
+/* ============================== کپچا (Cloudflare Turnstile) ============================== */
+
+app.get("/api/captcha-config", (req, res) => {
+  const cfg = db.prepare("SELECT * FROM captcha_settings WHERE id = 1").get();
+  res.json({ enabled: !!cfg.enabled && !!cfg.site_key, siteKey: cfg.site_key });
+});
+
+app.get("/api/admin/captcha-settings", authenticate, requireAdmin, (req, res) => {
+  const cfg = db.prepare("SELECT * FROM captcha_settings WHERE id = 1").get();
+  res.json({ enabled: !!cfg.enabled, siteKey: cfg.site_key, secretKey: cfg.secret_key });
+});
+
+app.put("/api/admin/captcha-settings", authenticate, requireAdmin, (req, res) => {
+  const b = req.body || {};
+  db.prepare("UPDATE captcha_settings SET enabled=?, site_key=?, secret_key=?, updated_at=? WHERE id=1").run(
+    b.enabled ? 1 : 0, b.siteKey || "", b.secretKey || "", new Date().toISOString()
   );
   res.json({ ok: true });
 });
@@ -372,6 +527,33 @@ app.get("/api/admin/users/:id/detail", authenticate, requireAdmin, (req, res) =>
 app.delete("/api/admin/addresses/:id", authenticate, requireAdmin, (req, res) => {
   db.prepare("DELETE FROM addresses WHERE id = ?").run(req.params.id);
   res.json({ ok: true });
+});
+
+/* ============================== دریافت اطلاعات یک لینک خارجی برای مقایسه محصول ============================== */
+// وقتی مدیر لینک محصول یک سایت دیگر را برای مقایسه وارد می‌کند، این مسیر تلاش می‌کند
+// عنوان/عکس/قیمت آن صفحه را (از تگ‌های Open Graph) به‌صورت خودکار بخواند تا پرکردن دستی کمتر لازم باشد.
+app.post("/api/admin/fetch-url-meta", authenticate, requireEditor, async (req, res) => {
+  const { url } = req.body || {};
+  if (!url || !/^https?:\/\//i.test(url)) return res.status(400).json({ error: "لینک معتبر نیست" });
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    const r = await fetch(url, { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; NovinPolytechnicBot/1.0)" } });
+    clearTimeout(timeout);
+    const html = await r.text();
+    const getMeta = (name) => {
+      const m = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${name}["'][^>]+content=["']([^"']+)["']`, "i"))
+        || html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${name}["']`, "i"));
+      return m ? m[1] : "";
+    };
+    const titleTag = html.match(/<title>([^<]+)<\/title>/i);
+    const title = getMeta("og:title") || (titleTag ? titleTag[1] : "");
+    const image = getMeta("og:image");
+    const price = getMeta("product:price:amount") || getMeta("og:price:amount");
+    res.json({ ok: true, name: title.trim().slice(0, 200), image, price: price ? Number(price.replace(/[^\d.]/g, "")) || null : null });
+  } catch (e) {
+    res.status(400).json({ error: "دریافت اطلاعات این لینک ممکن نشد؛ می‌توانید دستی وارد کنید" });
+  }
 });
 
 /* ============================== کدهای تخفیف ============================== */
@@ -602,7 +784,7 @@ const SHOP_STATUSES = ["reviewing", "registered", "packing", "shipped", "deliver
 const SERVICE_STATUSES = ["reviewing", "working", "ready", "delivered"];
 
 app.post("/api/orders", authenticate, (req, res) => {
-  const { orderType, items, total, customer, deviceInfo, issueDescription, couponCode, usePoints } = req.body || {};
+  const { orderType, items, total, customer, deviceInfo, issueDescription, couponCode, usePoints, invoice } = req.body || {};
   const type = orderType === "service" ? "service" : "shop";
   if (!customer?.name || !customer?.phone) return res.status(400).json({ error: "اطلاعات مشتری ناقص است" });
   if (type === "shop" && (!items?.length || !total || !customer?.address)) {
@@ -636,12 +818,13 @@ app.post("/api/orders", authenticate, (req, res) => {
   const trackingCode = `NP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
   const now = new Date().toISOString();
   db.prepare(
-    `INSERT INTO orders (id, order_type, status, username, items, total, customer_name, customer_phone, customer_email, customer_province, customer_city, customer_postal_code, customer_address, device_info, issue_description, created_at, updated_at, tracking_code, coupon_code, discount_amount, points_used, points_discount)
-     VALUES (?, ?, 'reviewing', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO orders (id, order_type, status, username, items, total, customer_name, customer_phone, customer_email, customer_province, customer_city, customer_postal_code, customer_address, device_info, issue_description, created_at, updated_at, tracking_code, coupon_code, discount_amount, points_used, points_discount, invoice_requested, invoice_company_name, invoice_economic_id, invoice_national_id)
+     VALUES (?, ?, 'reviewing', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id, type, req.user?.username || null, JSON.stringify(items || []), finalTotal,
     customer.name, customer.phone, customer.email || "", customer.province || "", customer.city || "", customer.postalCode || "", customer.address || "",
-    deviceInfo || "", issueDescription || "", now, now, trackingCode, appliedCouponRow?.code || "", discountAmount, pointsUsed, pointsDiscount
+    deviceInfo || "", issueDescription || "", now, now, trackingCode, appliedCouponRow?.code || "", discountAmount, pointsUsed, pointsDiscount,
+    invoice?.requested ? 1 : 0, invoice?.companyName || "", invoice?.economicId || "", invoice?.nationalId || ""
   );
 
   if (appliedCouponRow) {
@@ -672,6 +855,7 @@ function rowToOrder(o) {
     discountAmount: o.discount_amount || 0,
     pointsUsed: o.points_used || 0,
     pointsDiscount: o.points_discount || 0,
+    invoice: { requested: !!o.invoice_requested, companyName: o.invoice_company_name || "", economicId: o.invoice_economic_id || "", nationalId: o.invoice_national_id || "" },
     customer: { name: o.customer_name, phone: o.customer_phone, email: o.customer_email, province: o.customer_province, city: o.customer_city, postalCode: o.customer_postal_code, address: o.customer_address },
     deviceInfo: o.device_info,
     issueDescription: o.issue_description,
@@ -1215,12 +1399,16 @@ app.get("/sitemap.xml", (req, res) => {
   const base = `${req.protocol}://${req.get("host")}`;
   const pages = db.prepare("SELECT slug, updated_at FROM pages WHERE status = 'published'").all();
   const staticRoutes = ["", "services", "shop", "articles", "faq", "about", "contact", "tracking"];
-  let products = [];
-  try { products = JSON.parse(db.prepare("SELECT data FROM site_content WHERE id = 1").get().data).products || []; } catch (e) { /* ignore */ }
+  let products = [], services = [];
+  try {
+    const c = JSON.parse(db.prepare("SELECT data FROM site_content WHERE id = 1").get().data);
+    products = c.products || []; services = c.services || [];
+  } catch (e) { /* ignore */ }
   const urls = [
     ...staticRoutes.map((r) => `  <url><loc>${base}/${r}</loc><changefreq>weekly</changefreq><priority>${r ? "0.7" : "1.0"}</priority></url>`),
     ...pages.map((p) => `  <url><loc>${base}/page/${p.slug}</loc><lastmod>${(p.updated_at || "").slice(0, 10)}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`),
     ...products.map((p) => `  <url><loc>${base}/product/${p.id}</loc><changefreq>weekly</changefreq><priority>0.65</priority></url>`),
+    ...services.filter((s) => s.slug).map((s) => `  <url><loc>${base}/service/${s.slug}</loc><changefreq>monthly</changefreq><priority>0.65</priority></url>`),
   ];
   res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`);
 });
@@ -1287,6 +1475,15 @@ ${bodyHtml}
       const title = `${escapeHtml(pageTitle)} — ${siteName}`;
       const body = `<h1>${escapeHtml(pageTitle)}</h1>${blocksText}`;
       return wrap(title, pageTitle, `/page/${page.slug}`, body);
+    }
+
+    if (seg0 === "service" && segs[1]) {
+      const sv = (c.services || []).find((x) => x.slug === segs[1]);
+      if (!sv) return next();
+      const title = `${escapeHtml(tr_fa(sv.title))} — ${siteName}`;
+      const desc = escapeHtml(tr_fa(sv.desc) || "").slice(0, 160);
+      const body = `<h1>${escapeHtml(tr_fa(sv.title))}</h1><p>${escapeHtml(tr_fa(sv.desc) || "")}</p>${sv.priceRange?.fa ? `<p><strong>${escapeHtml(sv.priceRange.fa)}</strong></p>` : ""}${sv.estimatedTime?.fa ? `<p>زمان تخمینی: ${escapeHtml(sv.estimatedTime.fa)}</p>` : ""}`;
+      return wrap(title, desc, `/service/${sv.slug}`, body);
     }
 
     if (seg0 === "services") {

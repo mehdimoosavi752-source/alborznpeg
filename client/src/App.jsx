@@ -215,6 +215,7 @@ const ADMIN_UI = {
   loyalty: { fa: "باشگاه مشتریان", en: "Loyalty Club" },
   reservations: { fa: "رزرو نوبت", en: "Reservations" },
   system: { fa: "پشتیبان‌گیری و خطاها", en: "Backups & Errors" },
+  userFields: { fa: "فرم ثبت‌نام و کپچا", en: "Signup Form & CAPTCHA" },
   beforeAfter: { fa: "گالری قبل و بعد", en: "Before & After" },
   testimonials: { fa: "نظرات ویدیویی", en: "Video Testimonials" },
   users: { fa: "کاربران", en: "Users" },
@@ -315,7 +316,7 @@ function IconBadge({ name, className = "" }) {
   const Ico = ICONS[name] || Monitor;
   return <Ico className={className} />;
 }
-function TiltCard({ children, className = "" }) {
+function TiltCard({ children, className = "", onClick }) {
   const ref = useRef(null);
   const onMove = (e) => {
     const el = ref.current; if (!el) return;
@@ -325,7 +326,7 @@ function TiltCard({ children, className = "" }) {
     el.style.transform = `perspective(800px) rotateY(${x * 6}deg) rotateX(${-y * 6}deg)`;
   };
   const onLeave = () => { if (ref.current) ref.current.style.transform = "perspective(800px) rotateY(0deg) rotateX(0deg)"; };
-  return <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave} className={className} style={{ transition: "transform 0.2s ease-out", transformStyle: "preserve-3d" }}>{children}</div>;
+  return <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave} onClick={onClick} className={className} style={{ transition: "transform 0.2s ease-out", transformStyle: "preserve-3d", cursor: onClick ? "pointer" : undefined }}>{children}</div>;
 }
 function VitraStudioLogo({ size = 18 }) {
   return (
@@ -791,9 +792,9 @@ export default function NovinPolytechnic() {
       return null;
     } catch (e) { return e.message; }
   };
-  const doRegister = async (username, password, name) => {
+  const doRegister = async (payload) => {
     try {
-      const { token, user } = await api.register(username, password, name);
+      const { token, user } = await api.register(payload);
       api.setToken(token); setCurrentUser(user); setShowAuth(false);
       return null;
     } catch (e) { return e.message; }
@@ -812,7 +813,7 @@ export default function NovinPolytechnic() {
   const placeOrder = async (form) => {
     if (!currentUser) { setShowCheckout(false); setShowAuth(true); return; }
     try {
-      const result = await api.createOrder({ orderType: "shop", items: cart, total: cartTotal, customer: form, couponCode: form.couponCode || "", usePoints: !!form.usePoints });
+      const result = await api.createOrder({ orderType: "shop", items: cart, total: cartTotal, customer: form, couponCode: form.couponCode || "", usePoints: !!form.usePoints, invoice: form.invoice || { requested: false } });
       alert(`${lang === "fa" ? "کد رهگیری سفارش شما" : "Your tracking code"}: ${result.trackingCode}`);
       setOrderDone(true); setCart([]);
     } catch (e) { alert("Order failed: " + e.message); }
@@ -860,6 +861,7 @@ export default function NovinPolytechnic() {
       <main key={route.join("/") + lang} className="page-fade">
         {activePage === "home" && <HomePage content={content} navigate={navigate} lang={lang} />}
         {activePage === "services" && <ServicesPage content={content} lang={lang} onRequestService={placeServiceRequest} />}
+        {activePage === "service" && <ServiceDetailPage content={content} slug={route[1]} lang={lang} onRequestService={placeServiceRequest} />}
         {activePage === "shop" && <ShopPage content={content} addToCart={addToCart} lang={lang} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
         {activePage === "articles" && <ArticlesPage pages={pages} content={content} lang={lang} />}
         {activePage === "faq" && <FAQPage content={content} lang={lang} />}
@@ -1362,7 +1364,7 @@ function TestimonialCard({ item, lang }) {
 
 function ServiceCard({ s, lang, fallbackImage }) {
   return (
-    <TiltCard className={`group relative rounded-2xl overflow-hidden transition-all duration-300 h-full bg-white ${s.featured ? "border-2 border-red-600 shadow-xl sm:col-span-2 lg:col-span-1" : "border border-black/10 hover:border-red-600 hover:shadow-lg"}`}>
+    <TiltCard onClick={() => s.slug && navigate(`service/${s.slug}`)} className={`group relative rounded-2xl overflow-hidden transition-all duration-300 h-full bg-white ${s.featured ? "border-2 border-red-600 shadow-xl sm:col-span-2 lg:col-span-1" : "border border-black/10 hover:border-red-600 hover:shadow-lg"}`}>
       {s.featured && (
         <span className={`absolute top-3 left-3 z-20 text-[10px] font-bold bg-red-600 text-white rounded-full px-3 py-1 ${lang === "fa" ? "" : "tracking-wide"}`}>
           {lang === "fa" ? "مهم‌ترین خدمت ما" : "Our Top Service"}
@@ -1374,9 +1376,13 @@ function ServiceCard({ s, lang, fallbackImage }) {
       <div className="p-6">
         <h3 className={`font-bold mb-2 ${s.featured ? "text-xl" : "text-lg"}`}>{tr(s.title, lang)}</h3>
         <p className="text-black/60 text-sm leading-relaxed mb-3">{tr(s.desc, lang)}</p>
-        {s.priceRange && (
-          <p className="text-red-600 text-xs font-bold border-t border-black/5 pt-3">{tr(s.priceRange, lang)}</p>
+        {tr(s.estimatedTime, lang) && (
+          <p className="text-black/40 text-xs flex items-center gap-1.5 mb-2"><Clock size={12} /> {tr(s.estimatedTime, lang)}</p>
         )}
+        <div className="flex items-center justify-between border-t border-black/5 pt-3">
+          {s.priceRange && <p className="text-red-600 text-xs font-bold">{tr(s.priceRange, lang)}</p>}
+          {s.slug && <span className="text-black/30 text-xs font-bold flex items-center gap-1 group-hover:text-red-600 transition-colors">{lang === "fa" ? "جزئیات" : "Details"} <ChevronLeft size={12} className={lang === "fa" ? "" : "rotate-180"} /></span>}
+        </div>
       </div>
     </TiltCard>
   );
@@ -1465,6 +1471,14 @@ function ServicesPage({ content, lang, onRequestService }) {
         <button onClick={() => setShowRequest(true)} className="glow-pulse bg-red-600 hover:bg-red-700 text-white transition-all px-8 py-3.5 rounded-xl font-bold inline-flex items-center gap-2">
           <Wrench size={16} /> {lang === "fa" ? "درخواست تعمیر" : "Request a Repair"}
         </button>
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-6 text-xs text-black/50">
+          {content.settings.repairSuccessRate > 0 && (
+            <span className="flex items-center gap-1.5 font-bold text-green-700"><BadgeCheck size={14} /> {lang === "fa" ? `${fmtNum(content.settings.repairSuccessRate, lang)}٪ نرخ موفقیت تعمیر` : `${fmtNum(content.settings.repairSuccessRate, lang)}% repair success rate`}</span>
+          )}
+          {content.settings.serviceAreas?.length > 0 && (
+            <span className="flex items-center gap-1.5"><MapPin size={14} className="text-red-600" /> {lang === "fa" ? "پوشش مناطق: " : "Areas covered: "}{content.settings.serviceAreas.join("، ")}</span>
+          )}
+        </div>
       </section>
       <section className="pb-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1490,6 +1504,66 @@ function ServicesPage({ content, lang, onRequestService }) {
       )}
 
       <TrustBar lang={lang} variant="services" />
+      {showRequest && <ServiceRequestModal onClose={() => setShowRequest(false)} onSubmit={onRequestService} lang={lang} />}
+    </div>
+  );
+}
+
+function ServiceDetailPage({ content, slug, lang, onRequestService }) {
+  const [showRequest, setShowRequest] = useState(false);
+  const s = content.services.find((x) => x.slug === slug);
+  const others = content.services.filter((x) => x.id !== s?.id).slice(0, 3);
+  if (!s) return (
+    <div className="pt-40 pb-24 text-center px-4">
+      <p className="text-black/50 mb-4">{lang === "fa" ? "این خدمت پیدا نشد." : "Service not found."}</p>
+      <button onClick={() => navigate("services")} className="text-red-600 font-bold">{lang === "fa" ? "بازگشت به خدمات" : "Back to Services"}</button>
+    </div>
+  );
+  return (
+    <div>
+      <section className="relative pt-32 pb-16 px-4 sm:px-6 bg-neutral-50 border-b border-black/10 overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-72 h-72 bg-red-100 rounded-full blur-3xl blob" />
+        <div className="relative max-w-4xl mx-auto">
+          <button onClick={() => navigate("services")} className="text-black/40 hover:text-red-600 text-xs flex items-center gap-1 mb-6"><ChevronRight size={14} className={lang === "fa" ? "" : "rotate-180"} /> {lang === "fa" ? "همه‌ی خدمات" : "All Services"}</button>
+          <div className="grid sm:grid-cols-[auto_1fr] gap-6 items-center">
+            <PatternBox pattern={s.pattern} image={s.image} className="w-full sm:w-40 h-40 rounded-2xl flex items-center justify-center shrink-0">
+              <IconBadge name={s.icon} className="text-white relative z-10" size={48} />
+            </PatternBox>
+            <div>
+              <h1 className="text-2xl sm:text-4xl font-black mb-3">{tr(s.title, lang)}</h1>
+              <p className="text-black/60 leading-relaxed">{tr(s.desc, lang)}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3 mt-8">
+            {s.priceRange && <span className="bg-white border border-black/10 rounded-xl px-4 py-2.5 text-sm font-bold text-red-600 flex items-center gap-2"><CreditCard size={15} /> {tr(s.priceRange, lang)}</span>}
+            {tr(s.estimatedTime, lang) && <span className="bg-white border border-black/10 rounded-xl px-4 py-2.5 text-sm font-bold flex items-center gap-2"><Clock size={15} className="text-red-600" /> {tr(s.estimatedTime, lang)}</span>}
+            {content.settings.repairSuccessRate > 0 && <span className="bg-white border border-black/10 rounded-xl px-4 py-2.5 text-sm font-bold flex items-center gap-2 text-green-700"><BadgeCheck size={15} /> {fmtNum(content.settings.repairSuccessRate, lang)}٪ {lang === "fa" ? "موفقیت" : "success"}</span>}
+          </div>
+          <button onClick={() => setShowRequest(true)} className="glow-pulse mt-8 bg-red-600 hover:bg-red-700 text-white transition-all px-8 py-3.5 rounded-xl font-bold inline-flex items-center gap-2">
+            <Wrench size={16} /> {lang === "fa" ? "درخواست همین خدمت" : "Request This Service"}
+          </button>
+        </div>
+      </section>
+
+      {content.settings.serviceAreas?.length > 0 && (
+        <section className="py-8 px-4 sm:px-6 border-b border-black/10">
+          <div className="max-w-4xl mx-auto flex items-center gap-2 text-sm text-black/60 flex-wrap">
+            <MapPin size={16} className="text-red-600 shrink-0" /> <b>{lang === "fa" ? "مناطق تحت پوشش:" : "Areas covered:"}</b> {content.settings.serviceAreas.join("، ")}
+          </div>
+        </section>
+      )}
+
+      {others.length > 0 && (
+        <section className="py-16 px-4 sm:px-6 bg-neutral-50">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-xl font-black mb-6 text-center">{lang === "fa" ? "سایر خدمات" : "Other Services"}</h2>
+            <div className="grid sm:grid-cols-3 gap-6">
+              {others.map((o) => <ServiceCard key={o.id} s={o} lang={lang} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
       {showRequest && <ServiceRequestModal onClose={() => setShowRequest(false)} onSubmit={onRequestService} lang={lang} />}
     </div>
   );
@@ -1540,7 +1614,7 @@ function ServiceRequestModal({ onClose, onSubmit, lang }) {
 
 /* ============================== محیط فروشگاه ============================== */
 
-function ProductCard({ p, onAdd, dark, lang, isWishlisted, onToggleWishlist }) {
+function ProductCard({ p, onAdd, dark, lang, isWishlisted, onToggleWishlist, compareChecked, onToggleCompare }) {
   return (
     <TiltCard className={`relative group rounded-2xl overflow-hidden border transition-colors duration-300 h-full flex flex-col ${dark ? "border-white/10 hover:border-red-600 bg-neutral-900" : "border-black/10 hover:border-red-600 bg-white"}`}>
       <button onClick={() => navigate(`product/${p.id}`)} className="text-right">
@@ -1567,12 +1641,62 @@ function ProductCard({ p, onAdd, dark, lang, isWishlisted, onToggleWishlist }) {
           <span className={`text-[10px] rounded-full px-2 py-0.5 ${dark ? "bg-white/5 border border-white/10 text-white/50" : "bg-black/5 border border-black/10 text-black/50"}`}>{p.technology}</span>
           <span className={`text-[10px] rounded-full px-2 py-0.5 ${dark ? "bg-white/5 border border-white/10 text-white/50" : "bg-black/5 border border-black/10 text-black/50"}`}>{fmtNum(p.lumens, lang)} {lang === "fa" ? "لومن" : "Lumens"}</span>
         </div>
+        {onToggleCompare && (
+          <label className={`flex items-center gap-2 text-xs mb-3 cursor-pointer ${dark ? "text-white/50" : "text-black/50"}`}>
+            <input type="checkbox" checked={compareChecked} onChange={() => onToggleCompare(p.id)} className="accent-red-600" /> {lang === "fa" ? "افزودن به مقایسه" : "Add to compare"}
+          </label>
+        )}
         <div className="mt-auto flex items-center justify-between">
           <span className="text-red-600 font-black">{fmtPrice(p.price, lang)}</span>
           <button onClick={onAdd} className="text-xs bg-red-600 hover:bg-red-700 text-white transition-colors px-3 py-2 rounded-lg font-bold flex items-center gap-1"><Plus size={14} /> {ui("add", lang)}</button>
         </div>
       </div>
     </TiltCard>
+  );
+}
+
+function ProductCompareModal({ products, onClose, lang }) {
+  const rows = [
+    { key: "brand", label: lang === "fa" ? "برند" : "Brand", get: (p) => p.brand },
+    { key: "price", label: lang === "fa" ? "قیمت" : "Price", get: (p) => fmtPrice(p.price, lang) },
+    { key: "technology", label: lang === "fa" ? "تکنولوژی" : "Technology", get: (p) => p.technology },
+    { key: "resolution", label: lang === "fa" ? "رزولوشن" : "Resolution", get: (p) => p.resolution },
+    { key: "lumens", label: lang === "fa" ? "روشنایی (لومن)" : "Brightness (Lumens)", get: (p) => fmtNum(p.lumens, lang) },
+    { key: "stock", label: lang === "fa" ? "موجودی" : "Stock", get: (p) => (p.stock > 0 ? (lang === "fa" ? "موجود" : "In stock") : (lang === "fa" ? "ناموجود" : "Out of stock")) },
+  ];
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-3xl bg-white border border-black/10 rounded-2xl p-6 max-h-[88vh] overflow-y-auto">
+        <button onClick={onClose} className="absolute top-4 left-4 text-black/40 hover:text-black"><X size={18} /></button>
+        <h3 className="font-black text-lg mb-6">{lang === "fa" ? "مقایسه‌ی محصولات" : "Product Comparison"}</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse min-w-[500px]">
+            <thead>
+              <tr>
+                <th className="text-right p-2 w-32"></th>
+                {products.map((p) => (
+                  <th key={p.id} className="p-2 text-center border-b border-black/10 min-w-[150px]">
+                    <button onClick={() => { onClose(); navigate(`product/${p.id}`); }} className="hover:text-red-600">
+                      <PatternBox pattern={p.pattern} image={productImage(p)} className="h-20 w-full rounded-lg mb-2 flex items-center justify-center"><IconBadge name={p.icon} className="text-white" size={28} /></PatternBox>
+                      <span className="font-bold text-xs">{tr(p.name, lang)}</span>
+                    </button>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.key} className="border-b border-black/5">
+                  <td className="p-2 text-black/40 text-xs font-bold">{r.label}</td>
+                  {products.map((p) => <td key={p.id} className="p-2 text-center">{r.get(p)}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1585,6 +1709,11 @@ function ShopPage({ content, addToCart, lang, wishlistIds = [], onToggleWishlist
   const [activeCat, setActiveCat] = useState("همه");
   const [activeBrands, setActiveBrands] = useState([]);
   const [q, setQ] = useState("");
+  const [compareIds, setCompareIds] = useState([]);
+  const [showCompare, setShowCompare] = useState(false);
+
+  const toggleCompare = (id) => setCompareIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : (prev.length >= 4 ? prev : [...prev, id]));
+  const compareProducts = products.filter((p) => compareIds.includes(p.id));
 
   const toggleBrand = (b) => setActiveBrands((prev) => (prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]));
   const filtered = products.filter((p) => {
@@ -1645,11 +1774,22 @@ function ShopPage({ content, addToCart, lang, wishlistIds = [], onToggleWishlist
             <div className="text-center py-20 text-black/40 text-sm">{ui("noProductsFound", lang)}</div>
           ) : (
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filtered.map((p, idx) => <Reveal key={p.id} delay={Math.min(idx, 6) * 60}><ProductCard p={p} onAdd={() => addToCart(p)} lang={lang} isWishlisted={wishlistIds.includes(p.id)} onToggleWishlist={onToggleWishlist} /></Reveal>)}
+              {filtered.map((p, idx) => <Reveal key={p.id} delay={Math.min(idx, 6) * 60}><ProductCard p={p} onAdd={() => addToCart(p)} lang={lang} isWishlisted={wishlistIds.includes(p.id)} onToggleWishlist={onToggleWishlist} compareChecked={compareIds.includes(p.id)} onToggleCompare={toggleCompare} /></Reveal>)}
             </div>
           )}
         </div>
       </section>
+
+      {compareIds.length >= 2 && (
+        <div className="fixed bottom-5 inset-x-0 z-30 flex justify-center px-4">
+          <div className="bg-black text-white rounded-2xl shadow-2xl px-5 py-3 flex items-center gap-4">
+            <span className="text-sm">{lang === "fa" ? `${fmtNum(compareIds.length, lang)} محصول برای مقایسه انتخاب شد` : `${fmtNum(compareIds.length, lang)} products selected`}</span>
+            <button onClick={() => setShowCompare(true)} className="bg-red-600 hover:bg-red-700 transition-colors text-xs font-bold px-4 py-2 rounded-xl">{lang === "fa" ? "مقایسه کن" : "Compare"}</button>
+            <button onClick={() => setCompareIds([])} className="text-white/50 hover:text-white"><X size={16} /></button>
+          </div>
+        </div>
+      )}
+      {showCompare && <ProductCompareModal products={compareProducts} onClose={() => setShowCompare(false)} lang={lang} />}
 
       {content.testimonials?.length > 0 && (
         <section className="py-20 px-4 sm:px-6 bg-neutral-50">
@@ -1710,8 +1850,37 @@ function ProductDetailPage({ content, id, addToCart, lang, currentUser, onNeedAu
                 <button onClick={() => addToCart(p)} className="glow-pulse bg-red-600 hover:bg-red-700 text-white transition-colors px-6 py-3 rounded-xl font-bold flex items-center gap-2"><Plus size={16} /> {ui("addToCart", lang)}</button>
               </div>
             </div>
+            {content.settings.returnPolicyDays > 0 && (
+              <p className="text-green-700 text-xs font-bold flex items-center gap-1.5 mt-4"><RotateCcw size={13} /> {lang === "fa" ? `${fmtNum(content.settings.returnPolicyDays, lang)} روز مهلت بازگشت کالا` : `${fmtNum(content.settings.returnPolicyDays, lang)}-day return policy`}</p>
+            )}
           </div>
         </div>
+
+        {p.externalComparisons?.length > 0 && (
+          <div className="mt-16">
+            <h3 className="font-bold text-lg mb-1">{lang === "fa" ? "مقایسه با فروشگاه‌های دیگر" : "Compare with other stores"}</h3>
+            <p className="text-black/40 text-xs mb-6">{lang === "fa" ? "شفافیت قیمت برای ما مهمه — خودتون مقایسه کنید." : "Price transparency matters to us — compare for yourself."}</p>
+            <div className="border border-black/10 rounded-2xl overflow-hidden">
+              <div className="grid grid-cols-2 bg-neutral-50 text-xs font-bold text-black/50 px-4 py-3">
+                <span>{lang === "fa" ? "فروشنده" : "Seller"}</span>
+                <span className="text-left">{lang === "fa" ? "قیمت" : "Price"}</span>
+              </div>
+              <div className="grid grid-cols-2 items-center px-4 py-4 border-t border-black/5 bg-red-50/40">
+                <span className="font-bold flex items-center gap-2"><BadgeCheck size={15} className="text-red-600" /> {lang === "fa" ? "نوین پلی‌تکنیک البرز (ما)" : "Novin Polytechnic Alborz (us)"}</span>
+                <span className="text-left font-black text-red-600">{fmtPrice(p.price, lang)}</span>
+              </div>
+              {p.externalComparisons.map((c) => (
+                <div key={c.id} className="grid grid-cols-2 items-center px-4 py-4 border-t border-black/5">
+                  <span className="truncate">
+                    <a href={c.url} target="_blank" rel="noreferrer" className="hover:text-red-600 hover:underline">{c.name || c.siteName}</a>
+                    <span className="block text-black/30 text-[10px]" dir="ltr">{c.siteName}</span>
+                  </span>
+                  <span className="text-left font-bold text-black/60">{c.price ? fmtPrice(Number(c.price), lang) : (lang === "fa" ? "نامشخص" : "N/A")}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <ProductReviews productId={p.id} lang={lang} currentUser={currentUser} onNeedAuth={onNeedAuth} />
 
@@ -2638,6 +2807,10 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
   const [couponError, setCouponError] = useState("");
   const [couponBusy, setCouponBusy] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [wantInvoice, setWantInvoice] = useState(false);
+  const [companyName, setCompanyName] = useState("");
+  const [economicId, setEconomicId] = useState("");
+  const [nationalId, setNationalId] = useState("");
   const [loyalty, setLoyalty] = useState(null);
   const [usePoints, setUsePoints] = useState(false);
   const [pointsPreview, setPointsPreview] = useState(null);
@@ -2671,7 +2844,7 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
     if (!agreed) return;
     setProcessing(true);
     await new Promise((r) => setTimeout(r, 1200));
-    await onSubmit({ ...form, couponCode: coupon?.code || "", usePoints: usePoints && pointsPreview?.pointsUsed > 0 });
+    await onSubmit({ ...form, couponCode: coupon?.code || "", usePoints: usePoints && pointsPreview?.pointsUsed > 0, invoice: wantInvoice ? { requested: true, companyName, economicId, nationalId } : { requested: false } });
     setProcessing(false);
   };
   return (
@@ -2754,6 +2927,22 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
                 </div>
               </div>
 
+              <div>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={wantInvoice} onChange={(e) => setWantInvoice(e.target.checked)} className="accent-red-600" />
+                  <span className="flex items-center gap-1.5"><FileText size={14} className="text-black/40" /> {lang === "fa" ? "نیاز به فاکتور رسمی دارم (سازمانی/شرکتی)" : "I need an official company invoice"}</span>
+                </label>
+                {wantInvoice && (
+                  <div className="mt-2 space-y-2 bg-neutral-50 rounded-lg p-3">
+                    <input required placeholder={lang === "fa" ? "نام شرکت / سازمان" : "Company / organization name"} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-3 py-2 text-sm" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input placeholder={lang === "fa" ? "شناسه اقتصادی" : "Economic ID"} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-3 py-2 text-sm" value={economicId} onChange={(e) => setEconomicId(e.target.value)} />
+                      <input placeholder={lang === "fa" ? "شناسه ملی" : "National ID"} dir="ltr" className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-3 py-2 text-sm" value={nationalId} onChange={(e) => setNationalId(e.target.value)} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <label className="flex items-start gap-2 text-xs cursor-pointer pt-1">
                 <input required type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="accent-red-600 mt-0.5 shrink-0" />
                 <span className="text-black/60 leading-relaxed">
@@ -2780,26 +2969,99 @@ function CheckoutModal({ total, onClose, onSubmit, orderDone, currentUser, payme
 
 /* ============================== ورود / ثبت‌نام عمومی ============================== */
 
+function TurnstileWidget({ siteKey, onToken, lang }) {
+  const ref = useRef(null);
+  const widgetId = useRef(null);
+  useEffect(() => {
+    let cancelled = false;
+    function renderWidget() {
+      if (cancelled || !ref.current || !window.turnstile) return;
+      widgetId.current = window.turnstile.render(ref.current, {
+        sitekey: siteKey,
+        callback: (token) => onToken(token),
+        "expired-callback": () => onToken(""),
+        "error-callback": () => onToken(""),
+        language: lang === "fa" ? "fa" : "en",
+      });
+    }
+    if (window.turnstile) {
+      renderWidget();
+    } else if (!document.getElementById("turnstile-script")) {
+      const script = document.createElement("script");
+      script.id = "turnstile-script";
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      script.async = true;
+      script.onload = renderWidget;
+      document.head.appendChild(script);
+    } else {
+      document.getElementById("turnstile-script").addEventListener("load", renderWidget);
+    }
+    return () => {
+      cancelled = true;
+      if (widgetId.current && window.turnstile) { try { window.turnstile.remove(widgetId.current); } catch (e) { /* ignore */ } }
+    };
+  }, [siteKey]); // eslint-disable-line
+  return <div ref={ref} className="flex justify-center" />;
+}
+
 function AuthModal({ onClose, onLogin, onRegister, lang }) {
   const [mode, setMode] = useState("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [customValues, setCustomValues] = useState({});
+  const [signupFields, setSignupFields] = useState([]);
+  const [captchaCfg, setCaptchaCfg] = useState(null);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [notRobot, setNotRobot] = useState(false);
+  const [website, setWebsite] = useState(""); // هانی‌پات: مخفی از کاربر واقعی، فقط ربات‌ها پرش می‌کنند
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    api.getSignupFields().then(({ fields }) => setSignupFields(fields)).catch(() => setSignupFields([]));
+    api.getCaptchaConfig().then(setCaptchaCfg).catch(() => setCaptchaCfg({ enabled: false }));
+  }, []);
+
+  const IRAN_MOBILE_RE = /^(?:\+98|0098|98|0)?9\d{9}$/;
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const validate = () => {
+    const errs = {};
+    if (mode === "register") {
+      if (!IRAN_MOBILE_RE.test(phone.replace(/\s/g, ""))) errs.phone = lang === "fa" ? "شماره موبایل معتبر نیست (مثال: 0912xxxxxxx)" : "Invalid mobile number";
+      if (!EMAIL_RE.test(email.trim())) errs.email = lang === "fa" ? "ایمیل معتبر نیست" : "Invalid email address";
+      for (const f of signupFields) {
+        if (f.required && !String(customValues[f.key] || "").trim()) errs[f.key] = lang === "fa" ? `${f.label.fa} را پر کنید` : `${f.label.en} is required`;
+      }
+      if (captchaCfg?.enabled && !captchaToken) errs.captcha = lang === "fa" ? "لطفاً تأیید کنید که ربات نیستید" : "Please verify you're not a robot";
+      if (!notRobot) errs.notRobot = lang === "fa" ? "لطفاً تیک «من ربات نیستم» را بزنید" : "Please check \"I'm not a robot\"";
+    }
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const submit = async (e) => {
     e.preventDefault();
+    setError("");
+    if (!validate()) return;
     setBusy(true);
-    const err = mode === "login" ? await onLogin(username, password) : await onRegister(username, password, name);
+    const err = mode === "login"
+      ? await onLogin(username, password)
+      : await onRegister({ username, password, name, phone: phone.replace(/\s/g, ""), email: email.trim(), customFields: customValues, captchaToken, website });
     setBusy(false);
     if (err) setError(err); else setError("");
   };
 
+  const fieldInputCls = "w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-white border border-black/10 rounded-2xl p-6">
+      <div className="relative w-full max-w-sm bg-white border border-black/10 rounded-2xl p-6 max-h-[92vh] overflow-y-auto">
         <button onClick={onClose} className="absolute top-4 left-4 text-black/40 hover:text-black"><X size={18} /></button>
         <div className="text-center mb-6">
           <div className="w-14 h-14 rounded-full bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-3">
@@ -2808,13 +3070,58 @@ function AuthModal({ onClose, onLogin, onRegister, lang }) {
           <h3 className="font-bold text-lg">{mode === "login" ? ui("signInToAccount", lang) : ui("registerNewUser", lang)}</h3>
         </div>
         <div className="flex bg-black/5 rounded-lg p-1 mb-5">
-          <button onClick={() => { setMode("login"); setError(""); }} className={`flex-1 text-xs py-2 rounded-md transition-colors ${mode === "login" ? "bg-red-600 text-white font-bold" : "text-black/50"}`}>{ui("signIn", lang)}</button>
-          <button onClick={() => { setMode("register"); setError(""); }} className={`flex-1 text-xs py-2 rounded-md transition-colors ${mode === "register" ? "bg-red-600 text-white font-bold" : "text-black/50"}`}>{ui("createAccount", lang)}</button>
+          <button onClick={() => { setMode("login"); setError(""); setFieldErrors({}); }} className={`flex-1 text-xs py-2 rounded-md transition-colors ${mode === "login" ? "bg-red-600 text-white font-bold" : "text-black/50"}`}>{ui("signIn", lang)}</button>
+          <button onClick={() => { setMode("register"); setError(""); setFieldErrors({}); }} className={`flex-1 text-xs py-2 rounded-md transition-colors ${mode === "register" ? "bg-red-600 text-white font-bold" : "text-black/50"}`}>{ui("createAccount", lang)}</button>
         </div>
         <form onSubmit={submit} className="space-y-3">
-          {mode === "register" && <input required placeholder={ui("fullName", lang)} value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" />}
-          <input required placeholder={ui("username", lang)} value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" />
-          <input required type="password" placeholder={ui("password", lang)} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-white border border-black/15 focus:border-red-600 outline-none rounded-lg px-4 py-2.5 text-sm" />
+          {/* هانی‌پات: برای کاربر واقعی نامرئی است (ربات‌ها معمولاً همه‌ی فیلدها را پر می‌کنند) */}
+          <input type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} className="absolute opacity-0 pointer-events-none -z-10 w-0 h-0" aria-hidden="true" />
+          {mode === "register" && <input required placeholder={ui("fullName", lang)} value={name} onChange={(e) => setName(e.target.value)} className={fieldInputCls} />}
+          <input required placeholder={ui("username", lang)} value={username} onChange={(e) => setUsername(e.target.value)} className={fieldInputCls} />
+          <input required type="password" placeholder={ui("password", lang)} value={password} onChange={(e) => setPassword(e.target.value)} className={fieldInputCls} />
+
+          {mode === "register" && (
+            <>
+              <div>
+                <input required dir="ltr" placeholder={lang === "fa" ? "شماره موبایل (0912xxxxxxx)" : "Mobile number"} value={phone} onChange={(e) => setPhone(e.target.value)} className={fieldInputCls + (fieldErrors.phone ? " border-red-500" : "")} />
+                {fieldErrors.phone && <p className="text-red-600 text-[11px] mt-1">{fieldErrors.phone}</p>}
+              </div>
+              <div>
+                <input required dir="ltr" type="email" placeholder={lang === "fa" ? "ایمیل" : "Email"} value={email} onChange={(e) => setEmail(e.target.value)} className={fieldInputCls + (fieldErrors.email ? " border-red-500" : "")} />
+                {fieldErrors.email && <p className="text-red-600 text-[11px] mt-1">{fieldErrors.email}</p>}
+              </div>
+
+              {signupFields.map((f) => (
+                <div key={f.key}>
+                  {f.type === "select" ? (
+                    <select className={fieldInputCls} value={customValues[f.key] || ""} onChange={(e) => setCustomValues({ ...customValues, [f.key]: e.target.value })}>
+                      <option value="">{tr(f.label, lang)}</option>
+                      {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  ) : f.type === "textarea" ? (
+                    <textarea rows={2} placeholder={tr(f.label, lang)} className={fieldInputCls + " resize-none"} value={customValues[f.key] || ""} onChange={(e) => setCustomValues({ ...customValues, [f.key]: e.target.value })} />
+                  ) : (
+                    <input type={f.type} placeholder={tr(f.label, lang)} className={fieldInputCls} value={customValues[f.key] || ""} onChange={(e) => setCustomValues({ ...customValues, [f.key]: e.target.value })} />
+                  )}
+                  {fieldErrors[f.key] && <p className="text-red-600 text-[11px] mt-1">{fieldErrors[f.key]}</p>}
+                </div>
+              ))}
+
+              <label className="flex items-center gap-2.5 bg-neutral-50 border border-black/10 rounded-lg px-3.5 py-3 cursor-pointer">
+                <input type="checkbox" checked={notRobot} onChange={(e) => setNotRobot(e.target.checked)} className="accent-red-600 w-4 h-4" />
+                <span className="text-sm font-bold flex items-center gap-1.5"><ShieldCheck size={15} className="text-green-600" /> {lang === "fa" ? "من ربات نیستم" : "I'm not a robot"}</span>
+              </label>
+              {fieldErrors.notRobot && <p className="text-red-600 text-[11px] -mt-2">{fieldErrors.notRobot}</p>}
+
+              {captchaCfg?.enabled && (
+                <div>
+                  <TurnstileWidget siteKey={captchaCfg.siteKey} onToken={setCaptchaToken} lang={lang} />
+                  {fieldErrors.captcha && <p className="text-red-600 text-[11px] mt-1 text-center">{fieldErrors.captcha}</p>}
+                </div>
+              )}
+            </>
+          )}
+
           {error && <p className="text-red-600 text-xs text-center">{error}</p>}
           <button disabled={busy} className="w-full bg-red-600 hover:bg-red-700 text-white disabled:opacity-60 transition-colors py-2.5 rounded-xl font-bold">{busy ? ui("checking", lang) : mode === "login" ? ui("signIn", lang) : ui("createAccount", lang)}</button>
         </form>
@@ -2846,6 +3153,7 @@ const ALL_ADMIN_TABS = [
   { id: "reviews", icon: MessageCircle, roles: ["admin"] },
   { id: "tickets", icon: LifeBuoy, roles: ["admin"] },
   { id: "users", icon: UsersIcon, roles: ["admin"] },
+  { id: "userFields", icon: ShieldCheck, roles: ["admin"] },
   { id: "payment", icon: CreditCard, roles: ["admin"] },
   { id: "notifications", icon: Send, roles: ["admin"] },
   { id: "notifTemplates", icon: MessageSquareText, roles: ["admin"] },
@@ -2906,6 +3214,7 @@ function AdminPanel({ content, update, onClose, onLogout, tab, setTab, saving, r
           {tab === "reviews" && <AdminReviews lang={lang} />}
           {tab === "tickets" && <AdminTickets lang={lang} />}
           {tab === "users" && <AdminUsers lang={lang} />}
+          {tab === "userFields" && <AdminUserFields lang={lang} />}
           {tab === "payment" && <AdminPayment lang={lang} />}
           {tab === "notifications" && <AdminNotifications lang={lang} />}
           {tab === "notifTemplates" && <AdminNotificationTemplates lang={lang} />}
@@ -3091,7 +3400,7 @@ function ImageUploadField({ label, value, onChange, lang }) {
 
 function AdminServices({ content, update, lang }) {
   const set = (list) => update(["services"], list);
-  const addItem = () => set([...content.services, { id: uid("srv"), icon: "Monitor", title: { fa: "خدمت جدید", en: "New Service" }, desc: { fa: "", en: "" }, priceRange: { fa: "", en: "" }, pattern: "circuit", image: "", featured: false }]);
+  const addItem = () => set([...content.services, { id: uid("srv"), icon: "Monitor", slug: `service-${Date.now().toString(36)}`, estimatedTime: { fa: "", en: "" }, title: { fa: "خدمت جدید", en: "New Service" }, desc: { fa: "", en: "" }, priceRange: { fa: "", en: "" }, pattern: "circuit", image: "", featured: false }]);
   const removeItem = (id) => set(content.services.filter((s) => s.id !== id));
   const editItem = (id, key, val) => set(content.services.map((s) => (s.id === id ? { ...s, [key]: val } : s)));
   return (
@@ -3105,7 +3414,11 @@ function AdminServices({ content, update, lang }) {
               <button onClick={() => removeItem(s.id)} className="mt-5 text-black/30 hover:text-red-600 shrink-0"><Trash2 size={16} /></button>
             </div>
             <div className="mb-3"><BField label={aui("description", lang)} value={s.desc} onChange={(v) => editItem(s.id, "desc", v)} multiline lang={lang} /></div>
-            <div className="mb-3"><BField label={lang === "fa" ? "محدوده‌ی قیمت" : "Price range"} value={s.priceRange || { fa: "", en: "" }} onChange={(v) => editItem(s.id, "priceRange", v)} lang={lang} /></div>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <Field label={lang === "fa" ? "نامک صفحه (slug)" : "Page slug"}><input dir="ltr" className={inputCls} value={s.slug || ""} onChange={(e) => editItem(s.id, "slug", e.target.value.trim().replace(/\s+/g, "-").toLowerCase())} placeholder="motherboard-repair" /></Field>
+              <div><span className="text-[10px] text-black/40 mb-1 block">{lang === "fa" ? "محدوده‌ی قیمت" : "Price range"}</span><BField value={s.priceRange || { fa: "", en: "" }} onChange={(v) => editItem(s.id, "priceRange", v)} lang={lang} /></div>
+            </div>
+            <div className="mb-3"><span className="text-[10px] text-black/40 mb-1 block flex items-center gap-1"><Clock size={11} /> {lang === "fa" ? "زمان تخمینی انجام" : "Estimated turnaround time"}</span><BField value={s.estimatedTime || { fa: "", en: "" }} onChange={(v) => editItem(s.id, "estimatedTime", v)} lang={lang} /></div>
             <label className="flex items-center gap-2 text-sm cursor-pointer mb-3"><input type="checkbox" checked={!!s.featured} onChange={(e) => editItem(s.id, "featured", e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "به‌عنوان مهم‌ترین خدمت نشان داده شود" : "Highlight as top service"}</label>
             <div className="grid grid-cols-2 gap-3">
               <div><span className="text-[10px] text-black/40 mb-1 block">{aui("icon", lang)}</span><IconPicker value={s.icon} onChange={(v) => editItem(s.id, "icon", v)} /></div>
@@ -3154,8 +3467,51 @@ function AdminProducts({ content, update, lang }) {
               <div><span className="text-[10px] text-black/40 mb-1 block">{aui("bgImage", lang)}</span><PatternPicker value={p.pattern} onChange={(v) => editItem(p.id, "pattern", v)} /></div>
             </div>
             <div className="mt-3"><ImageUploadField value={p.image} onChange={(v) => editItem(p.id, "image", v)} lang={lang} /></div>
+            <ExternalComparisonEditor product={p} onChange={(v) => editItem(p.id, "externalComparisons", v)} lang={lang} />
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function ExternalComparisonEditor({ product, onChange, lang }) {
+  const list = product.externalComparisons || [];
+  const [url, setUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const addFromUrl = async () => {
+    if (!url.trim()) return;
+    setBusy(true);
+    let meta = { name: "", image: "", price: null };
+    try { meta = await api.fetchUrlMeta(url.trim()); } catch (e) { /* دستی پر می‌شود */ }
+    onChange([...list, { id: uid("cmp"), url: url.trim(), siteName: new URL(url.trim()).hostname.replace("www.", ""), name: meta.name || "", image: meta.image || "", price: meta.price || "" }]);
+    setUrl(""); setBusy(false);
+  };
+  const editEntry = (id, key, val) => onChange(list.map((c) => (c.id === id ? { ...c, [key]: val } : c)));
+  const removeEntry = (id) => onChange(list.filter((c) => c.id !== id));
+
+  return (
+    <div className="mt-4 pt-4 border-t border-black/10">
+      <span className="text-[11px] font-bold text-black/50 mb-2 flex items-center gap-1.5"><ArrowUpRight size={12} /> {lang === "fa" ? "مقایسه با محصول سایت‌های دیگر" : "Compare with other sites"}</span>
+      <div className="flex gap-2 mb-3">
+        <input dir="ltr" placeholder="https://competitor.com/product" className={inputCls} value={url} onChange={(e) => setUrl(e.target.value)} />
+        <button type="button" onClick={addFromUrl} disabled={busy || !url.trim()} className={btnGhost + " shrink-0 disabled:opacity-50"}>{busy ? "…" : (lang === "fa" ? "افزودن" : "Add")}</button>
+      </div>
+      <div className="space-y-2">
+        {list.map((c) => (
+          <div key={c.id} className="bg-neutral-50 rounded-lg p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <a href={c.url} target="_blank" rel="noreferrer" dir="ltr" className="text-[11px] text-blue-600 truncate hover:underline">{c.siteName}</a>
+              <button onClick={() => removeEntry(c.id)} className="text-black/30 hover:text-red-600 shrink-0"><X size={14} /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <input placeholder={lang === "fa" ? "نام محصول رقیب" : "Competitor product name"} className={inputCls} value={c.name} onChange={(e) => editEntry(c.id, "name", e.target.value)} />
+              <input type="number" placeholder={lang === "fa" ? "قیمت رقیب (تومان)" : "Competitor price"} dir="ltr" className={inputCls} value={c.price} onChange={(e) => editEntry(c.id, "price", e.target.value)} />
+            </div>
+          </div>
+        ))}
+        {list.length === 0 && <p className="text-black/30 text-xs">{lang === "fa" ? "لینک محصول مشابه از یک سایت دیگر رو بچسبونید تا خودکار اطلاعاتش خونده بشه." : "Paste a similar product's link from another site to auto-fetch its info."}</p>}
       </div>
     </div>
   );
@@ -3591,6 +3947,9 @@ function AdminOrderRow({ order: o, lang, onChanged }) {
       {o.couponCode && (
         <p className="text-green-700 text-[11px] mb-1 flex items-center gap-1"><Tag size={11} /> <span dir="ltr">{o.couponCode}</span> · {lang === "fa" ? "تخفیف" : "discount"}: {fmtPrice(o.discountAmount, lang)}</p>
       )}
+      {o.invoice?.requested && (
+        <p className="text-blue-700 text-[11px] mb-1 flex items-center gap-1"><FileText size={11} /> {lang === "fa" ? "درخواست فاکتور رسمی" : "Official invoice requested"}: {o.invoice.companyName} {o.invoice.economicId ? `· ${lang === "fa" ? "ش.اقتصادی" : "Econ.ID"} ${o.invoice.economicId}` : ""}</p>
+      )}
       {isService ? (
         <p className="text-black/40 text-xs mb-1">{lang === "fa" ? "دستگاه" : "Device"}: {o.deviceInfo} — {o.issueDescription}</p>
       ) : (
@@ -3776,6 +4135,125 @@ function AdminMessageDetail({ message: m, lang, onBack, onDelete, onChanged }) {
   );
 }
 
+function AdminUserFields({ lang }) {
+  const [captcha, setCaptcha] = useState(null);
+  const [captchaSaved, setCaptchaSaved] = useState(false);
+  const [fields, setFields] = useState(null);
+  const [editing, setEditing] = useState(null);
+
+  const loadFields = () => api.adminListUserFields().then(({ fields: list }) => setFields(list)).catch(() => setFields([]));
+  useEffect(() => {
+    api.adminGetCaptchaSettings().then(setCaptcha).catch(() => setCaptcha({ enabled: false, siteKey: "", secretKey: "" }));
+    loadFields();
+  }, []);
+
+  const saveCaptcha = async () => {
+    try { await api.adminUpdateCaptchaSettings(captcha); setCaptchaSaved(true); setTimeout(() => setCaptchaSaved(false), 1800); } catch (e) { alert(e.message); }
+  };
+
+  const startNew = () => setEditing({ id: null, key: "", labelFa: "", labelEn: "", type: "text", options: [], required: false, showAtSignup: true, order: 50 });
+  const startEdit = (f) => setEditing({ id: f.id, key: f.key, labelFa: f.label.fa, labelEn: f.label.en, type: f.type, options: f.options, required: f.required, showAtSignup: f.showAtSignup, order: f.order });
+  const saveField = async () => {
+    try {
+      if (editing.id) await api.adminUpdateUserField(editing.id, editing);
+      else await api.adminCreateUserField(editing);
+      setEditing(null); await loadFields();
+    } catch (e) { alert(e.message); }
+  };
+  const removeField = async (f) => {
+    if (!confirm(lang === "fa" ? "این خانه حذف شود؟ اطلاعات ذخیره‌شده‌ی کاربران برای آن باقی می‌ماند." : "Delete this field? Already-saved user data for it will remain.")) return;
+    try { await api.adminDeleteUserField(f.id); await loadFields(); } catch (e) { alert(e.message); }
+  };
+
+  const FIELD_TYPES = [
+    { v: "text", fa: "متن کوتاه", en: "Short text" },
+    { v: "textarea", fa: "متن بلند", en: "Long text" },
+    { v: "number", fa: "عدد", en: "Number" },
+    { v: "email", fa: "ایمیل", en: "Email" },
+    { v: "tel", fa: "شماره تلفن", en: "Phone" },
+    { v: "date", fa: "تاریخ", en: "Date" },
+    { v: "select", fa: "لیست کشویی", en: "Dropdown" },
+  ];
+
+  if (editing) {
+    const set = (k, v) => setEditing({ ...editing, [k]: v });
+    return (
+      <div className="max-w-lg">
+        <SectionTitle action={<div className="flex gap-2"><button onClick={() => setEditing(null)} className={btnGhost}>{aui("cancel", lang)}</button><button onClick={saveField} className={btnPrimary}>{aui("save", lang)}</button></div>}>
+          {editing.id ? aui("edit", lang) : (lang === "fa" ? "خانه‌ی جدید" : "New Field")}
+        </SectionTitle>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={lang === "fa" ? "عنوان فارسی" : "Persian label"}><input className={inputCls} value={editing.labelFa} onChange={(e) => set("labelFa", e.target.value)} /></Field>
+            <Field label={lang === "fa" ? "عنوان انگلیسی" : "English label"}><input className={inputCls} value={editing.labelEn} onChange={(e) => set("labelEn", e.target.value)} /></Field>
+          </div>
+          {!editing.id && (
+            <Field label={lang === "fa" ? "کلید یکتا (انگلیسی، بدون فاصله)" : "Unique key"}><input dir="ltr" className={inputCls} value={editing.key} onChange={(e) => set("key", e.target.value.trim().replace(/\s+/g, "_").toLowerCase())} placeholder="national_code" /></Field>
+          )}
+          <Field label={lang === "fa" ? "نوع فیلد" : "Field type"}>
+            <select className={inputCls} value={editing.type} onChange={(e) => set("type", e.target.value)}>
+              {FIELD_TYPES.map((t) => <option key={t.v} value={t.v}>{lang === "fa" ? t.fa : t.en}</option>)}
+            </select>
+          </Field>
+          {editing.type === "select" && (
+            <Field label={lang === "fa" ? "گزینه‌ها (با کاما جدا کنید)" : "Options (comma separated)"}>
+              <input className={inputCls} value={editing.options.join(", ")} onChange={(e) => set("options", e.target.value.split(",").map((s) => s.trim()).filter(Boolean))} />
+            </Field>
+          )}
+          <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={editing.showAtSignup} onChange={(e) => set("showAtSignup", e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "در فرم ثبت‌نام نمایش داده شود" : "Show on the signup form"}</label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={editing.required} onChange={(e) => set("required", e.target.checked)} className="accent-red-600" /> {lang === "fa" ? "پر کردن این خانه الزامی باشد" : "Required field"}</label>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl">
+      <SectionTitle>{aui("userFields", lang)}</SectionTitle>
+
+      {captcha && (
+        <div className={cardCls + " mb-8"}>
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-bold text-sm flex items-center gap-2"><ShieldCheck size={16} className="text-red-600" /> {lang === "fa" ? "کپچا (من ربات نیستم)" : "CAPTCHA (I'm not a robot)"}</h3>
+            <button onClick={() => setCaptcha({ ...captcha, enabled: !captcha.enabled })} className={`w-14 h-8 rounded-full transition-colors relative shrink-0 ${captcha.enabled ? "bg-red-600" : "bg-black/15"}`}>
+              <span className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-all ${captcha.enabled ? "left-1" : "left-7"}`} />
+            </button>
+          </div>
+          <p className="text-black/40 text-xs mb-4">
+            {lang === "fa"
+              ? <>از Cloudflare Turnstile استفاده می‌شود (جدیدترین و بدون‌دردسرترین روش کپچا). رایگانه؛ کلیدهاش رو از <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank" rel="noreferrer" className="text-red-600 underline">اینجا</a> بسازید.</>
+              : <>Uses Cloudflare Turnstile (the newest, most frictionless CAPTCHA). It's free — create your keys <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank" rel="noreferrer" className="text-red-600 underline">here</a>.</>}
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3 mb-3">
+            <Field label={lang === "fa" ? "Site Key" : "Site Key"}><input dir="ltr" className={inputCls} value={captcha.siteKey} onChange={(e) => setCaptcha({ ...captcha, siteKey: e.target.value })} /></Field>
+            <Field label={lang === "fa" ? "Secret Key" : "Secret Key"}><input dir="ltr" type="password" className={inputCls} value={captcha.secretKey} onChange={(e) => setCaptcha({ ...captcha, secretKey: e.target.value })} /></Field>
+          </div>
+          <button onClick={saveCaptcha} className={btnPrimary}>{captchaSaved ? <><Check size={14} /> {lang === "fa" ? "ذخیره شد" : "Saved"}</> : aui("save", lang)}</button>
+        </div>
+      )}
+
+      <SectionTitle action={<button onClick={startNew} className={btnPrimary}><Plus size={14} /> {lang === "fa" ? "خانه‌ی جدید" : "New Field"}</button>}>{lang === "fa" ? "خانه‌های سفارشی اطلاعات کاربر" : "Custom User Fields"}</SectionTitle>
+      <p className="text-black/40 text-xs mb-5">{lang === "fa" ? "خانه‌های اضافی که در فرم ثبت‌نام و در پروفایل کاربر (قابل ویرایش توسط مدیر) نمایش داده می‌شوند." : "Extra fields shown on the signup form and in each user's admin-editable profile."}</p>
+      {fields === null && <p className="text-black/40 text-sm">{ui("loading", lang)}</p>}
+      <div className="space-y-2">
+        {fields?.map((f) => (
+          <div key={f.id} className={cardCls + " flex items-center justify-between gap-3 flex-wrap"}>
+            <div>
+              <p className="text-sm font-bold flex items-center gap-2">{tr(f.label, lang)} {f.required && <span className="text-red-600 text-xs">*</span>}</p>
+              <p className="text-black/40 text-xs mt-1">{f.type} {f.showAtSignup ? `· ${lang === "fa" ? "در ثبت‌نام" : "on signup"}` : ""}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => startEdit(f)} className={btnGhost}>{aui("edit", lang)}</button>
+              <button onClick={() => removeField(f)} className="text-black/30 hover:text-red-600"><Trash2 size={16} /></button>
+            </div>
+          </div>
+        ))}
+        {fields && fields.length === 0 && <p className="text-black/40 text-sm">{lang === "fa" ? "هنوز خانه‌ی سفارشی‌ای اضافه نکرده‌اید." : "No custom fields yet."}</p>}
+      </div>
+    </div>
+  );
+}
+
 function AdminUsers({ lang }) {
   const [users, setUsers] = useState(null);
   const [busyId, setBusyId] = useState(null);
@@ -3830,15 +4308,18 @@ function AdminUserDetail({ userId, lang, onChanged }) {
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [fieldDefs, setFieldDefs] = useState([]);
+  const [resetResult, setResetResult] = useState(null);
+  const [resetBusy, setResetBusy] = useState(false);
 
   const load = async () => {
     try {
       const d = await api.getUserDetail(userId);
       setDetail(d);
-      setForm({ name: d.user.name, phone: d.user.phone || "", email: d.user.email || "" });
+      setForm({ name: d.user.name, phone: d.user.phone || "", email: d.user.email || "", customFields: { ...d.user.customFields } });
     } catch (e) { setDetail(false); }
   };
-  useEffect(() => { load(); }, [userId]); // eslint-disable-line
+  useEffect(() => { load(); api.adminListUserFields().then(({ fields }) => setFieldDefs(fields)).catch(() => setFieldDefs([])); }, [userId]); // eslint-disable-line
 
   const saveProfile = async (e) => {
     e.preventDefault(); setBusy(true); setMsg("");
@@ -3851,20 +4332,55 @@ function AdminUserDetail({ userId, lang, onChanged }) {
     try { await api.adminDeleteAddress(id); await load(); } catch (e) { alert(e.message); }
   };
 
+  const resetPassword = async () => {
+    if (!confirm(lang === "fa" ? "یک رمز عبور جدید تصادفی برای این کاربر ساخته شود؟" : "Generate a new random password for this user?")) return;
+    setResetBusy(true); setResetResult(null);
+    try { const r = await api.adminResetUserPassword(userId); setResetResult(r.newPassword); } catch (e) { alert(e.message); }
+    setResetBusy(false);
+  };
+
   if (detail === null) return <p className="text-black/40 text-sm mt-3">{ui("loading", lang)}</p>;
   if (detail === false) return <p className="text-red-600 text-sm mt-3">{aui("loadFailed", lang)}</p>;
 
   return (
     <div className="mt-4 pt-4 border-t border-black/10 space-y-6">
-      <form onSubmit={saveProfile} className="grid sm:grid-cols-3 gap-2">
-        <input placeholder={aui("name", lang)} className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <input dir="ltr" placeholder={aui("phone", lang)} className={inputCls} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-        <input dir="ltr" placeholder={aui("email", lang)} className={inputCls} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        <div className="sm:col-span-3 flex items-center gap-2">
+      <form onSubmit={saveProfile} className="space-y-2">
+        <div className="grid sm:grid-cols-3 gap-2">
+          <input placeholder={aui("name", lang)} className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <input dir="ltr" placeholder={aui("phone", lang)} className={inputCls} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          <input dir="ltr" placeholder={aui("email", lang)} className={inputCls} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        </div>
+        {fieldDefs.length > 0 && (
+          <div className="grid sm:grid-cols-3 gap-2">
+            {fieldDefs.map((f) => (
+              f.type === "select" ? (
+                <select key={f.id} className={inputCls} value={form.customFields[f.key] || ""} onChange={(e) => setForm({ ...form, customFields: { ...form.customFields, [f.key]: e.target.value } })}>
+                  <option value="">{tr(f.label, lang)}</option>
+                  {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              ) : (
+                <input key={f.id} type={f.type === "textarea" ? "text" : f.type} placeholder={tr(f.label, lang)} className={inputCls} value={form.customFields[f.key] || ""} onChange={(e) => setForm({ ...form, customFields: { ...form.customFields, [f.key]: e.target.value } })} />
+              )
+            ))}
+          </div>
+        )}
+        <div className="flex items-center gap-2 pt-1">
           <button disabled={busy} className={btnPrimary}>{busy ? ui("checking", lang) : aui("save", lang)}</button>
           {msg && <span className="text-xs text-black/50">{msg}</span>}
         </div>
       </form>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <h4 className="font-bold text-xs mb-2 text-amber-800 flex items-center gap-1.5"><KeyRound size={14} /> {lang === "fa" ? "بازیابی رمز عبور" : "Password Recovery"}</h4>
+        <p className="text-amber-800/70 text-xs mb-3">{lang === "fa" ? "اگر کاربر رمزش را فراموش کرده، اینجا یک رمز جدید تصادفی برایش بسازید و به او اطلاع دهید." : "If the user forgot their password, generate a new random one here and share it with them."}</p>
+        <button onClick={resetPassword} disabled={resetBusy} className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg font-bold transition-colors">{resetBusy ? "…" : (lang === "fa" ? "ساخت رمز جدید" : "Generate new password")}</button>
+        {resetResult && (
+          <div className="mt-3 bg-white border border-amber-300 rounded-lg p-3 flex items-center justify-between gap-2">
+            <span className="text-sm font-black" dir="ltr">{resetResult}</span>
+            <span className="text-[10px] text-amber-700">{lang === "fa" ? "این رمز فقط همین یک‌بار نمایش داده می‌شود" : "Shown only once"}</span>
+          </div>
+        )}
+      </div>
 
       <div>
         <h4 className="font-bold text-xs mb-2 text-black/60">{aui("addressesOfUser", lang)}</h4>
@@ -4687,6 +5203,19 @@ function AdminSettings({ content, update, lang }) {
         <Field label={lang === "fa" ? "لینک صفحه آپارات" : "Aparat profile URL"}><input dir="ltr" className={inputCls} value={s.aparat || ""} onChange={(e) => set("aparat", e.target.value)} /></Field>
         <Field label={lang === "fa" ? "لینک ویدیوی آپارات فروشگاه" : "Shop Aparat video URL"}><input dir="ltr" className={inputCls} value={s.shopVideoUrl || ""} onChange={(e) => set("shopVideoUrl", e.target.value)} placeholder="https://www.aparat.com/v/..." /></Field>
         <Field label={lang === "fa" ? "لینک سایت طراح (Vitra Studio) در فوتر" : "Designer (Vitra Studio) website link in footer"}><input dir="ltr" className={inputCls} value={s.designerUrl || ""} onChange={(e) => set("designerUrl", e.target.value)} placeholder="https://vitrastudio.example" /></Field>
+
+        <div className="border-t border-black/10 pt-4 mt-2">
+          <p className="text-xs font-bold text-black/50 mb-3">{lang === "fa" ? "اعتمادسازی و اطلاعات کسب‌وکار" : "Trust & Business Info"}</p>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <Field label={lang === "fa" ? "تعداد تعمیر موفق (پایه)" : "Successful repairs (base count)"}><input type="number" min={0} dir="ltr" className={inputCls} value={s.successfulRepairsCount || 0} onChange={(e) => set("successfulRepairsCount", Number(e.target.value))} /></Field>
+            <Field label={lang === "fa" ? "درصد موفقیت تعمیر" : "Repair success rate (%)"}><input type="number" min={0} max={100} dir="ltr" className={inputCls} value={s.repairSuccessRate || 0} onChange={(e) => set("repairSuccessRate", Number(e.target.value))} /></Field>
+          </div>
+          <Field label={lang === "fa" ? "مهلت بازگشت کالا (روز)" : "Return policy period (days)"}><input type="number" min={0} dir="ltr" className={inputCls} value={s.returnPolicyDays || 0} onChange={(e) => set("returnPolicyDays", Number(e.target.value))} /></Field>
+          <div className="mt-3">
+            <span className="text-xs text-black/50 mb-1.5 block">{lang === "fa" ? "مناطق تحت پوشش (با کاما جدا کنید)" : "Areas covered (comma separated)"}</span>
+            <input className={inputCls} value={(s.serviceAreas || []).join("، ")} onChange={(e) => set("serviceAreas", e.target.value.split(/[،,]/).map((x) => x.trim()).filter(Boolean))} placeholder="کرج، فردیس، گوهردشت، اندیشه" />
+          </div>
+        </div>
       </div>
     </div>
   );

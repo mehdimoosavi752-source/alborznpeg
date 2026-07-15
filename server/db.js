@@ -249,6 +249,27 @@ db.exec(`
     user_agent TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS user_field_defs (
+    id TEXT PRIMARY KEY,
+    key TEXT UNIQUE NOT NULL,
+    label_fa TEXT NOT NULL DEFAULT '',
+    label_en TEXT NOT NULL DEFAULT '',
+    type TEXT NOT NULL DEFAULT 'text',   -- text | number | email | tel | date | select | textarea
+    options TEXT NOT NULL DEFAULT '[]',  -- برای نوع select: آرایه‌ی JSON از گزینه‌ها
+    required INTEGER NOT NULL DEFAULT 0,
+    show_at_signup INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 99,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS captcha_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled INTEGER NOT NULL DEFAULT 0,
+    site_key TEXT NOT NULL DEFAULT '',
+    secret_key TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL
+  );
 `);
 
 function uid(prefix = "id") {
@@ -268,6 +289,10 @@ if (!userColumns.includes("email")) {
 if (!userColumns.includes("points")) {
   db.exec("ALTER TABLE users ADD COLUMN points INTEGER NOT NULL DEFAULT 0");
   console.log("[migrate] ستون points به جدول users اضافه شد");
+}
+if (!userColumns.includes("custom_fields")) {
+  db.exec("ALTER TABLE users ADD COLUMN custom_fields TEXT NOT NULL DEFAULT '{}'");
+  console.log("[migrate] ستون custom_fields به جدول users اضافه شد");
 }
 
 const pageColumns = db.prepare("PRAGMA table_info(pages)").all().map((c) => c.name);
@@ -508,6 +533,44 @@ const articles = [
         "Don't make this call without real information. A lot of our customers assumed their laptop was done for, when in fact a small investment got them several more years out of it."),
   ],
   },
+  {
+    slug: "best-projector-by-use-case",
+    title: T("بهترین ویدئو پروژکتور برای هر کاربرد: سینما خانگی، اداری و گیمینگ", "Best Video Projector for Every Use Case: Home Cinema, Office & Gaming"),
+    blocks: [
+      B("heading", "برای سینمای خانگی", "For Home Cinema"),
+      B("paragraph",
+        "تو اتاقی که کامل تاریک می‌کنید، اولویت با کنتراست و رنگه، نه لومن بالا. یه مدل 3LCD یا DLP با رزولوشن Full HD به بالا و کنتراست خوب، تصویر سینمایی‌تری نسبت به یه مدل پرنور ولی رنگ‌پریده می‌ده. اگه صفحه‌ی نمایش بزرگ (۱۰۰ اینچ به بالا) می‌خواید، فاصله‌ی پرتاب دستگاه رو حتماً با اندازه‌ی اتاقتون چک کنید.",
+        "In a room you can fully darken, contrast and color accuracy matter more than raw brightness. A 3LCD or DLP model with Full HD+ resolution and strong contrast gives a more cinematic image than a brighter but washed-out one. For a large screen (100\"+), always check the throw distance against your room size."),
+      B("heading", "برای فضای اداری و ارائه", "For Office & Presentations"),
+      B("paragraph",
+        "تو دفتر معمولاً نور محیط حذف نمی‌شه، پس روشنایی بالا (۳۵۰۰ لومن به بالا) مهم‌تر از کنتراست سینمایی می‌شه. وزن سبک و قابلیت اتصال سریع (HDMI/وایرلس) هم برای جابه‌جایی بین جلسات ارزش زیادی داره. اگه سازمانی خرید می‌کنید، حتماً گزینه‌ی فاکتور رسمی رو موقع تسویه‌حساب انتخاب کنید.",
+        "In an office, ambient light usually can't be eliminated, so high brightness (3500+ lumens) matters more than cinematic contrast. Light weight and quick connectivity (HDMI/wireless) also matter a lot if it moves between meeting rooms. If purchasing for an organization, select the official invoice option at checkout."),
+      B("heading", "برای گیمینگ", "For Gaming"),
+      B("paragraph",
+        "برای گیم، نرخ رفرش و تأخیر ورودی (input lag) از همه مهم‌تره. مدل‌های DLP معمولاً نرخ رفرش بالاتری دارن که برای بازی‌های اکشن و رقابتی حس بهتری می‌ده. اگه با کنسول‌های نسل جدید بازی می‌کنید، حتماً پشتیبانی از رزولوشن و نرخ فریم دستگاهتون رو چک کنید.",
+        "For gaming, refresh rate and input lag matter most. DLP models typically offer higher refresh rates, which feels better for action and competitive games. If you're on a current-gen console, verify the projector supports its resolution and frame rate."),
+      B("paragraph",
+        "اگه مطمئن نیستید کدوم مدل برای کاربرد شما مناسبه، با مشاوره‌ی رایگان ما تماس بگیرید — بر اساس اندازه‌ی اتاق، نور محیط و بودجه‌تون بهترین گزینه رو پیشنهاد می‌کنیم.",
+        "If you're unsure which model fits your use case, reach out for our free consultation — we'll recommend the best option based on your room size, ambient light, and budget."),
+    ],
+  },
+  {
+    slug: "repair-cost-estimate-guide",
+    title: T("قبل از تعمیر چقدر باید هزینه کنید؟ راهنمای تخمین هزینه تعمیرات", "What Should Repairs Cost? A Guide to Estimating Repair Prices"),
+    blocks: [
+      B("heading", "چرا قیمت تعمیر از جایی به جای دیگه فرق می‌کنه؟", "Why Do Repair Quotes Vary So Much?"),
+      B("paragraph",
+        "قیمت واقعی تعمیر معمولاً بعد از عیب‌یابی مشخص می‌شه، چون دو ایراد با علائم مشابه می‌تونن هزینه‌ی خیلی متفاوتی داشته باشن. با این حال، دونستن محدوده‌ی قیمت رایج به شما کمک می‌کنه پیشنهادهای غیرمنطقی رو تشخیص بدید.",
+        "The real repair price is usually only clear after diagnosis, since two faults with similar symptoms can cost very differently to fix. Still, knowing typical price ranges helps you spot an unreasonable quote."),
+      B("heading", "چند تا محدوده‌ی رایج", "A Few Common Ranges"),
+      B("paragraph",
+        "بازیابی اطلاعات بسته به شدت آسیب فیزیکی یا منطقی هارد متغیره؛ تعمیر نرم‌افزاری و نصب ویندوز معمولاً ارزون‌ترین خدمته؛ تعویض قطعه‌ی سخت‌افزاری (مثل صفحه‌کلید یا فن) معمولاً هزینه‌ی قطعه به‌علاوه‌ی اجرت داره؛ و تعمیر مادربرد معمولاً گرون‌ترین ولی هنوز به‌صرفه‌تر از خرید نو حساب می‌شه.",
+        "Data recovery cost varies with how physically or logically damaged the drive is; software repairs and OS installs are usually the cheapest service; hardware part replacement (like a keyboard or fan) typically costs the part plus labor; and motherboard repair is usually the most expensive but still cheaper than buying new."),
+      B("paragraph",
+        "توصیه‌ی ما: همیشه قبل از شروع کار، تخمین هزینه رو کتبی یا پیامکی بخواید و از تعمیرگاه‌هایی که بدون عیب‌یابی قیمت قطعی می‌دن، محتاط باشید.",
+        "Our advice: always ask for a written or texted cost estimate before work begins, and be cautious of any shop that quotes a firm price without diagnosing the device first."),
+    ],
+  },
 ];
 
 articles.forEach((a, idx) => {
@@ -540,6 +603,10 @@ const orderMigrations = [
   ["points_used", "INTEGER NOT NULL DEFAULT 0"],
   ["points_discount", "INTEGER NOT NULL DEFAULT 0"],
   ["points_awarded", "INTEGER NOT NULL DEFAULT 0"],
+  ["invoice_requested", "INTEGER NOT NULL DEFAULT 0"],
+  ["invoice_company_name", "TEXT NOT NULL DEFAULT ''"],
+  ["invoice_economic_id", "TEXT NOT NULL DEFAULT ''"],
+  ["invoice_national_id", "TEXT NOT NULL DEFAULT ''"],
 ];
 for (const [col, def] of orderMigrations) {
   if (!orderColumns.includes(col)) {
@@ -603,6 +670,11 @@ const reservationRow = db.prepare("SELECT id FROM reservation_settings WHERE id 
 if (!reservationRow) {
   db.prepare("INSERT INTO reservation_settings (id, updated_at) VALUES (1, ?)").run(new Date().toISOString());
   console.log("[seed] تنظیمات پیش‌فرض رزرو نوبت ذخیره شد");
+}
+const captchaRow = db.prepare("SELECT id FROM captcha_settings WHERE id = 1").get();
+if (!captchaRow) {
+  db.prepare("INSERT INTO captcha_settings (id, updated_at) VALUES (1, ?)").run(new Date().toISOString());
+  console.log("[seed] تنظیمات پیش‌فرض کپچا ذخیره شد");
 }
 
 export { uid };

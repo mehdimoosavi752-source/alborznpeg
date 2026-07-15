@@ -44,8 +44,8 @@ export const api = {
   updateContent: (content) => request("/api/content", { method: "PUT", body: JSON.stringify(content) }),
 
   // احراز هویت
-  register: (username, password, name) =>
-    request("/api/auth/register", { method: "POST", body: JSON.stringify({ username, password, name }) }),
+  register: (payload) =>
+    request("/api/auth/register", { method: "POST", body: JSON.stringify(payload) }),
   login: (username, password) =>
     request("/api/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
   me: () => request("/api/auth/me"),
@@ -188,4 +188,22 @@ export const api = {
   reportClientError: (payload) => request("/api/client-error", { method: "POST", body: JSON.stringify(payload) }),
   adminListErrorLogs: () => request("/api/admin/error-logs"),
   adminClearErrorLogs: () => request("/api/admin/error-logs", { method: "DELETE" }),
+
+  // دریافت اطلاعات لینک خارجی برای مقایسه محصول
+  fetchUrlMeta: (url) => request("/api/admin/fetch-url-meta", { method: "POST", body: JSON.stringify({ url }) }),
+
+  // خانه‌های سفارشی اطلاعات کاربر
+  getSignupFields: () => request("/api/user-fields/signup"),
+  adminListUserFields: () => request("/api/admin/user-fields"),
+  adminCreateUserField: (payload) => request("/api/admin/user-fields", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateUserField: (id, payload) => request(`/api/admin/user-fields/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  adminDeleteUserField: (id) => request(`/api/admin/user-fields/${id}`, { method: "DELETE" }),
+
+  // کپچا
+  getCaptchaConfig: () => request("/api/captcha-config"),
+  adminGetCaptchaSettings: () => request("/api/admin/captcha-settings"),
+  adminUpdateCaptchaSettings: (payload) => request("/api/admin/captcha-settings", { method: "PUT", body: JSON.stringify(payload) }),
+
+  // بازیابی رمز عبور توسط مدیر
+  adminResetUserPassword: (id, newPassword) => request(`/api/admin/users/${id}/reset-password`, { method: "POST", body: JSON.stringify({ newPassword }) }),
 };
